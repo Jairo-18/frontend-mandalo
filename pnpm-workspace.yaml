@@ -1,0 +1,3 @@
+nodeLinker: hoisted
+minimumReleaseAgeExclude:
+  - '@expo/ui@57.0.2'
