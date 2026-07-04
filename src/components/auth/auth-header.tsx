@@ -20,15 +20,15 @@ export function AuthHeader({
   return (
     <LinearGradient
       colors={[WHITE, ORANGE_SOFT, ORANGE]}
-      style={{ paddingHorizontal: 28, paddingBottom: compact ? 44 : 96 }}
+      style={{ paddingHorizontal: 28, paddingBottom: compact ? 40 : 60 }}
     >
       <SafeAreaView edges={['top']}>
-        <View className="pt-2">
-          <View className="mb-[18px] mt-3 h-[72px] w-[72px] items-center justify-center self-center rounded-full bg-white shadow-md">
-            <Ionicons name="bag-handle" size={34} color={ORANGE} />
+        <View className="pt-1">
+          <View className="mb-3 mt-2 h-[60px] w-[60px] items-center justify-center self-center rounded-full bg-white shadow-md">
+            <Ionicons name="bag-handle" size={28} color={ORANGE} />
           </View>
-          <Text className="text-[44px] font-extrabold tracking-tighter text-dark">
-            Mandalo.
+          <Text className="text-[38px] font-extrabold tracking-tighter text-dark">
+            Mándalo.
           </Text>
           <Text className="mt-0.5 text-sm text-dark">{subtitle}</Text>
         </View>

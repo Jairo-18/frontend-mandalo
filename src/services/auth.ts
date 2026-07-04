@@ -12,6 +12,8 @@ export type RegisterPayload = {
   departmentId?: number;
   municipalityId?: number;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   identificationNumber?: string;
   identificationTypeId?: number;
 };
@@ -55,6 +57,22 @@ export const authService = {
     }>('/auth/google', {
       method: 'POST',
       body: { idToken, ...(role ? { role } : {}) },
+      toastSuccess: true,
+    }),
+
+  /** Paso 1 de recuperar contraseña: envía el código de 6 dígitos al correo. */
+  forgotPassword: (email: string) =>
+    http<{ message?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+      toastSuccess: true,
+    }),
+
+  /** Paso 2: valida el código y cambia la contraseña. */
+  resetPassword: (email: string, code: string, newPassword: string) =>
+    http<{ message?: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: { email, code, newPassword },
       toastSuccess: true,
     }),
 

@@ -25,8 +25,14 @@ type Options = {
   toastSuccess?: boolean;
 };
 
-function pickMessage(json: any, fallback: string): string {
-  const raw = json?.message ?? fallback;
+/** Tiempo máximo de espera de una petición (fetch en RN no trae timeout). */
+const REQUEST_TIMEOUT_MS = 15000;
+
+function pickMessage(json: unknown, fallback: string): string {
+  const raw =
+    json && typeof json === 'object' && 'message' in json
+      ? ((json as { message?: unknown }).message ?? fallback)
+      : fallback;
   return Array.isArray(raw) ? raw.join('\n') : String(raw);
 }
 
@@ -50,6 +56,9 @@ export async function http<T = unknown>(
 
   const bearer = token ?? (auth ? getSession()?.accessToken : undefined);
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   let res: Response;
   try {
     res = await fetch(apiUrl(path), {
@@ -60,11 +69,17 @@ export async function http<T = unknown>(
         ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      signal: controller.signal,
     });
-  } catch {
-    const message = 'No se pudo conectar con el servidor';
+  } catch (e) {
+    const message =
+      e instanceof Error && e.name === 'AbortError'
+        ? 'El servidor tardó demasiado en responder'
+        : 'No se pudo conectar con el servidor';
     if (toastError) toast.error(message);
     throw new HttpError(message, 0, null);
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const json = await res.json().catch(() => null);

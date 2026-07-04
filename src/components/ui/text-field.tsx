@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, TextInputProps, View } from 'react-native';
 
+import { finishText, formatText, TextFormat } from '@/lib/text-format';
+
 const PLACEHOLDER = '#9CA3AF';
 
 type Props = TextInputProps & {
@@ -11,10 +13,50 @@ type Props = TextInputProps & {
   secure?: boolean;
   /** Mensaje de error de validación (se muestra debajo del campo). */
   error?: string;
+  /**
+   * Pipeline de formateo (`lib/text-format.ts`): limpia espacios y aplica la
+   * regla del tipo de dato mientras se escribe (name/email/digits/username/
+   * text) + trim al salir del campo. NO usar en contraseñas.
+   */
+  format?: TextFormat;
 };
 
-export function TextField({ label, icon, secure, error, ...inputProps }: Props) {
+/** Props de teclado que cada formato trae por defecto (sobrescribibles). */
+const FORMAT_DEFAULTS: Partial<Record<TextFormat, TextInputProps>> = {
+  digits: { keyboardType: 'number-pad' },
+  email: {
+    keyboardType: 'email-address',
+    autoComplete: 'email',
+    autoCorrect: false,
+  },
+  name: { autoCorrect: false },
+  username: { autoCorrect: false },
+};
+
+export function TextField({
+  label,
+  icon,
+  secure,
+  error,
+  format,
+  onChangeText,
+  onBlur,
+  ...inputProps
+}: Props) {
   const [hidden, setHidden] = useState(true);
+
+  const handleChangeText = (value: string) => {
+    onChangeText?.(format ? formatText(format, value) : value);
+  };
+
+  const handleBlur: TextInputProps['onBlur'] = (e) => {
+    // Limpieza final: quita el espacio que se permite al final mientras se escribe.
+    if (format && typeof inputProps.value === 'string') {
+      const finished = finishText(inputProps.value);
+      if (finished !== inputProps.value) onChangeText?.(finished);
+    }
+    onBlur?.(e);
+  };
 
   return (
     <View className="mb-4">
@@ -30,7 +72,10 @@ export function TextField({ label, icon, secure, error, ...inputProps }: Props) 
           placeholderTextColor={PLACEHOLDER}
           autoCapitalize="none"
           secureTextEntry={secure ? hidden : false}
+          {...(format ? FORMAT_DEFAULTS[format] : undefined)}
           {...inputProps}
+          onChangeText={handleChangeText}
+          onBlur={handleBlur}
         />
         {secure && (
           <Pressable onPress={() => setHidden((v) => !v)} hitSlop={8}>

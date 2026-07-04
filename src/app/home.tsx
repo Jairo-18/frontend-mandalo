@@ -45,7 +45,7 @@ export default function HomeScreen() {
           Estás en el home 🎉
         </Text>
         <Text className="mt-2 text-center text-sm text-muted">
-          Aquí irá el contenido principal de Mandalo.
+          Aquí irá el contenido principal de Mándalo.
         </Text>
 
         <View className="mt-10 w-full">

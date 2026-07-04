@@ -1,23 +1,41 @@
 import { Platform } from 'react-native';
 
 /**
- * URL base del backend según el entorno.
- * - Desarrollo (`expo start`, __DEV__ === true):
- *     · Android (emulador): http://10.0.2.2:3000  (10.0.2.2 = localhost del PC host)
- *     · iOS / web:          http://localhost:3000
- * - Producción (build de EAS): https://apimandalo.ecohotelsamawe.com
+ * URL base del backend. Las URLs viven en `.env.local` (gitignored) y acá
+ * solo quedan los defaults por si las variables no están:
  *
- * Se puede sobreescribir con la variable de entorno `EXPO_PUBLIC_API_URL`
- * (p. ej. desde un dispositivo físico usando la IP LAN de tu PC:
- *  EXPO_PUBLIC_API_URL=http://192.168.x.x:3000).
+ * - `EXPO_PUBLIC_DEV_API_URL`  → a qué API pega `expo start` (__DEV__).
+ *   En `.env.local` hay dos líneas (backend local / dev desplegado): se
+ *   comenta una u otra para cambiar de backend. Default: backend local
+ *   (Android emulador ve el localhost del PC como 10.0.2.2).
+ * - `EXPO_PUBLIC_PROD_API_URL` → a qué API pegan los builds (APK/AAB).
+ *   OJO: EAS no lee `.env.local`, así que en la nube aplica este default.
+ * - `EXPO_PUBLIC_API_URL`      → override total (pisa a las dos anteriores).
+ *
+ * Las `EXPO_PUBLIC_*` se inyectan al bundlear: tras cambiar `.env.local`,
+ * reiniciar Metro con `npx expo start -c`.
  */
 const DEV_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-const DEV_API_URL = `http://${DEV_HOST}:3000`;
-const PROD_API_URL = 'https://apimandalo.ecohotelsamawe.com';
 
-export const API_URL = (
+const DEV_API_URL =
+  process.env.EXPO_PUBLIC_DEV_API_URL ?? `http://${DEV_HOST}:3000`;
+const PROD_API_URL =
+  process.env.EXPO_PUBLIC_PROD_API_URL ??
+  'https://apimandaloprod.ecohotelsamawe.com';
+
+const RAW_API_URL = (
   process.env.EXPO_PUBLIC_API_URL ?? (__DEV__ ? DEV_API_URL : PROD_API_URL)
 ).replace(/\/+$/, '');
+
+/**
+ * Blindaje: en builds (release) NUNCA se habla http plano. Si una env quedó
+ * apuntando a `http://` al compilar (p. ej. EXPO_PUBLIC_API_URL de una prueba
+ * local), se fuerza https. Android release además bloquea cleartext, así que
+ * sin esto la app simplemente no conectaría.
+ */
+export const API_URL = __DEV__
+  ? RAW_API_URL
+  : RAW_API_URL.replace(/^http:\/\//, 'https://');
 
 /** Une la URL base con un path del API evitando slashes duplicados. */
 export function apiUrl(path: string): string {

@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type SelectOption = { label: string; value: number };
 
@@ -36,6 +37,7 @@ export function Select({
   error,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
   const selected = options.find((o) => o.value === value);
 
   return (
@@ -80,7 +82,10 @@ export function Select({
           onPress={() => setOpen(false)}
         >
           <Pressable
-            className="max-h-[70%] rounded-t-3xl bg-white px-4 pb-8 pt-4"
+            className="max-h-[70%] rounded-t-3xl bg-white px-4 pt-4"
+            // Safe-area inferior: sin esto la hoja queda detrás de la barra de
+            // navegación del sistema (edge-to-edge de Android).
+            style={{ paddingBottom: insets.bottom + 16 }}
             onPress={() => {}}
           >
             <View className="mb-3 h-1 w-10 self-center rounded-full bg-gray-200" />

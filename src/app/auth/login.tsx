@@ -16,10 +16,8 @@ import {
 } from '@/lib/credentials';
 import { signInWithGoogle } from '@/lib/google-auth';
 import { setSession } from '@/lib/session';
-import { toast } from '@/lib/toast';
+import { EMAIL_RE } from '@/lib/text-format';
 import { authService } from '@/services/auth';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -107,6 +105,7 @@ export default function LoginScreen() {
           <TextField
             label="Correo electrónico"
             icon="mail-outline"
+            format="email"
             value={email}
             onChangeText={(t) => {
               setEmail(t);
@@ -114,9 +113,6 @@ export default function LoginScreen() {
             }}
             error={errors.email}
             placeholder="tu@correo.com"
-            keyboardType="email-address"
-            autoComplete="email"
-            autoCorrect={false}
           />
 
           <TextField
@@ -138,7 +134,7 @@ export default function LoginScreen() {
               onChange={setRemember}
               label="Recordar mis datos"
             />
-            <Pressable onPress={() => toast.info('Función próximamente.')}>
+            <Pressable onPress={() => router.push('/auth/forgot-password')}>
               <Text className="text-[13px] font-bold text-primary">
                 ¿Olvidaste tu contraseña?
               </Text>
@@ -151,6 +147,9 @@ export default function LoginScreen() {
             loading={loading}
           />
 
+          {/* TEMPORAL: Google Sign-In deshabilitado mientras se resuelve la
+              cuenta de Google cancelada (NOTAS.md §12). Descomentar para
+              restaurar — el flujo completo sigue intacto en lib/google-auth.ts.
           <View className="my-[18px] flex-row items-center gap-3">
             <View className="h-px flex-1 bg-gray-200" />
             <Text className="text-[13px] text-muted">o</Text>
@@ -158,6 +157,7 @@ export default function LoginScreen() {
           </View>
 
           <GoogleButton onPress={handleGoogle} loading={googleLoading} />
+          */}
 
           <View className="mt-[14px]">
             <Button

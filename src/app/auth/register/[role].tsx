@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AuthHeader } from '@/components/auth/auth-header';
 import { GoogleButton } from '@/components/auth/google-button';
@@ -11,10 +12,18 @@ import { Select } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
 import { signInWithGoogle } from '@/lib/google-auth';
+import { DeviceCoords, getDeviceLocation } from '@/lib/location';
+import { EMAIL_RE } from '@/lib/text-format';
 import { Municipality } from '@/services/catalog';
 import { authService, RegisterPayload } from '@/services/auth';
 
 type Errors = Record<string, string | undefined>;
+
+// La app por ahora solo opera en Putumayo (Villagarzón por defecto), así que
+// el registro llega con esa región preseleccionada. Se identifica por código
+// DANE (los ids son SERIAL y podrían cambiar entre bases).
+const DEFAULT_DEPARTMENT_DANE = '86'; // Putumayo
+const DEFAULT_MUNICIPALITY_DANE = '86885'; // Villagarzón
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -34,6 +43,9 @@ export default function RegisterForm() {
   const [municipalityId, setMunicipalityId] = useState<number>();
   const [identificationNumber, setIdentificationNumber] = useState('');
   const [identificationTypeId, setIdentificationTypeId] = useState<number>();
+
+  const [coords, setCoords] = useState<DeviceCoords>();
+  const [locating, setLocating] = useState(false);
 
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [loadingMuns, setLoadingMuns] = useState(false);
@@ -63,6 +75,47 @@ export default function RegisterForm() {
     [identificationTypes],
   );
 
+  // Preselecciona Putumayo / Villagarzón al cargar (solo si el usuario aún no
+  // eligió nada; los selects siguen editables).
+  useEffect(() => {
+    if (departmentId || !departments.length) return;
+    const dept = departments.find((d) => d.code === DEFAULT_DEPARTMENT_DANE);
+    if (!dept) return;
+
+    setDepartmentId(dept.id);
+    setLoadingMuns(true);
+    getMunicipalities(dept.id)
+      .then((muns) => {
+        setMunicipalities(muns);
+        const mun = muns.find((m) => m.code === DEFAULT_MUNICIPALITY_DANE);
+        if (mun) setMunicipalityId(mun.id);
+      })
+      .catch(() => {
+        // El interceptor HTTP ya mostró el toast; el usuario puede elegir manualmente.
+      })
+      .finally(() => setLoadingMuns(false));
+  }, [departments, departmentId, getMunicipalities]);
+
+  /**
+   * Ubicación del dispositivo: guarda las coordenadas (van al backend) y
+   * prellena la dirección con el geocoding inverso (el campo sigue editable).
+   */
+  async function handleUseLocation() {
+    setLocating(true);
+    try {
+      const result = await getDeviceLocation();
+      if (result) {
+        setCoords(result.coords);
+        if (result.address) {
+          setAddress(result.address);
+          clearError('address');
+        }
+      }
+    } finally {
+      setLocating(false);
+    }
+  }
+
   async function onSelectDepartment(id: number) {
     setDepartmentId(id);
     clearError('departmentId');
@@ -84,6 +137,7 @@ export default function RegisterForm() {
     if (!username.trim()) e.username = 'Ingresa un nombre de usuario.';
     if (!phone.trim()) e.phone = 'Ingresa tu teléfono.';
     if (!email.trim()) e.email = 'Ingresa tu correo.';
+    else if (!EMAIL_RE.test(email.trim())) e.email = 'Ingresa un correo válido.';
     if (!departmentId) e.departmentId = 'Selecciona un departamento.';
     if (!municipalityId) e.municipalityId = 'Selecciona un municipio.';
     if (!address.trim()) e.address = 'Ingresa tu dirección.';
@@ -112,6 +166,7 @@ export default function RegisterForm() {
       address: address.trim(),
       departmentId,
       municipalityId,
+      ...(coords ?? {}),
       ...(isDelivery && {
         identificationNumber: identificationNumber.trim(),
         identificationTypeId,
@@ -166,15 +221,16 @@ export default function RegisterForm() {
           <TextField
             label="Nombre completo"
             icon="person-outline"
+            format="name"
             value={fullName}
             onChangeText={bind('fullName', setFullName)}
             error={errors.fullName}
             placeholder="Juan Pérez"
-            autoCapitalize="words"
           />
           <TextField
             label="Nombre de usuario"
             icon="at-outline"
+            format="username"
             value={username}
             onChangeText={bind('username', setUsername)}
             error={errors.username}
@@ -183,6 +239,7 @@ export default function RegisterForm() {
           <TextField
             label="Teléfono"
             icon="call-outline"
+            format="digits"
             value={phone}
             onChangeText={bind('phone', setPhone)}
             error={errors.phone}
@@ -192,13 +249,11 @@ export default function RegisterForm() {
           <TextField
             label="Correo electrónico"
             icon="mail-outline"
+            format="email"
             value={email}
             onChangeText={bind('email', setEmail)}
             error={errors.email}
             placeholder="tu@correo.com"
-            keyboardType="email-address"
-            autoComplete="email"
-            autoCorrect={false}
           />
 
           <Select
@@ -232,11 +287,34 @@ export default function RegisterForm() {
           <TextField
             label="Dirección"
             icon="home-outline"
+            format="text"
             value={address}
             onChangeText={bind('address', setAddress)}
             error={errors.address}
             placeholder="Calle 1 # 2-3"
           />
+          <Pressable
+            onPress={handleUseLocation}
+            disabled={locating}
+            className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+          >
+            {locating ? (
+              <ActivityIndicator size="small" color="#FF5A3C" />
+            ) : (
+              <Ionicons
+                name={coords ? 'checkmark-circle' : 'locate-outline'}
+                size={16}
+                color="#FF5A3C"
+              />
+            )}
+            <Text className="text-[13px] font-bold text-primary">
+              {locating
+                ? 'Obteniendo ubicación…'
+                : coords
+                  ? 'Ubicación marcada — toca para actualizar'
+                  : 'Usar mi ubicación actual'}
+            </Text>
+          </Pressable>
 
           {isDelivery && (
             <>
@@ -255,11 +333,11 @@ export default function RegisterForm() {
               <TextField
                 label="Número de identificación"
                 icon="finger-print-outline"
+                format="digits"
                 value={identificationNumber}
                 onChangeText={bind('identificationNumber', setIdentificationNumber)}
                 error={errors.identificationNumber}
                 placeholder="1090123456"
-                keyboardType="number-pad"
               />
             </>
           )}
@@ -291,6 +369,9 @@ export default function RegisterForm() {
             />
           </View>
 
+          {/* TEMPORAL: Google Sign-In deshabilitado mientras se resuelve la
+              cuenta de Google cancelada (NOTAS.md §12). Descomentar para
+              restaurar — el flujo completo sigue intacto en lib/google-auth.ts.
           <View className="my-[18px] flex-row items-center gap-3">
             <View className="h-px flex-1 bg-gray-200" />
             <Text className="text-[13px] text-muted">o</Text>
@@ -306,6 +387,7 @@ export default function RegisterForm() {
             onPress={handleGoogle}
             loading={googleLoading}
           />
+          */}
 
           <View className="mt-5 flex-row justify-center">
             <Text className="text-sm text-muted">¿Ya tienes cuenta? </Text>

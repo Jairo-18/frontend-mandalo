@@ -10,6 +10,7 @@ import {
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { loadCatalogCache, saveCatalogCache } from '@/lib/catalog-cache';
 import {
   catalogService,
   Department,
@@ -20,7 +21,7 @@ import {
 type AppData = {
   departments: Department[];
   identificationTypes: IdentificationType[];
-  /** Municipios de un departamento (con caché en memoria). */
+  /** Municipios de un departamento (con caché en memoria y en disco). */
   getMunicipalities: (departmentId: number) => Promise<Municipality[]>;
 };
 
@@ -42,49 +43,88 @@ type State = {
 };
 
 /**
- * Carga inicial de la app: trae departamentos y tipos de identificación al
- * abrir. Muestra un splash mientras carga y una pantalla de error con
- * reintento si el backend no responde. Los municipios se cargan por
- * departamento bajo demanda (son ~1100 en total).
+ * Carga inicial de la app con caché en disco (stale-while-revalidate):
+ * - Con caché → la app abre AL INSTANTE con los catálogos guardados y se
+ *   refrescan desde el backend en segundo plano (si cambió algo, el estado
+ *   se actualiza solo; si el backend no responde, se sigue con lo guardado).
+ * - Sin caché (primer arranque) → splash mientras carga y pantalla de error
+ *   con reintento, como siempre.
+ * Los municipios se cargan por departamento bajo demanda (~1100 en total) y
+ * también quedan cacheados.
  */
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>({
-    loading: true,
-    error: null,
-    departments: [],
-    identificationTypes: [],
+  // Lazy initializer: el archivo de caché se lee UNA sola vez, en el primer render.
+  const [cached] = useState(loadCatalogCache);
+
+  const [state, setState] = useState<State>(() =>
+    cached
+      ? {
+          loading: false,
+          error: null,
+          departments: cached.departments,
+          identificationTypes: cached.identificationTypes,
+        }
+      : { loading: true, error: null, departments: [], identificationTypes: [] },
+  );
+
+  const municipalitiesCache = useRef<Record<number, Municipality[]>>(
+    cached?.municipalitiesByDepartment ?? {},
+  );
+  // Última versión confirmada de los catálogos (para persistir junto con los
+  // municipios sin depender del ciclo de renders).
+  const latestData = useRef({
+    departments: cached?.departments ?? [],
+    identificationTypes: cached?.identificationTypes ?? [],
   });
 
-  const municipalitiesCache = useRef<Record<number, Municipality[]>>({});
-
-  const load = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
-    try {
-      const [departments, identificationTypes] = await Promise.all([
-        catalogService.getDepartments(),
-        catalogService.getIdentificationTypes(),
-      ]);
-      setState({ loading: false, error: null, departments, identificationTypes });
-    } catch (e) {
-      setState((s) => ({
-        ...s,
-        loading: false,
-        error: e instanceof Error ? e.message : 'Error cargando la aplicación',
-      }));
-    }
+  const persist = useCallback(() => {
+    if (latestData.current.departments.length === 0) return;
+    saveCatalogCache({
+      ...latestData.current,
+      municipalitiesByDepartment: municipalitiesCache.current,
+    });
   }, []);
+
+  const load = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      if (!silent) setState((s) => ({ ...s, loading: true, error: null }));
+      try {
+        const [departments, identificationTypes] = await Promise.all([
+          catalogService.getDepartments(),
+          catalogService.getIdentificationTypes(),
+        ]);
+        latestData.current = { departments, identificationTypes };
+        setState({ loading: false, error: null, departments, identificationTypes });
+        persist();
+      } catch (e) {
+        // Refresco en segundo plano fallido → se sigue con la caché, sin molestar.
+        if (silent) return;
+        setState((s) => ({
+          ...s,
+          loading: false,
+          error: e instanceof Error ? e.message : 'Error cargando la aplicación',
+        }));
+      }
+    },
+    [persist],
+  );
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load({ silent: !!cached });
+    // `cached` y `load` son estables: esto corre una sola vez al montar.
+  }, [cached, load]);
 
-  const getMunicipalities = useCallback(async (departmentId: number) => {
-    const cached = municipalitiesCache.current[departmentId];
-    if (cached) return cached;
-    const muns = await catalogService.getMunicipalities(departmentId);
-    municipalitiesCache.current[departmentId] = muns;
-    return muns;
-  }, []);
+  const getMunicipalities = useCallback(
+    async (departmentId: number) => {
+      const cachedMuns = municipalitiesCache.current[departmentId];
+      if (cachedMuns) return cachedMuns;
+      const muns = await catalogService.getMunicipalities(departmentId);
+      municipalitiesCache.current[departmentId] = muns;
+      persist();
+      return muns;
+    },
+    [persist],
+  );
 
   if (state.loading) {
     return (
@@ -105,7 +145,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           {state.error}
         </Text>
         <View className="w-full">
-          <Button label="Reintentar" onPress={load} />
+          <Button label="Reintentar" onPress={() => load()} />
         </View>
       </View>
     );

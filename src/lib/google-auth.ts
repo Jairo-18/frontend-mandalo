@@ -67,7 +67,19 @@ export async function signInWithGoogle(
       toast.error('Tu dispositivo no tiene Google Play Services disponible.');
       return false;
     }
-    toast.error('No se pudo conectar con Google. Intenta de nuevo.');
+    const code = isErrorWithCode(e) ? String(e.code) : '';
+    console.error('[google-auth] GoogleSignin.signIn falló:', code, e);
+    if (code === 'DEVELOPER_ERROR' || code === '10') {
+      // El SHA-1 + package del APK no coincide con ningún client Android de
+      // Google Cloud (o el client aún no propaga). Ver NOTAS.md §10.
+      toast.error(
+        'Google rechazó la configuración de la app (DEVELOPER_ERROR: SHA-1/package).',
+      );
+      return false;
+    }
+    toast.error(
+      `No se pudo conectar con Google. Intenta de nuevo.${code ? ` (código ${code})` : ''}`,
+    );
     return false;
   }
 
