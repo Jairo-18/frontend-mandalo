@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthHeader } from '@/components/auth/auth-header';
 
@@ -32,13 +33,17 @@ function RoleCard({ icon, title, desc, onPress }: RoleCardProps) {
 
 export default function RegisterChooser() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
       <AuthHeader compact subtitle="Únete a Mandalo" />
 
-      <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pt-8">
+      <View
+        className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pt-8"
+        style={{ paddingBottom: insets.bottom + 16 }}
+      >
         <Text className="text-center text-[26px] font-extrabold text-dark">
           ¿Cómo quieres registrarte?
         </Text>

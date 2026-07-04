@@ -1,4 +1,4 @@
-import { apiUrl } from '@/constants/api';
+import { http } from '@/lib/http';
 
 export type Tokens = { accessToken: string; refreshToken: string };
 export type AuthUser = { id: string; fullName: string; roleTypeId?: string };
@@ -16,31 +16,57 @@ export type RegisterPayload = {
   identificationTypeId?: number;
 };
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(apiUrl(path), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    const raw = data?.message ?? 'Ocurrió un error inesperado';
-    throw new Error(Array.isArray(raw) ? raw.join('\n') : String(raw));
-  }
-  return data as T;
-}
-
-/** Capa de acceso al API de autenticación / registro (estilo "service"). */
+/** Capa de acceso al API de autenticación / registro. */
 export const authService = {
   signIn: (email: string, password: string) =>
-    postJson<{
+    http<{
       data: { tokens: Tokens; user: AuthUser; accessSessionId?: string };
-    }>('/auth/sign-in', { email, password }),
+    }>('/auth/sign-in', {
+      method: 'POST',
+      body: { email, password },
+      toastSuccess: true,
+    }),
 
   registerClient: (payload: RegisterPayload) =>
-    postJson<{ data: { rowId: string } }>('/user/register/client', payload),
+    http<{ data: { rowId: string } }>('/user/register/client', {
+      method: 'POST',
+      body: payload,
+      toastSuccess: true,
+    }),
 
   registerDelivery: (payload: RegisterPayload) =>
-    postJson<{ data: { rowId: string } }>('/user/register/delivery', payload),
+    http<{ data: { rowId: string } }>('/user/register/delivery', {
+      method: 'POST',
+      body: payload,
+      toastSuccess: true,
+    }),
+
+  /**
+   * Autenticación con Google: manda el idToken del Google Sign-In nativo.
+   * `role` define el rol si la cuenta se crea en ese momento (default client).
+   */
+  signInWithGoogle: (idToken: string, role?: 'client' | 'delivery') =>
+    http<{
+      data: {
+        tokens: Tokens;
+        user: AuthUser & { isNewUser?: boolean };
+        accessSessionId?: string;
+      };
+    }>('/auth/google', {
+      method: 'POST',
+      body: { idToken, ...(role ? { role } : {}) },
+      toastSuccess: true,
+    }),
+
+  signOut: (body: {
+    userId: string;
+    accessToken: string;
+    accessSessionId: string;
+  }) =>
+    http<{ message?: string }>('/auth/sign-out', {
+      method: 'POST',
+      body,
+      token: body.accessToken,
+      toastSuccess: true,
+    }),
 };

@@ -23,3 +23,19 @@ export const API_URL = (
 export function apiUrl(path: string): string {
   return `${API_URL}/${path.replace(/^\/+/, '')}`;
 }
+
+/**
+ * Client key que exige el `ApiKeyGuard` del backend (header `X-Client-Key`)
+ * en los endpoints NO públicos. Se define en `.env.local`
+ * (`EXPO_PUBLIC_CLIENT_API_KEY`) y debe coincidir con `APP_CLIENT_API_KEY`.
+ */
+export const CLIENT_API_KEY = process.env.EXPO_PUBLIC_CLIENT_API_KEY ?? '';
+
+/**
+ * Client ID "Web application" de Google Cloud Console (el MISMO que usa el
+ * backend como audience para verificar el idToken). Se define en `.env.local`
+ * (`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`). Sin él, el botón de Google avisa que
+ * la función no está configurada.
+ */
+export const GOOGLE_WEB_CLIENT_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';

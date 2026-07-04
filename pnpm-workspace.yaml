@@ -1,3 +1,10 @@
 nodeLinker: hoisted
+# pnpm 11 interpreta estas entradas como PATRONES de nombre de paquete (no admite
+# `nombre@version`, que es lo que agregaba el CLI de Expo y por eso no excluía nada).
+# Excluimos del chequeo de minimumReleaseAge solo los paquetes first-party de Expo:
+# el SDK 57 completo se publica el mismo día y, de otra forma, cada release recién
+# salida bloquea el install. El resto de dependencias siguen sujetas a la política.
 minimumReleaseAgeExclude:
-  - '@expo/ui@57.0.2'
+  - 'expo'
+  - 'expo-*'
+  - '@expo/*'

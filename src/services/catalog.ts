@@ -1,4 +1,4 @@
-import { apiUrl } from '@/constants/api';
+import { http } from '@/lib/http';
 
 export type Department = { id: number; code: string; name: string };
 export type Municipality = {
@@ -9,21 +9,20 @@ export type Municipality = {
 };
 export type IdentificationType = { id: number; code: string; name: string };
 
-async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(apiUrl(path));
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    const raw = data?.message ?? 'No se pudieron cargar los datos';
-    throw new Error(Array.isArray(raw) ? raw.join('\n') : String(raw));
-  }
-  return data as T;
-}
-
-/** Catálogos de la app (departamentos, municipios, tipos de identificación). */
+/**
+ * Catálogos de la app. Departamentos y tipos de identificación se cargan al
+ * inicio (el error lo maneja la pantalla de carga, por eso `toastError: false`
+ * para no duplicar). Los municipios son bajo demanda → sí muestran toast si fallan.
+ */
 export const catalogService = {
-  getDepartments: () => getJson<Department[]>('/catalog/departments'),
+  getDepartments: () =>
+    http<Department[]>('/catalog/departments', { toastError: false }),
+
   getMunicipalities: (departmentId: number) =>
-    getJson<Municipality[]>(`/catalog/municipalities?departmentId=${departmentId}`),
+    http<Municipality[]>(`/catalog/municipalities?departmentId=${departmentId}`),
+
   getIdentificationTypes: () =>
-    getJson<IdentificationType[]>('/catalog/identification-types'),
+    http<IdentificationType[]>('/catalog/identification-types', {
+      toastError: false,
+    }),
 };

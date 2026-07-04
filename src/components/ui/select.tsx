@@ -20,6 +20,8 @@ type Props = {
   placeholder?: string;
   disabled?: boolean;
   loading?: boolean;
+  /** Mensaje de error de validación (se muestra debajo del campo). */
+  error?: string;
 };
 
 export function Select({
@@ -31,6 +33,7 @@ export function Select({
   placeholder = 'Selecciona una opción',
   disabled = false,
   loading = false,
+  error,
 }: Props) {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
@@ -42,9 +45,9 @@ export function Select({
       <Pressable
         disabled={disabled}
         onPress={() => setOpen(true)}
-        className={`h-[52px] flex-row items-center gap-2.5 rounded-xl border border-gray-200 px-3.5 ${
-          disabled ? 'bg-gray-50 opacity-60' : ''
-        }`}
+        className={`h-[52px] flex-row items-center gap-2.5 rounded-xl border px-3.5 ${
+          error ? 'border-red-500' : 'border-gray-200'
+        } ${disabled ? 'bg-gray-50 opacity-60' : ''}`}
       >
         {icon && <Ionicons name={icon} size={20} color="#9CA3AF" />}
         <Text
@@ -61,6 +64,10 @@ export function Select({
           <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
         )}
       </Pressable>
+
+      {error ? (
+        <Text className="mt-1 text-xs font-medium text-red-500">{error}</Text>
+      ) : null}
 
       <Modal
         visible={open}

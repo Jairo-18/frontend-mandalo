@@ -1,13 +1,38 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
+import { clearSession, loadSession } from '@/lib/session';
+import { authService } from '@/services/auth';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogout() {
+    try {
+      setLoading(true);
+      const s = await loadSession();
+      if (s?.accessSessionId) {
+        // El interceptor muestra el mensaje del backend ("Sesión cerrada exitosamente").
+        await authService.signOut({
+          userId: s.user.id,
+          accessToken: s.accessToken,
+          accessSessionId: s.accessSessionId,
+        });
+      }
+    } catch {
+      // El interceptor ya mostró el error; igual limpiamos la sesión local.
+    } finally {
+      await clearSession();
+      setLoading(false);
+      router.replace('/auth/login');
+    }
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -27,7 +52,8 @@ export default function HomeScreen() {
           <Button
             label="Cerrar sesión"
             variant="outline"
-            onPress={() => router.replace('/auth/login')}
+            onPress={handleLogout}
+            loading={loading}
           />
         </View>
       </View>

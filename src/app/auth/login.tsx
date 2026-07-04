@@ -1,120 +1,173 @@
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 
 import { AuthHeader } from '@/components/auth/auth-header';
+import { GoogleButton } from '@/components/auth/google-button';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
+import {
+  clearCredentials,
+  loadCredentials,
+  saveCredentials,
+} from '@/lib/credentials';
+import { signInWithGoogle } from '@/lib/google-auth';
+import { setSession } from '@/lib/session';
+import { toast } from '@/lib/toast';
 import { authService } from '@/services/auth';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+    {},
+  );
+
+  // Prellena con las credenciales recordadas al abrir.
+  useEffect(() => {
+    loadCredentials().then((c) => {
+      if (c) {
+        setEmail(c.email);
+        setPassword(c.password);
+        setRemember(true);
+      }
+    });
+  }, []);
+
+  const clearError = (field: 'email' | 'password') =>
+    setErrors((p) => (p[field] ? { ...p, [field]: undefined } : p));
 
   async function handleLogin() {
-    if (!email.trim() || !password) {
-      Alert.alert('Faltan datos', 'Ingresa tu correo y contraseña.');
-      return;
-    }
+    const e: { email?: string; password?: string } = {};
+    if (!email.trim()) e.email = 'Ingresa tu correo.';
+    else if (!EMAIL_RE.test(email.trim())) e.email = 'Ingresa un correo válido.';
+    if (!password) e.password = 'Ingresa tu contraseña.';
+    setErrors(e);
+    if (e.email || e.password) return;
+
     try {
       setLoading(true);
-      await authService.signIn(email.trim(), password);
-      // TODO: guardar tokens (persistencia de sesión)
+      const res = await authService.signIn(email.trim(), password);
+      const { tokens, user, accessSessionId } = res.data;
+      await setSession({
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        accessSessionId,
+        user,
+      });
+
+      if (remember) {
+        await saveCredentials({ email: email.trim(), password });
+      } else {
+        await clearCredentials();
+      }
+
       router.replace('/home');
-    } catch (e) {
-      Alert.alert(
-        'No se pudo iniciar sesión',
-        e instanceof Error ? e.message : 'Intenta de nuevo.',
-      );
+    } catch {
+      // El interceptor HTTP ya mostró el toast con el mensaje del backend.
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGoogle() {
+    try {
+      setGoogleLoading(true);
+      if (await signInWithGoogle()) {
+        router.replace('/home');
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
   return (
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <AuthHeader />
+      <KeyboardAwareScroll>
+        <AuthHeader />
 
-          <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">
-            <Text className="text-center text-[26px] font-extrabold text-dark">
-              ¡Bienvenido!
-            </Text>
-            <Text className="mb-6 mt-1.5 text-center text-sm text-muted">
-              Inicia sesión para pedir lo mejor de tu región
-            </Text>
+        <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">
+          <Text className="text-center text-[26px] font-extrabold text-dark">
+            ¡Bienvenido!
+          </Text>
+          <Text className="mb-6 mt-1.5 text-center text-sm text-muted">
+            Inicia sesión para pedir lo mejor de tu región
+          </Text>
 
-            <TextField
-              label="Correo electrónico"
-              icon="mail-outline"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="tu@correo.com"
-              keyboardType="email-address"
-              autoComplete="email"
-              autoCorrect={false}
+          <TextField
+            label="Correo electrónico"
+            icon="mail-outline"
+            value={email}
+            onChangeText={(t) => {
+              setEmail(t);
+              clearError('email');
+            }}
+            error={errors.email}
+            placeholder="tu@correo.com"
+            keyboardType="email-address"
+            autoComplete="email"
+            autoCorrect={false}
+          />
+
+          <TextField
+            label="Contraseña"
+            icon="lock-closed-outline"
+            secure
+            value={password}
+            onChangeText={(t) => {
+              setPassword(t);
+              clearError('password');
+            }}
+            error={errors.password}
+            placeholder="••••••••"
+          />
+
+          <View className="mb-5 flex-row items-center justify-between">
+            <Checkbox
+              checked={remember}
+              onChange={setRemember}
+              label="Recordar mis datos"
             />
-
-            <TextField
-              label="Contraseña"
-              icon="lock-closed-outline"
-              secure
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••"
-            />
-
-            <Pressable
-              className="mb-5 self-end"
-              onPress={() =>
-                Alert.alert('Recuperar contraseña', 'Función próximamente.')
-              }
-            >
+            <Pressable onPress={() => toast.info('Función próximamente.')}>
               <Text className="text-[13px] font-bold text-primary">
                 ¿Olvidaste tu contraseña?
               </Text>
             </Pressable>
+          </View>
 
-            <Button
-              label="Iniciar Sesión"
-              onPress={handleLogin}
-              loading={loading}
-            />
+          <Button
+            label="Iniciar Sesión"
+            onPress={handleLogin}
+            loading={loading}
+          />
 
-            <View className="my-[18px] flex-row items-center gap-3">
-              <View className="h-px flex-1 bg-gray-200" />
-              <Text className="text-[13px] text-muted">o</Text>
-              <View className="h-px flex-1 bg-gray-200" />
-            </View>
+          <View className="my-[18px] flex-row items-center gap-3">
+            <View className="h-px flex-1 bg-gray-200" />
+            <Text className="text-[13px] text-muted">o</Text>
+            <View className="h-px flex-1 bg-gray-200" />
+          </View>
 
+          <GoogleButton onPress={handleGoogle} loading={googleLoading} />
+
+          <View className="mt-[14px]">
             <Button
               label="Registrarse"
               variant="outline"
               onPress={() => router.push('/auth/register')}
             />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </KeyboardAwareScroll>
     </View>
   );
 }
