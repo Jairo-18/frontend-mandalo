@@ -1,0 +1,24 @@
+# CI/CD de Expo (EAS Workflows): al hacer push a `main` compila el APK
+# preview en la nube de EAS automáticamente.
+#
+# Requisito (una sola vez): vincular el repo en https://expo.dev →
+# proyecto `mandalo` → Settings → GitHub → instalar la GitHub App y
+# conectar `Jairo-18/frontend-mandalo`.
+#
+# OJO con la cuota: el plan gratis de EAS trae ~30 builds/mes; por eso se
+# dispara solo con `main` (merge = APK nuevo) y no en cada push a `dev`.
+# Para el AAB de Play cambiar `profile: production`.
+
+name: Build Android (preview)
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  build_android:
+    name: Build APK preview
+    type: build
+    params:
+      platform: android
+      profile: preview
