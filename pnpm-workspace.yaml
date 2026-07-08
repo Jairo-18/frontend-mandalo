@@ -8,3 +8,4 @@ minimumReleaseAgeExclude:
   - 'expo'
   - 'expo-*'
   - '@expo/*'
+  - 'babel-preset-expo'

@@ -14,7 +14,7 @@ type Props = {
 };
 
 export function AuthHeader({
-  subtitle = 'Villagarzón a tu puerta',
+  subtitle = 'Putumayo a tu puerta',
   compact = false,
 }: Props) {
   return (

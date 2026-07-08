@@ -7,15 +7,11 @@
     "icon": "./assets/images/icon.png",
     "scheme": "frontendmandalo",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
     "android": {
       "package": "com.mandalo.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#F75929",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
@@ -35,11 +31,18 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mándalo accede a tus fotos para que elijas tu imagen de perfil o el logo de tu negocio.",
+          "cameraPermission": "Mándalo usa la cámara para que tomes tu foto de perfil o la de tu negocio."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 140
         }
       ]
     ],

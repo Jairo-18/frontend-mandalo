@@ -15,7 +15,7 @@ import {
   saveCredentials,
 } from '@/lib/credentials';
 import { signInWithGoogle } from '@/lib/google-auth';
-import { setSession } from '@/lib/session';
+import { getSession, homePathFor, setSession } from '@/lib/session';
 import { EMAIL_RE } from '@/lib/text-format';
 import { authService } from '@/services/auth';
 
@@ -69,7 +69,7 @@ export default function LoginScreen() {
         await clearCredentials();
       }
 
-      router.replace('/home');
+      router.replace(homePathFor(user));
     } catch {
       // El interceptor HTTP ya mostró el toast con el mensaje del backend.
     } finally {
@@ -81,7 +81,7 @@ export default function LoginScreen() {
     try {
       setGoogleLoading(true);
       if (await signInWithGoogle()) {
-        router.replace('/home');
+        router.replace(homePathFor(getSession()?.user));
       }
     } finally {
       setGoogleLoading(false);
@@ -147,9 +147,6 @@ export default function LoginScreen() {
             loading={loading}
           />
 
-          {/* TEMPORAL: Google Sign-In deshabilitado mientras se resuelve la
-              cuenta de Google cancelada (NOTAS.md §12). Descomentar para
-              restaurar — el flujo completo sigue intacto en lib/google-auth.ts.
           <View className="my-[18px] flex-row items-center gap-3">
             <View className="h-px flex-1 bg-gray-200" />
             <Text className="text-[13px] text-muted">o</Text>
@@ -157,7 +154,6 @@ export default function LoginScreen() {
           </View>
 
           <GoogleButton onPress={handleGoogle} loading={googleLoading} />
-          */}
 
           <View className="mt-[14px]">
             <Button

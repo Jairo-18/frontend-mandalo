@@ -53,7 +53,7 @@ export default function RegisterChooser() {
 
         <RoleCard
           icon="person-outline"
-          title="Usuario"
+          title="Cliente"
           desc="Pide lo mejor de tu región"
           onPress={() =>
             router.push({
@@ -64,7 +64,7 @@ export default function RegisterChooser() {
         />
         <RoleCard
           icon="bicycle-outline"
-          title="Repartidor"
+          title="Domiciliario"
           desc="Entrega pedidos y genera ingresos"
           onPress={() =>
             router.push({

@@ -10,13 +10,16 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export type SelectOption = { label: string; value: number };
-
-type Props = {
+export type SelectOption<T extends string | number = number> = {
   label: string;
-  options: SelectOption[];
-  value?: number;
-  onSelect: (value: number) => void;
+  value: T;
+};
+
+type Props<T extends string | number> = {
+  label: string;
+  options: SelectOption<T>[];
+  value?: T;
+  onSelect: (value: T) => void;
   icon?: keyof typeof Ionicons.glyphMap;
   placeholder?: string;
   disabled?: boolean;
@@ -25,7 +28,7 @@ type Props = {
   error?: string;
 };
 
-export function Select({
+export function Select<T extends string | number = number>({
   label,
   options,
   value,
@@ -35,7 +38,7 @@ export function Select({
   disabled = false,
   loading = false,
   error,
-}: Props) {
+}: Props<T>) {
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const selected = options.find((o) => o.value === value);

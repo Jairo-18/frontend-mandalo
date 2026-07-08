@@ -28,6 +28,9 @@ type Options = {
 /** Tiempo máximo de espera de una petición (fetch en RN no trae timeout). */
 const REQUEST_TIMEOUT_MS = 15000;
 
+/** Las subidas de archivos (multipart) pueden tardar más que un JSON. */
+const UPLOAD_TIMEOUT_MS = 60000;
+
 function pickMessage(json: unknown, fallback: string): string {
   const raw =
     json && typeof json === 'object' && 'message' in json
@@ -56,22 +59,34 @@ export async function http<T = unknown>(
 
   const bearer = token ?? (auth ? getSession()?.accessToken : undefined);
 
+  // FormData (subida de archivos): fetch pone solo el Content-Type multipart
+  // con su boundary; forzar application/json lo rompería.
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    isFormData ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
+  );
 
   let res: Response;
   try {
     res = await fetch(apiUrl(path), {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(CLIENT_API_KEY ? { 'X-Client-Key': CLIENT_API_KEY } : {}),
         ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
       },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined
+        ? { body: isFormData ? (body as FormData) : JSON.stringify(body) }
+        : {}),
       signal: controller.signal,
     });
   } catch (e) {
+    // En desarrollo se imprime el error crudo del fetch (sale en Metro):
+    // el toast genérico esconde la causa real (timeout, DNS, TLS, archivo…).
+    if (__DEV__) console.error(`[http] ${method} ${path} falló:`, e);
     const message =
       e instanceof Error && e.name === 'AbortError'
         ? 'El servidor tardó demasiado en responder'

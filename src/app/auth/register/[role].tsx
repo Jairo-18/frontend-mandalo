@@ -5,19 +5,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AuthHeader } from '@/components/auth/auth-header';
+import { DeliveryVerification } from '@/components/auth/delivery-verification';
 import { GoogleButton } from '@/components/auth/google-button';
 import { Button } from '@/components/ui/button';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { Select } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
+import { useFormErrors } from '@/hooks/use-form-errors';
+import { useMunicipalities } from '@/hooks/use-municipalities';
 import { signInWithGoogle } from '@/lib/google-auth';
 import { DeviceCoords, getDeviceLocation } from '@/lib/location';
+import { getSession, homePathFor } from '@/lib/session';
 import { EMAIL_RE } from '@/lib/text-format';
-import { Municipality } from '@/services/catalog';
 import { authService, RegisterPayload } from '@/services/auth';
-
-type Errors = Record<string, string | undefined>;
 
 // La app por ahora solo opera en Putumayo (Villagarzón por defecto), así que
 // el registro llega con esa región preseleccionada. Se identifica por código
@@ -30,7 +31,9 @@ export default function RegisterForm() {
   const { role } = useLocalSearchParams<{ role: string }>();
   const isDelivery = role === 'delivery';
 
-  const { departments, identificationTypes, getMunicipalities } = useAppData();
+  const { departments, identificationTypes } = useAppData();
+  const muni = useMunicipalities();
+  const { errors, clearError, bind, validate } = useFormErrors();
 
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -39,36 +42,28 @@ export default function RegisterForm() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [address, setAddress] = useState('');
-  const [departmentId, setDepartmentId] = useState<number>();
-  const [municipalityId, setMunicipalityId] = useState<number>();
   const [identificationNumber, setIdentificationNumber] = useState('');
   const [identificationTypeId, setIdentificationTypeId] = useState<number>();
+
+  // Fotos de verificación del repartidor (obligatorias): rostro + documento
+  // por ambos lados. Un admin las revisa antes de activar la cuenta.
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [idFrontUri, setIdFrontUri] = useState<string | null>(null);
+  const [idBackUri, setIdBackUri] = useState<string | null>(null);
 
   const [coords, setCoords] = useState<DeviceCoords>();
   const [locating, setLocating] = useState(false);
 
-  const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
-  const [loadingMuns, setLoadingMuns] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [errors, setErrors] = useState<Errors>({});
-
-  const clearError = (field: string) =>
-    setErrors((p) => (p[field] ? { ...p, [field]: undefined } : p));
-
-  /** onChangeText que setea el valor y limpia el error del campo. */
-  const bind = (field: string, setter: (v: string) => void) => (v: string) => {
-    setter(v);
-    clearError(field);
-  };
 
   const departmentOptions = useMemo(
     () => departments.map((d) => ({ label: d.name, value: d.id })),
     [departments],
   );
   const municipalityOptions = useMemo(
-    () => municipalities.map((m) => ({ label: m.name, value: m.id })),
-    [municipalities],
+    () => muni.municipalities.map((m) => ({ label: m.name, value: m.id })),
+    [muni.municipalities],
   );
   const identificationTypeOptions = useMemo(
     () => identificationTypes.map((t) => ({ label: t.name, value: t.id })),
@@ -78,23 +73,16 @@ export default function RegisterForm() {
   // Preselecciona Putumayo / Villagarzón al cargar (solo si el usuario aún no
   // eligió nada; los selects siguen editables).
   useEffect(() => {
-    if (departmentId || !departments.length) return;
+    if (muni.departmentId || !departments.length) return;
     const dept = departments.find((d) => d.code === DEFAULT_DEPARTMENT_DANE);
     if (!dept) return;
 
-    setDepartmentId(dept.id);
-    setLoadingMuns(true);
-    getMunicipalities(dept.id)
-      .then((muns) => {
-        setMunicipalities(muns);
-        const mun = muns.find((m) => m.code === DEFAULT_MUNICIPALITY_DANE);
-        if (mun) setMunicipalityId(mun.id);
-      })
-      .catch(() => {
-        // El interceptor HTTP ya mostró el toast; el usuario puede elegir manualmente.
-      })
-      .finally(() => setLoadingMuns(false));
-  }, [departments, departmentId, getMunicipalities]);
+    muni.preload(dept.id).then((muns) => {
+      const mun = muns.find((m) => m.code === DEFAULT_MUNICIPALITY_DANE);
+      if (mun) muni.setMunicipalityId(mun.id);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [departments]);
 
   /**
    * Ubicación del dispositivo: guarda las coordenadas (van al backend) y
@@ -116,46 +104,49 @@ export default function RegisterForm() {
     }
   }
 
-  async function onSelectDepartment(id: number) {
-    setDepartmentId(id);
-    clearError('departmentId');
-    setMunicipalityId(undefined);
-    setMunicipalities([]);
-    setLoadingMuns(true);
-    try {
-      setMunicipalities(await getMunicipalities(id));
-    } catch {
-      // El interceptor HTTP ya mostró el toast de error.
-    } finally {
-      setLoadingMuns(false);
-    }
-  }
-
-  function validate(): Errors {
-    const e: Errors = {};
-    if (!fullName.trim()) e.fullName = 'Ingresa tu nombre completo.';
-    if (!username.trim()) e.username = 'Ingresa un nombre de usuario.';
-    if (!phone.trim()) e.phone = 'Ingresa tu teléfono.';
-    if (!email.trim()) e.email = 'Ingresa tu correo.';
-    else if (!EMAIL_RE.test(email.trim())) e.email = 'Ingresa un correo válido.';
-    if (!departmentId) e.departmentId = 'Selecciona un departamento.';
-    if (!municipalityId) e.municipalityId = 'Selecciona un municipio.';
-    if (!address.trim()) e.address = 'Ingresa tu dirección.';
-    if (isDelivery && !identificationTypeId)
-      e.identificationTypeId = 'Selecciona el tipo.';
-    if (isDelivery && !identificationNumber.trim())
-      e.identificationNumber = 'Ingresa tu número de identificación.';
-    if (!password) e.password = 'Ingresa una contraseña.';
-    else if (password.length < 8) e.password = 'Mínimo 8 caracteres.';
-    if (!confirm) e.confirm = 'Confirma tu contraseña.';
-    else if (password !== confirm) e.confirm = 'Las contraseñas no coinciden.';
-    return e;
+  function validateForm() {
+    return validate({
+      fullName: fullName.trim() ? undefined : 'Ingresa tu nombre completo.',
+      username: username.trim() ? undefined : 'Ingresa un nombre de usuario.',
+      phone: phone.trim() ? undefined : 'Ingresa tu teléfono.',
+      email: !email.trim()
+        ? 'Ingresa tu correo.'
+        : !EMAIL_RE.test(email.trim())
+          ? 'Ingresa un correo válido.'
+          : undefined,
+      departmentId: muni.departmentId ? undefined : 'Selecciona un departamento.',
+      municipalityId: muni.municipalityId ? undefined : 'Selecciona un municipio.',
+      address: address.trim() ? undefined : 'Ingresa tu dirección.',
+      password: !password
+        ? 'Ingresa una contraseña.'
+        : password.length < 8
+          ? 'Mínimo 8 caracteres.'
+          : undefined,
+      confirm: !confirm
+        ? 'Confirma tu contraseña.'
+        : password !== confirm
+          ? 'Las contraseñas no coinciden.'
+          : undefined,
+      ...(isDelivery && {
+        identificationTypeId: identificationTypeId
+          ? undefined
+          : 'Selecciona el tipo.',
+        identificationNumber: identificationNumber.trim()
+          ? undefined
+          : 'Ingresa tu número de identificación.',
+        avatar: avatarUri ? undefined : 'Sube una foto de tu rostro.',
+        idFront: idFrontUri
+          ? undefined
+          : 'Sube la foto del frente de tu documento.',
+        idBack: idBackUri
+          ? undefined
+          : 'Sube la foto del respaldo de tu documento.',
+      }),
+    });
   }
 
   async function handleRegister() {
-    const e = validate();
-    setErrors(e);
-    if (Object.values(e).some(Boolean)) return;
+    if (!validateForm()) return;
 
     const payload: RegisterPayload = {
       fullName: fullName.trim(),
@@ -164,8 +155,8 @@ export default function RegisterForm() {
       email: email.trim(),
       password,
       address: address.trim(),
-      departmentId,
-      municipalityId,
+      departmentId: muni.departmentId,
+      municipalityId: muni.municipalityId,
       ...(coords ?? {}),
       ...(isDelivery && {
         identificationNumber: identificationNumber.trim(),
@@ -176,7 +167,11 @@ export default function RegisterForm() {
     try {
       setLoading(true);
       if (isDelivery) {
-        await authService.registerDelivery(payload);
+        await authService.registerDelivery(payload, {
+          avatar: avatarUri!,
+          idFront: idFrontUri!,
+          idBack: idBackUri!,
+        });
       } else {
         await authService.registerClient(payload);
       }
@@ -197,7 +192,7 @@ export default function RegisterForm() {
     try {
       setGoogleLoading(true);
       if (await signInWithGoogle(isDelivery ? 'delivery' : 'client')) {
-        router.replace('/home');
+        router.replace(homePathFor(getSession()?.user));
       }
     } finally {
       setGoogleLoading(false);
@@ -261,26 +256,29 @@ export default function RegisterForm() {
             icon="map-outline"
             placeholder="Selecciona tu departamento"
             options={departmentOptions}
-            value={departmentId}
-            onSelect={onSelectDepartment}
+            value={muni.departmentId}
+            onSelect={(id) => {
+              clearError('departmentId');
+              muni.onSelectDepartment(id);
+            }}
             error={errors.departmentId}
           />
           <Select
             label="Municipio"
             icon="location-outline"
             placeholder={
-              departmentId
+              muni.departmentId
                 ? 'Selecciona tu municipio'
                 : 'Elige un departamento primero'
             }
             options={municipalityOptions}
-            value={municipalityId}
+            value={muni.municipalityId}
             onSelect={(id) => {
-              setMunicipalityId(id);
+              muni.setMunicipalityId(id);
               clearError('municipalityId');
             }}
-            disabled={!departmentId || loadingMuns}
-            loading={loadingMuns}
+            disabled={!muni.departmentId || muni.loadingMuns}
+            loading={muni.loadingMuns}
             error={errors.municipalityId}
           />
 
@@ -339,6 +337,25 @@ export default function RegisterForm() {
                 error={errors.identificationNumber}
                 placeholder="1090123456"
               />
+
+              <DeliveryVerification
+                avatarUri={avatarUri}
+                idFrontUri={idFrontUri}
+                idBackUri={idBackUri}
+                onAvatar={(uri) => {
+                  setAvatarUri(uri);
+                  clearError('avatar');
+                }}
+                onIdFront={(uri) => {
+                  setIdFrontUri(uri);
+                  clearError('idFront');
+                }}
+                onIdBack={(uri) => {
+                  setIdBackUri(uri);
+                  clearError('idBack');
+                }}
+                errors={errors}
+              />
             </>
           )}
 
@@ -369,9 +386,6 @@ export default function RegisterForm() {
             />
           </View>
 
-          {/* TEMPORAL: Google Sign-In deshabilitado mientras se resuelve la
-              cuenta de Google cancelada (NOTAS.md §12). Descomentar para
-              restaurar — el flujo completo sigue intacto en lib/google-auth.ts.
           <View className="my-[18px] flex-row items-center gap-3">
             <View className="h-px flex-1 bg-gray-200" />
             <Text className="text-[13px] text-muted">o</Text>
@@ -387,7 +401,6 @@ export default function RegisterForm() {
             onPress={handleGoogle}
             loading={googleLoading}
           />
-          */}
 
           <View className="mt-5 flex-row justify-center">
             <Text className="text-sm text-muted">¿Ya tienes cuenta? </Text>
