@@ -11,7 +11,7 @@ import { signOutEverywhere } from '@/lib/sign-out';
 import { AdminBusiness } from '@/services/admin-businesses';
 import { businessService } from '@/services/business';
 
-type BusinessRoute = '/business/products';
+type BusinessRoute = '/business/products' | '/business/orders';
 
 type Item = {
   label: string;
@@ -19,9 +19,10 @@ type Item = {
   href: BusinessRoute;
 };
 
-/** Secciones del panel del negocio (Pedidos llegará con su módulo). */
+/** Secciones del panel del negocio. */
 const ITEMS: Item[] = [
   { label: 'Productos', icon: 'cube-outline', href: '/business/products' },
+  { label: 'Pedidos', icon: 'receipt-outline', href: '/business/orders' },
 ];
 
 // Lo único que se usa de las props del drawer (evita el choque de tipos entre
@@ -146,17 +147,6 @@ export function BusinessDrawerContent({ navigation }: Props) {
             </Pressable>
           );
         })}
-
-        {/* Pedidos: llega con el módulo de pedidos (se muestra deshabilitado) */}
-        <View className="mb-1 flex-row items-center gap-3 rounded-xl px-3.5 py-3 opacity-40">
-          <Ionicons name="receipt-outline" size={21} color="#7A7A8A" />
-          <Text className="text-[15px] font-medium text-dark">Pedidos</Text>
-          <View className="ml-auto rounded-full bg-surface px-2 py-0.5">
-            <Text className="text-[10px] font-bold uppercase text-muted">
-              Pronto
-            </Text>
-          </View>
-        </View>
       </View>
 
       {/* Cerrar sesión */}

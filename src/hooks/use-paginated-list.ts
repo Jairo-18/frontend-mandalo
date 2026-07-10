@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { PaginationMeta } from '@/components/ui/paginator';
 import { Paginated } from '@/services/admin-users';
 
-export type FetchMode = 'initial' | 'refresh' | 'page';
+export type FetchMode = 'initial' | 'refresh' | 'page' | 'more';
 
 type Fetcher<T> = (params: {
   page: number;
@@ -18,6 +18,9 @@ type Fetcher<T> = (params: {
  *
  * El `fetcher` debe venir memoizado (useCallback): cuando cambia (búsqueda
  * confirmada, filtros, tamaño de página) se recarga solo desde la página 1.
+ *
+ * Además del paginador, soporta scroll infinito (feeds del cliente): el modo
+ * `more` AGREGA la página siguiente en vez de reemplazar (`loadMore()`).
  */
 export function usePaginatedList<T>(fetcher: Fetcher<T>) {
   const [items, setItems] = useState<T[]>([]);
@@ -25,6 +28,7 @@ export function usePaginatedList<T>(fetcher: Fetcher<T>) {
   const [perPage, setPerPage] = useState(20);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
@@ -38,12 +42,13 @@ export function usePaginatedList<T>(fetcher: Fetcher<T>) {
       const requestId = ++requestIdRef.current;
       if (mode === 'initial' || mode === 'page') setLoading(true);
       if (mode === 'refresh') setRefreshing(true);
+      if (mode === 'more') setLoadingMore(true);
 
       try {
         const res = await fetcher({ page, perPage, search: query });
         if (requestId !== requestIdRef.current) return; // respuesta vieja
 
-        setItems(res.data);
+        setItems((prev) => (mode === 'more' ? [...prev, ...res.data] : res.data));
         setMeta(res.pagination);
       } catch {
         // El interceptor HTTP ya mostró el error.
@@ -51,6 +56,7 @@ export function usePaginatedList<T>(fetcher: Fetcher<T>) {
         if (requestId === requestIdRef.current) {
           setLoading(false);
           setRefreshing(false);
+          setLoadingMore(false);
         }
       }
     },
@@ -74,6 +80,13 @@ export function usePaginatedList<T>(fetcher: Fetcher<T>) {
     [fetchPage, meta?.page],
   );
 
+  /** Scroll infinito: agrega la página siguiente si existe (onEndReached). */
+  const loadMore = useCallback(() => {
+    if (loading || refreshing || loadingMore) return;
+    if (!meta?.hasNextPage) return;
+    fetchPage(meta.page + 1, 'more');
+  }, [fetchPage, loading, refreshing, loadingMore, meta]);
+
   return {
     items,
     meta,
@@ -81,6 +94,8 @@ export function usePaginatedList<T>(fetcher: Fetcher<T>) {
     setPerPage,
     loading,
     refreshing,
+    loadingMore,
+    loadMore,
     search,
     setSearch,
     /** Búsqueda ya confirmada por el debounce (para textos de "sin resultados"). */

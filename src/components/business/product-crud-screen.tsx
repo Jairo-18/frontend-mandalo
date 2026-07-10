@@ -11,12 +11,8 @@ import { Paginator } from '@/components/ui/paginator';
 import { SearchBar } from '@/components/ui/search-bar';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
+import { finalPrice, formatPrice } from '@/lib/price';
 import { BusinessProduct, businessService } from '@/services/business';
-
-/** Precio en pesos colombianos ("$ 25.000"). */
-export function formatPrice(value: number): string {
-  return `$ ${Math.round(value).toLocaleString('es-CO')}`;
-}
 
 /**
  * CRUD de productos del negocio autenticado (el backend limita todo al
@@ -63,9 +59,7 @@ export function ProductCrudScreen() {
 
   function renderItem({ item }: { item: BusinessProduct }) {
     const hasDiscount = item.discount > 0;
-    const finalPrice = hasDiscount
-      ? item.priceSale * (1 - item.discount / 100)
-      : item.priceSale;
+    const price = finalPrice(item.priceSale, item.discount);
 
     return (
       <View className="mb-3 flex-row items-center gap-3 rounded-2xl bg-white p-3.5">
@@ -95,7 +89,7 @@ export function ProductCrudScreen() {
 
           <View className="mt-0.5 flex-row items-center gap-2">
             <Text className="text-sm font-extrabold text-primary">
-              {formatPrice(finalPrice)}
+              {formatPrice(price)}
             </Text>
             {hasDiscount && (
               <>

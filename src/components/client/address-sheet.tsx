@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,50 +12,35 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddressFormModal } from '@/components/client/address-form-modal';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
+import { useUserAddresses } from '@/hooks/use-user-data';
+import { refreshAddresses } from '@/lib/user-data';
 import { UserAddress, userAddressesService } from '@/services/user-addresses';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  /** La lista cambió (selección/alta/edición/borrado): el home refresca el chip. */
-  onChanged?: (addresses: UserAddress[]) => void;
 };
 
 /**
  * Hoja "Mis direcciones" del cliente: elegir a dónde enviar (tocar una la
  * vuelve la principal), agregar, editar y eliminar. Es el destino del chip
- * "Enviar a…" del home.
+ * "Enviar a…" del home. Lee el caché compartido (`use-user-data`) — las
+ * mutaciones fuerzan el refresh y el resto de pantallas se enteran solas.
  */
-export function AddressSheet({ visible, onClose, onChanged }: Props) {
+export function AddressSheet({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
 
-  const [addresses, setAddresses] = useState<UserAddress[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { addresses, loading } = useUserAddresses();
   const [settingId, setSettingId] = useState<number | null>(null);
 
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<UserAddress | null>(null);
   const [toDelete, setToDelete] = useState<UserAddress | null>(null);
 
-  const load = useCallback(
-    async (notify = false) => {
-      setLoading(true);
-      try {
-        const res = await userAddressesService.list();
-        setAddresses(res.data);
-        if (notify) onChanged?.(res.data);
-      } catch {
-        // El interceptor HTTP ya mostró el error.
-      } finally {
-        setLoading(false);
-      }
-    },
-    [onChanged],
-  );
-
   useEffect(() => {
-    if (visible) load();
-  }, [visible, load]);
+    // Al abrir revalida si el TTL venció (normalmente no toca la red).
+    if (visible) void refreshAddresses();
+  }, [visible]);
 
   /** Tocar una dirección = enviar ahí (se marca principal). */
   async function choose(item: UserAddress) {
@@ -63,7 +48,7 @@ export function AddressSheet({ visible, onClose, onChanged }: Props) {
     setSettingId(item.id);
     try {
       await userAddressesService.setDefault(item.id);
-      await load(true);
+      await refreshAddresses(true);
     } catch {
       // El interceptor HTTP ya mostró el error.
     } finally {
@@ -75,7 +60,7 @@ export function AddressSheet({ visible, onClose, onChanged }: Props) {
     if (!toDelete) return;
     try {
       await userAddressesService.remove(toDelete.id);
-      await load(true);
+      await refreshAddresses(true);
     } catch {
       // El interceptor HTTP ya mostró el error.
     } finally {
@@ -95,7 +80,7 @@ export function AddressSheet({ visible, onClose, onChanged }: Props) {
 
   function handleSaved() {
     setFormVisible(false);
-    load(true);
+    void refreshAddresses(true);
   }
 
   function renderItem({ item }: { item: UserAddress }) {

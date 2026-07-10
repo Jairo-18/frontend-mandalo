@@ -1,4 +1,6 @@
+import { disconnectOrdersSocket } from '@/lib/orders-socket';
 import { clearSession, loadSession } from '@/lib/session';
+import { clearUserData } from '@/lib/user-data';
 import { authService } from '@/services/auth';
 
 /**
@@ -19,6 +21,8 @@ export async function signOutEverywhere(): Promise<void> {
   } catch {
     // El interceptor ya mostró el error; igual se limpia la sesión local.
   } finally {
+    disconnectOrdersSocket();
+    clearUserData();
     await clearSession();
   }
 }

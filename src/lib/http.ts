@@ -92,7 +92,10 @@ export async function http<T = unknown>(
         ? 'El servidor tardó demasiado en responder'
         : 'No se pudo conectar con el servidor';
     if (toastError) toast.error(message);
-    throw new HttpError(message, 0, null);
+    // La causa cruda viaja en el body para poder diagnosticar en release
+    // (p. ej. la pantalla de error del arranque la muestra en letra pequeña).
+    const cause = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    throw new HttpError(message, 0, { cause });
   } finally {
     clearTimeout(timeoutId);
   }

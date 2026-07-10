@@ -5,7 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { BusinessDrawerContent } from '@/components/business/drawer-content';
-import { getSession, loadSession, Session } from '@/lib/session';
+import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
 
 /**
  * Panel del negocio (solo rol NEGO): drawer con sidebar a la izquierda,
@@ -32,7 +32,8 @@ export default function BusinessLayout() {
 
   const role = session?.user.role?.code;
   if (role !== 'NEGO') {
-    return <Redirect href={role === 'ADMIN' ? '/admin/users' : '/home'} />;
+    // A la vista de SU rol (no al home del cliente, que fetchea el explorar).
+    return <Redirect href={homePathFor(session?.user)} />;
   }
 
   return (
@@ -49,6 +50,7 @@ export default function BusinessLayout() {
         }}
       >
         <Drawer.Screen name="products" options={{ title: 'Productos' }} />
+        <Drawer.Screen name="orders" options={{ title: 'Pedidos' }} />
       </Drawer>
     </GestureHandlerRootView>
   );

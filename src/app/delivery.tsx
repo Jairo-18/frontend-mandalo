@@ -2,11 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DeliveryOrders } from '@/components/delivery/delivery-orders';
 import { Button } from '@/components/ui/button';
-import { getSession, setSession } from '@/lib/session';
+import { getSession, homePathFor, setSession } from '@/lib/session';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { toast } from '@/lib/toast';
 import { authService } from '@/services/auth';
@@ -27,12 +28,10 @@ export default function DeliveryScreen() {
   const session = getSession();
   const user = session?.user;
 
-  // Guard: solo cuentas con rol DELI.
+  // Guard: solo cuentas con rol DELI; el resto va a la vista de SU rol.
   const role = user?.role?.code;
   if (role !== 'DELI') {
-    if (role === 'ADMIN') return <Redirect href="/admin/users" />;
-    if (role === 'NEGO') return <Redirect href="/business/products" />;
-    return <Redirect href="/home" />;
+    return <Redirect href={homePathFor(user)} />;
   }
 
   const pending = user?.isActive === false;
@@ -66,60 +65,74 @@ export default function DeliveryScreen() {
     router.replace('/auth/login');
   }
 
+  // Cuenta activa: panel de pedidos (disponibles + mis entregas).
+  if (!pending) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
+        <StatusBar style="dark" />
+        <View className="flex-row items-center justify-between bg-surface px-5 pb-1 pt-2">
+          <View>
+            <Text className="text-xl font-extrabold text-dark">Repartir</Text>
+            <Text className="text-[11px] font-bold uppercase tracking-widest text-muted">
+              Panel del repartidor
+            </Text>
+          </View>
+          <Pressable
+            onPress={handleLogout}
+            disabled={signingOut}
+            hitSlop={8}
+            className="h-10 w-10 items-center justify-center rounded-full bg-white active:opacity-70"
+          >
+            {signingOut ? (
+              <ActivityIndicator size="small" color="#FF5A3C" />
+            ) : (
+              <Ionicons name="log-out-outline" size={20} color="#FF5A3C" />
+            )}
+          </Pressable>
+        </View>
+        <DeliveryOrders />
+      </SafeAreaView>
+    );
+  }
+
+  // Cuenta en proceso de habilitación.
   return (
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar style="dark" />
       <View className="flex-1 items-center justify-center px-8">
-        {pending ? (
-          <>
-            <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-tint">
-              <Ionicons name="hourglass-outline" size={40} color="#FF5A3C" />
-            </View>
-            <Text className="text-center text-2xl font-extrabold text-dark">
-              Cuenta en proceso de habilitación
-            </Text>
-            <Text className="mt-3 text-center text-sm leading-5 text-muted">
-              Un administrador está verificando tus datos y las fotos de tu
-              documento. Cuando tu cuenta esté activa podrás empezar a
-              trabajar con Mándalo.
-            </Text>
+        <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-tint">
+          <Ionicons name="hourglass-outline" size={40} color="#FF5A3C" />
+        </View>
+        <Text className="text-center text-2xl font-extrabold text-dark">
+          Cuenta en proceso de habilitación
+        </Text>
+        <Text className="mt-3 text-center text-sm leading-5 text-muted">
+          Un administrador está verificando tus datos y las fotos de tu
+          documento. Cuando tu cuenta esté activa podrás empezar a trabajar con
+          Mándalo.
+        </Text>
 
-            {/* Nota del admin (p. ej. "la foto de la cédula está borrosa") */}
-            {!!user?.observations && (
-              <View className="mt-5 w-full flex-row gap-2.5 rounded-2xl bg-primary-tint p-4">
-                <Ionicons
-                  name="information-circle-outline"
-                  size={20}
-                  color="#FF5A3C"
-                />
-                <Text className="flex-1 text-[13px] leading-5 text-dark">
-                  {user.observations}
-                </Text>
-              </View>
-            )}
-
-            <View className="mt-8 w-full">
-              <Button
-                label="Consultar estado"
-                onPress={checkStatus}
-                loading={checking}
-              />
-            </View>
-          </>
-        ) : (
-          <>
-            <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-tint">
-              <Ionicons name="bicycle" size={40} color="#FF5A3C" />
-            </View>
-            <Text className="text-center text-2xl font-extrabold text-dark">
-              ¡Tu cuenta está activa!
+        {/* Nota del admin (p. ej. "la foto de la cédula está borrosa") */}
+        {!!user?.observations && (
+          <View className="mt-5 w-full flex-row gap-2.5 rounded-2xl bg-primary-tint p-4">
+            <Ionicons
+              name="information-circle-outline"
+              size={20}
+              color="#FF5A3C"
+            />
+            <Text className="flex-1 text-[13px] leading-5 text-dark">
+              {user.observations}
             </Text>
-            <Text className="mt-3 text-center text-sm leading-5 text-muted">
-              Muy pronto vas a ver aquí los pedidos de los negocios cercanos
-              para empezar a repartir.
-            </Text>
-          </>
+          </View>
         )}
+
+        <View className="mt-8 w-full">
+          <Button
+            label="Consultar estado"
+            onPress={checkStatus}
+            loading={checking}
+          />
+        </View>
 
         <View className="mt-3 w-full">
           <Button

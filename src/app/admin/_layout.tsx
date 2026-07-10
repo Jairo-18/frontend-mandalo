@@ -5,11 +5,12 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AdminDrawerContent } from '@/components/admin/drawer-content';
-import { getSession, loadSession, Session } from '@/lib/session';
+import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
 
 /**
  * Panel de administración (solo rol ADMIN): drawer con sidebar a la izquierda.
- * Si la sesión no es de un admin, se redirige al home normal.
+ * Si la sesión no es de un admin, se redirige a la vista de SU rol (no al
+ * home del cliente: montarlo dispararía sus peticiones de explorar/direcciones).
  */
 export default function AdminLayout() {
   // undefined = cargando de SecureStore; null = sin sesión.
@@ -30,7 +31,7 @@ export default function AdminLayout() {
   }
 
   if (session?.user.role?.code !== 'ADMIN') {
-    return <Redirect href="/home" />;
+    return <Redirect href={homePathFor(session?.user)} />;
   }
 
   return (
