@@ -29,6 +29,9 @@ export function ActionButton({ label, onPress, variant = 'primary' }: Props) {
     try {
       setWorking(true);
       await onPress();
+    } catch {
+      // El interceptor HTTP ya mostró el error (p. ej. una transición
+      // rechazada por tocar cuando el pedido ya cambió de estado).
     } finally {
       setWorking(false);
     }

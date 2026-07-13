@@ -1,10 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AuthHeader } from '@/components/auth/auth-header';
+import { DeveloperCredit } from '@/components/ui/developer-credit';
+import { FormSection } from '@/components/ui/form-section';
 import { DeliveryVerification } from '@/components/auth/delivery-verification';
 import { GoogleButton } from '@/components/auth/google-button';
 import { Button } from '@/components/ui/button';
@@ -15,16 +17,10 @@ import { useAppData } from '@/context/app-data';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
 import { signInWithGoogle } from '@/lib/google-auth';
-import { DeviceCoords, getDeviceLocation } from '@/lib/location';
+import { DeviceCoords, getDeviceLocation, samePlaceName } from '@/lib/location';
 import { getSession, homePathFor } from '@/lib/session';
-import { EMAIL_RE } from '@/lib/text-format';
+import { EMAIL_RE, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
 import { authService, RegisterPayload } from '@/services/auth';
-
-// La app por ahora solo opera en Putumayo (Villagarzón por defecto), así que
-// el registro llega con esa región preseleccionada. Se identifica por código
-// DANE (los ids son SERIAL y podrían cambiar entre bases).
-const DEFAULT_DEPARTMENT_DANE = '86'; // Putumayo
-const DEFAULT_MUNICIPALITY_DANE = '86885'; // Villagarzón
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -37,7 +33,8 @@ export default function RegisterForm() {
 
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
-  const [phone, setPhone] = useState('');
+  // Prellenado con el indicativo de Colombia; borrable (extranjeros).
+  const [phone, setPhone] = useState(PHONE_PREFIX);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -70,20 +67,6 @@ export default function RegisterForm() {
     [identificationTypes],
   );
 
-  // Preselecciona Putumayo / Villagarzón al cargar (solo si el usuario aún no
-  // eligió nada; los selects siguen editables).
-  useEffect(() => {
-    if (muni.departmentId || !departments.length) return;
-    const dept = departments.find((d) => d.code === DEFAULT_DEPARTMENT_DANE);
-    if (!dept) return;
-
-    muni.preload(dept.id).then((muns) => {
-      const mun = muns.find((m) => m.code === DEFAULT_MUNICIPALITY_DANE);
-      if (mun) muni.setMunicipalityId(mun.id);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [departments]);
-
   /**
    * Ubicación del dispositivo: guarda las coordenadas (van al backend) y
    * prellena la dirección con el geocoding inverso (el campo sigue editable).
@@ -94,9 +77,28 @@ export default function RegisterForm() {
       const result = await getDeviceLocation();
       if (result) {
         setCoords(result.coords);
-        if (result.address) {
-          setAddress(result.address);
-          clearError('address');
+        clearError('location');
+        // El campo dirección es de solo lectura (las coords deben
+        // corresponder al texto): si el geocoder no da nombre, se pinta
+        // el punto GPS para que se vea que quedó marcado.
+        setAddress(
+          result.address ??
+            `Ubicación GPS (${result.coords.latitude.toFixed(5)}, ${result.coords.longitude.toFixed(5)})`,
+        );
+        clearError('address');
+        // Preselección de departamento/municipio según el geocoder (los
+        // selects siguen editables por si el nombre no matchea con el DANE).
+        if (result.region) {
+          const dept = departments.find((d) =>
+            samePlaceName(d.name, result.region),
+          );
+          if (dept && result.city) {
+            const muns = await muni.preload(dept.id);
+            const mun = muns.find((m) => samePlaceName(m.name, result.city));
+            if (mun) muni.setMunicipalityId(mun.id);
+            clearError('departmentId');
+            clearError('municipalityId');
+          }
         }
       }
     } finally {
@@ -108,7 +110,11 @@ export default function RegisterForm() {
     return validate({
       fullName: fullName.trim() ? undefined : 'Ingresa tu nombre completo.',
       username: username.trim() ? undefined : 'Ingresa un nombre de usuario.',
-      phone: phone.trim() ? undefined : 'Ingresa tu teléfono.',
+      // El prellenado "+57 - " sin número no cuenta como teléfono.
+      phone:
+        normalizePhone(phone).replace('+', '').length >= 10
+          ? undefined
+          : 'Ingresa un número de celular válido.',
       email: !email.trim()
         ? 'Ingresa tu correo.'
         : !EMAIL_RE.test(email.trim())
@@ -117,6 +123,11 @@ export default function RegisterForm() {
       departmentId: muni.departmentId ? undefined : 'Selecciona un departamento.',
       municipalityId: muni.municipalityId ? undefined : 'Selecciona un municipio.',
       address: address.trim() ? undefined : 'Ingresa tu dirección.',
+      // Las coordenadas SOLO salen del GPS (alimentan las distancias y el
+      // radio de cercanía): sin ubicación marcada no se puede registrar.
+      location: coords
+        ? undefined
+        : 'Marca tu ubicación con "Usar mi ubicación actual".',
       password: !password
         ? 'Ingresa una contraseña.'
         : password.length < 8
@@ -151,7 +162,8 @@ export default function RegisterForm() {
     const payload: RegisterPayload = {
       fullName: fullName.trim(),
       username: username.trim(),
-      phone: phone.trim(),
+      // Al backend va sin formato visual: "+573102103660".
+      phone: normalizePhone(phone),
       email: email.trim(),
       password,
       address: address.trim(),
@@ -191,8 +203,17 @@ export default function RegisterForm() {
   async function handleGoogle() {
     try {
       setGoogleLoading(true);
-      if (await signInWithGoogle(isDelivery ? 'delivery' : 'client')) {
-        router.replace(homePathFor(getSession()?.user));
+      const result = await signInWithGoogle(isDelivery ? 'delivery' : 'client');
+      if (result.ok) {
+        // Cuenta nueva: completa el registro con el rol ya elegido acá.
+        router.replace(
+          result.isNewUser
+            ? {
+                pathname: '/auth/complete-registration',
+                params: { role: isDelivery ? 'delivery' : 'client' },
+              }
+            : homePathFor(getSession()?.user),
+        );
       }
     } finally {
       setGoogleLoading(false);
@@ -213,6 +234,7 @@ export default function RegisterForm() {
             {isDelivery ? 'Crea tu cuenta de repartidor' : 'Crea tu cuenta'}
           </Text>
 
+          <FormSection label="Tus datos" />
           <TextField
             label="Nombre completo"
             icon="person-outline"
@@ -232,9 +254,9 @@ export default function RegisterForm() {
             placeholder="juanp"
           />
           <TextField
-            label="Teléfono"
+            label="Celular"
             icon="call-outline"
-            format="digits"
+            format="phone"
             value={phone}
             onChangeText={bind('phone', setPhone)}
             error={errors.phone}
@@ -251,6 +273,7 @@ export default function RegisterForm() {
             placeholder="tu@correo.com"
           />
 
+          <FormSection label="Tu ubicación" />
           <Select
             label="Departamento"
             icon="map-outline"
@@ -282,14 +305,16 @@ export default function RegisterForm() {
             error={errors.municipalityId}
           />
 
+          {/* Solo lectura: la llena "Usar mi ubicación actual" para que el
+              texto siempre corresponda a las coordenadas reales. */}
           <TextField
-            label="Dirección"
+            label="Dirección (se llena con tu ubicación)"
             icon="home-outline"
             format="text"
             value={address}
-            onChangeText={bind('address', setAddress)}
             error={errors.address}
-            placeholder="Calle 1 # 2-3"
+            placeholder="Toca «Usar mi ubicación actual»"
+            editable={false}
           />
           <Pressable
             onPress={handleUseLocation}
@@ -310,12 +335,18 @@ export default function RegisterForm() {
                 ? 'Obteniendo ubicación…'
                 : coords
                   ? 'Ubicación marcada — toca para actualizar'
-                  : 'Usar mi ubicación actual'}
+                  : 'Usar mi ubicación actual (obligatorio)'}
             </Text>
           </Pressable>
+          {!!errors.location && (
+            <Text className="-mt-2 mb-3 text-xs text-red-600">
+              {errors.location}
+            </Text>
+          )}
 
           {isDelivery && (
             <>
+              <FormSection label="Identidad del repartidor" />
               <Select
                 label="Tipo de identificación"
                 icon="card-outline"
@@ -331,7 +362,7 @@ export default function RegisterForm() {
               <TextField
                 label="Número de identificación"
                 icon="finger-print-outline"
-                format="digits"
+                format="identification"
                 value={identificationNumber}
                 onChangeText={bind('identificationNumber', setIdentificationNumber)}
                 error={errors.identificationNumber}
@@ -359,6 +390,7 @@ export default function RegisterForm() {
             </>
           )}
 
+          <FormSection label="Tu contraseña" />
           <TextField
             label="Contraseña"
             icon="lock-closed-outline"
@@ -376,6 +408,8 @@ export default function RegisterForm() {
             onChangeText={bind('confirm', setConfirm)}
             error={errors.confirm}
             placeholder="Repite tu contraseña"
+            returnKeyType="go"
+            onSubmitEditing={handleRegister}
           />
 
           <View className="mt-2">
@@ -409,6 +443,10 @@ export default function RegisterForm() {
                 Inicia sesión
               </Text>
             </Pressable>
+          </View>
+
+          <View className="mt-6">
+            <DeveloperCredit />
           </View>
         </View>
       </KeyboardAwareScroll>

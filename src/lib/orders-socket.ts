@@ -42,6 +42,43 @@ export function disconnectOrdersSocket(): void {
   socket = null;
 }
 
+/** Posición en vivo del repartidor de un pedido (relay del gateway). */
+export type DeliveryPosition = {
+  invoiceId: number;
+  latitude: number;
+  longitude: number;
+  at: number;
+};
+
+/**
+ * El repartidor reporta su posición GPS para un pedido EN RUTA. El gateway
+ * valida en el backend que sea el asignado; acá solo se emite.
+ */
+export function emitDeliveryPosition(
+  invoiceId: number,
+  coords: { latitude: number; longitude: number },
+): void {
+  getOrdersSocket()?.emit('delivery:position', { invoiceId, ...coords });
+}
+
+/**
+ * Posición en vivo del repartidor (la escuchan cliente y negocio). El handler
+ * debe venir memoizado; el payload trae el invoiceId — filtra el caller.
+ */
+export function useDeliveryPosition(
+  handler: (position: DeliveryPosition) => void,
+): void {
+  useEffect(() => {
+    const s = getOrdersSocket();
+    if (!s) return;
+    const cb = (payload: DeliveryPosition) => handler(payload);
+    s.on('delivery:position', cb);
+    return () => {
+      s.off('delivery:position', cb);
+    };
+  }, [handler]);
+}
+
 /**
  * Suscribe un handler a los eventos de pedido en vivo. El handler debe venir
  * memoizado (useCallback). Es tolerante: si no hay sesión/socket, no hace

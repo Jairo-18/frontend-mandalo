@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthHeader } from '@/components/auth/auth-header';
+import { DeveloperCredit } from '@/components/ui/developer-credit';
 
 type RoleCardProps = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -17,16 +18,18 @@ function RoleCard({ icon, title, desc, onPress }: RoleCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="mb-4 flex-row items-center gap-4 rounded-2xl border border-gray-200 p-4 active:opacity-80"
+      className="mb-4 flex-row items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm active:border-primary active:bg-primary-tint"
     >
-      <View className="h-14 w-14 items-center justify-center rounded-full bg-primary-tint">
+      <View className="h-14 w-14 items-center justify-center rounded-2xl bg-primary-tint">
         <Ionicons name={icon} size={28} color="#FF5A3C" />
       </View>
       <View className="flex-1">
-        <Text className="text-base font-bold text-dark">{title}</Text>
-        <Text className="text-sm text-muted">{desc}</Text>
+        <Text className="text-[17px] font-extrabold text-dark">{title}</Text>
+        <Text className="mt-0.5 text-[13px] leading-4 text-muted">{desc}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+      <View className="h-8 w-8 items-center justify-center rounded-full bg-surface">
+        <Ionicons name="chevron-forward" size={17} color="#FF5A3C" />
+      </View>
     </Pressable>
   );
 }
@@ -74,6 +77,15 @@ export default function RegisterChooser() {
           }
         />
 
+        {/* Los negocios no se auto-registran: los da de alta el equipo. */}
+        <View className="mt-1 flex-row items-center gap-3 rounded-2xl bg-surface p-4">
+          <Ionicons name="storefront-outline" size={20} color="#7A7A8A" />
+          <Text className="flex-1 text-xs leading-4 text-muted">
+            ¿Tienes un negocio? El equipo de Mándalo crea tu cuenta —
+            contáctanos y te ayudamos a vender.
+          </Text>
+        </View>
+
         <Pressable
           className="mt-4 self-center"
           onPress={() => router.replace('/auth/login')}
@@ -82,6 +94,10 @@ export default function RegisterChooser() {
             Volver a iniciar sesión
           </Text>
         </Pressable>
+
+        <View className="mt-auto pt-4">
+          <DeveloperCredit />
+        </View>
       </View>
     </View>
   );

@@ -20,24 +20,17 @@ function ensureConfigured() {
 }
 
 /**
- * Flujo completo de autenticación con Google: abre el Google Sign-In nativo,
- * manda el idToken al backend (`POST /auth/google`) y guarda la sesión.
- * Devuelve `true` si quedó autenticado (la pantalla decide a dónde navegar) y
- * `false` si el usuario canceló o hubo error (el toast ya se mostró acá o en
- * el interceptor HTTP).
- *
- * `role` solo aplica cuando la cuenta NO existe todavía: define con qué rol
- * se crea (cliente por defecto, repartidor desde su pantalla de registro).
+ * Paso nativo del flujo Google: abre el selector de cuenta y devuelve el
+ * idToken (o `null` si el usuario canceló o hubo error — el toast ya salió
+ * acá). Lo usan el sign-in (`signInWithGoogle`) y el "Vincular con Google"
+ * del perfil (`linkGoogleAccount`).
  */
-export async function signInWithGoogle(
-  role?: 'client' | 'delivery',
-): Promise<boolean> {
+export async function getGoogleIdToken(): Promise<string | null> {
   if (!GOOGLE_WEB_CLIENT_ID) {
     toast.error('El inicio de sesión con Google no está configurado.');
-    return false;
+    return null;
   }
 
-  let idToken: string;
   try {
     ensureConfigured();
     await GoogleSignin.hasPlayServices({
@@ -49,23 +42,23 @@ export async function signInWithGoogle(
 
     const response = await GoogleSignin.signIn();
     if (response.type !== 'success') {
-      return false; // el usuario canceló
+      return null; // el usuario canceló
     }
     if (!response.data.idToken) {
       toast.error('Google no devolvió las credenciales esperadas.');
-      return false;
+      return null;
     }
-    idToken = response.data.idToken;
+    return response.data.idToken;
   } catch (e) {
     if (isErrorWithCode(e) && e.code === statusCodes.IN_PROGRESS) {
-      return false;
+      return null;
     }
     if (
       isErrorWithCode(e) &&
       e.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE
     ) {
       toast.error('Tu dispositivo no tiene Google Play Services disponible.');
-      return false;
+      return null;
     }
     const code = isErrorWithCode(e) ? String(e.code) : '';
     console.error('[google-auth] GoogleSignin.signIn falló:', code, e);
@@ -75,29 +68,56 @@ export async function signInWithGoogle(
       toast.error(
         'Google rechazó la configuración de la app (DEVELOPER_ERROR: SHA-1/package).',
       );
-      return false;
+      return null;
     }
     toast.error(
       `No se pudo conectar con Google. Intenta de nuevo.${code ? ` (código ${code})` : ''}`,
     );
-    return false;
+    return null;
   }
+}
+
+export type GoogleSignInResult = {
+  ok: boolean;
+  /**
+   * La cuenta se CREÓ en este sign-in: falta completar el registro (rol +
+   * datos). La pantalla debe llevar a /auth/complete-registration.
+   */
+  isNewUser: boolean;
+};
+
+/**
+ * Flujo completo de autenticación con Google: abre el Google Sign-In nativo,
+ * manda el idToken al backend (`POST /auth/google`) y guarda la sesión.
+ * Si la cuenta es NUEVA queda marcada con `needsOnboarding` en la sesión
+ * (el auto-login del index también la manda a completar el registro).
+ *
+ * `role` solo aplica cuando la cuenta NO existe todavía: define con qué rol
+ * se crea (cliente por defecto, repartidor desde su pantalla de registro).
+ */
+export async function signInWithGoogle(
+  role?: 'client' | 'delivery',
+): Promise<GoogleSignInResult> {
+  const idToken = await getGoogleIdToken();
+  if (!idToken) return { ok: false, isNewUser: false };
 
   try {
     const res = await authService.signInWithGoogle(idToken, role);
     const { tokens, user, accessSessionId } = res.data;
+    const isNewUser = !!user.isNewUser;
     await setSession({
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       accessSessionId,
       user,
+      ...(isNewUser ? { needsOnboarding: true } : {}),
     });
-    return true;
+    return { ok: true, isNewUser };
   } catch (e) {
     if (!(e instanceof HttpError)) {
       toast.error('No se pudo iniciar sesión con Google.');
     }
     // Si es HttpError, el interceptor ya mostró el mensaje del backend.
-    return false;
+    return { ok: false, isNewUser: false };
   }
 }

@@ -33,6 +33,8 @@ export function CancelOrderDialog({ visible, onConfirm, onCancel }: Props) {
     try {
       setWorking(true);
       await onConfirm(reason.trim());
+    } catch {
+      // El interceptor HTTP ya mostró el error.
     } finally {
       setWorking(false);
     }

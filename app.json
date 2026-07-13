@@ -7,8 +7,21 @@
     "icon": "./assets/images/icon.png",
     "scheme": "frontendmandalo",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.mandalo.app",
+      "supportsTablet": false,
+      "config": {
+        "googleMapsApiKey": "AIzaSyDJN3PWMQ625JiMNaVRVueITd37BRZDqIo"
+      }
+    },
     "android": {
       "package": "com.mandalo.app",
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAeweO--d-iGHbMfGBbQ5lai2WleVxEGPI"
+        }
+      },
       "adaptiveIcon": {
         "backgroundColor": "#F75929",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -27,7 +40,18 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Mándalo usa tu ubicación para marcar tu dirección de entrega."
+          "locationWhenInUsePermission": "Mándalo usa tu ubicación para marcar tu dirección de entrega.",
+          "locationAlwaysAndWhenInUsePermission": "Mándalo usa tu ubicación para que el cliente vea dónde va su pedido mientras lo llevas.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "isIosBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF5A3C",
+          "defaultChannel": "orders"
         }
       ],
       [

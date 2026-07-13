@@ -22,6 +22,16 @@ export type ExploreBusiness = {
   longitude: number | null;
   municipality: { id: number; name: string } | null;
   tags: ExploreFilterItem[];
+  /** Horario de atención (hora Colombia); null = sin horario configurado. */
+  openTime?: string | null;
+  closeTime?: string | null;
+  openDays?: string | null;
+  temporarilyClosed?: boolean;
+  /**
+   * Calculada por el backend con el horario. Opcional por compatibilidad:
+   * si el backend viejo no la manda, se asume abierto (`!== false`).
+   */
+  isOpen?: boolean;
 };
 
 /** Producto activo de un negocio (vista del cliente). */
@@ -42,6 +52,8 @@ export type ExploreProduct = {
     legalName: string;
     tradeName: string | null;
     logoUrl: string | null;
+    /** false = el negocio está cerrado ahora (badge en la card del feed). */
+    isOpen?: boolean;
   } | null;
 };
 
@@ -51,6 +63,19 @@ export function businessDisplayName(business: {
   legalName: string;
 }): string {
   return business.tradeName || business.legalName;
+}
+
+export type NearCoords = { latitude: number; longitude: number };
+
+/**
+ * Adjunta las coords de cercanía redondeadas a 2 decimales (~1 km): el
+ * backend cachea `/explore/*` por URL (§21 de NOTAS) — con la precisión
+ * completa cada usuario tendría su propia clave y el caché no serviría.
+ */
+function appendNear(query: URLSearchParams, near?: NearCoords | null): void {
+  if (!near) return;
+  query.set('lat', near.latitude.toFixed(2));
+  query.set('lng', near.longitude.toFixed(2));
 }
 
 /**
@@ -69,6 +94,8 @@ export const exploreService = {
     perPage?: number;
     search?: string;
     tagIds?: number[];
+    /** Coords del "enviar a": limita al radio de cercanía del backend. */
+    near?: NearCoords | null;
   }) => {
     const query = new URLSearchParams({
       page: String(params.page),
@@ -76,6 +103,7 @@ export const exploreService = {
     });
     if (params.search?.trim()) query.set('search', params.search.trim());
     if (params.tagIds?.length) query.set('tagIds', params.tagIds.join(','));
+    appendNear(query, params.near);
 
     return http<Paginated<ExploreBusiness>>(
       `/explore/organizationals?${query.toString()}`,
@@ -92,6 +120,8 @@ export const exploreService = {
     perPage?: number;
     search?: string;
     categoryTypeId?: number;
+    /** Coords del "enviar a": limita al radio de cercanía del backend. */
+    near?: NearCoords | null;
   }) => {
     const query = new URLSearchParams({
       page: String(params.page),
@@ -101,6 +131,7 @@ export const exploreService = {
     if (params.categoryTypeId) {
       query.set('categoryTypeId', String(params.categoryTypeId));
     }
+    appendNear(query, params.near);
 
     return http<Paginated<ExploreProduct>>(
       `/explore/products?${query.toString()}`,

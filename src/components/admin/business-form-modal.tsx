@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { OwnerField } from '@/components/admin/owner-field';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,7 +12,14 @@ import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
-import { EMAIL_RE } from '@/lib/text-format';
+import { DeviceCoords, getDeviceLocation } from '@/lib/location';
+import { extractCoordsFromMapsUrl } from '@/lib/maps-url';
+import {
+  EMAIL_RE,
+  formatHour12,
+  formatText,
+  normalizePhone,
+} from '@/lib/text-format';
 import {
   AdminBusiness,
   AdminBusinessPayload,
@@ -20,6 +28,45 @@ import {
 } from '@/services/admin-businesses';
 import { adminTagsService, CatalogItem } from '@/services/admin-catalogs';
 import { businessService } from '@/services/business';
+
+/** Días de la semana para el horario (números JS: 0 = domingo). */
+const DAY_ITEMS = [
+  { id: 1, name: 'Lun' },
+  { id: 2, name: 'Mar' },
+  { id: 3, name: 'Mié' },
+  { id: 4, name: 'Jue' },
+  { id: 5, name: 'Vie' },
+  { id: 6, name: 'Sáb' },
+  { id: 0, name: 'Dom' },
+];
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+
+/**
+ * "Sin definir" + cada media hora del día para los selects del horario.
+ * El value viaja en 24 h ("HH:MM", formato de la DB); el label se muestra en
+ * 12 horas ("8:00 a. m.").
+ */
+const TIME_OPTIONS = [
+  { label: 'Sin definir', value: '' },
+  ...Array.from({ length: 48 }, (_, i) => {
+    const time = `${String(Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`;
+    return { label: formatHour12(time), value: time };
+  }),
+];
+
+function parseOpenDays(openDays: string | null | undefined): number[] {
+  if (!openDays?.trim()) return ALL_DAYS;
+  return openDays
+    .split(',')
+    .map((d) => Number(d.trim()))
+    .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+}
+
+/** Días elegidos → valor del payload (todos o ninguno = null = "todos"). */
+function daysToPayload(days: number[]): string | null {
+  if (days.length === 0 || days.length === 7) return null;
+  return [...days].sort((a, b) => a - b).join(',');
+}
 
 type Props = {
   visible: boolean;
@@ -53,6 +100,13 @@ export function BusinessFormModal({
   const [description, setDescription] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  // Ubicación del local: se extrae del link "Compartir" de Google Maps
+  // (alimenta el radio de cercanía del explorar y la ETA de entrega).
+  const [mapsUrl, setMapsUrl] = useState('');
+  const [coords, setCoords] = useState<DeviceCoords | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  // GPS del dueño (solo panel NEGO: el dueño suele estar EN el negocio).
+  const [locating, setLocating] = useState(false);
   // Dueño/representante: usuario existente elegido con el buscador…
   const [owner, setOwner] = useState<BusinessOwner | null>(null);
   // …o cuenta nueva del negocio (correo + contraseña, solo al crear).
@@ -62,6 +116,11 @@ export function BusinessFormModal({
 
   const [tagIds, setTagIds] = useState<number[]>([]);
   const [isActive, setIsActive] = useState(true);
+  // Horario de atención (hora Colombia). Sin horas = siempre abierto.
+  const [openTime, setOpenTime] = useState('');
+  const [closeTime, setCloseTime] = useState('');
+  const [openDaysSel, setOpenDaysSel] = useState<number[]>(ALL_DAYS);
+  const [temporarilyClosed, setTemporarilyClosed] = useState(false);
   // Logo recortado por el PhotoEditor pendiente de subir (se sube al guardar).
   const [pendingLogo, setPendingLogo] = useState<string | null>(null);
 
@@ -79,7 +138,8 @@ export function BusinessFormModal({
 
     setErrors({});
     setPendingLogo(null);
-    setLegalName(editing?.legalName ?? '');
+    // La razón social va SIEMPRE en mayúsculas (también las guardadas antes).
+    setLegalName(formatText('upper', editing?.legalName ?? ''));
     setTradeName(editing?.tradeName ?? '');
     setIdentificationNumber(editing?.identificationNumber ?? '');
     setIdentificationTypeId(
@@ -88,14 +148,24 @@ export function BusinessFormModal({
         : undefined,
     );
     setDescription(editing?.description ?? '');
-    setPhone(editing?.phone ?? '');
+    setPhone(formatText('phone', editing?.phone ?? ''));
     setAddress(editing?.address ?? '');
+    setMapsUrl('');
+    setCoords(
+      editing?.latitude != null && editing?.longitude != null
+        ? { latitude: editing.latitude, longitude: editing.longitude }
+        : null,
+    );
     setOwner(editing?.legalPerson ?? null);
     setAccountEmail('');
     setAccountPassword('');
     setAccountConfirm('');
     setTagIds(editing?.tags?.map((t) => t.id) ?? []);
     setIsActive(editing?.isActive ?? true);
+    setOpenTime(editing?.openTime ?? '');
+    setCloseTime(editing?.closeTime ?? '');
+    setOpenDaysSel(parseOpenDays(editing?.openDays));
+    setTemporarilyClosed(editing?.temporarilyClosed ?? false);
 
     muni.preload(
       editing?.department ? Number(editing.department.id) : undefined,
@@ -135,12 +205,87 @@ export function BusinessFormModal({
     !owner &&
     !!(accountEmail.trim() || accountPassword || accountConfirm);
 
+  /** Saca lat/lng del link pegado (o de "lat, lng" a mano). */
+  async function handleExtractLocation() {
+    if (!mapsUrl.trim() || extracting) return;
+    setExtracting(true);
+    try {
+      const result = await extractCoordsFromMapsUrl(mapsUrl);
+      if (result) {
+        setCoords(result);
+        clearError('location');
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          location:
+            'No pudimos leer la ubicación de ese link. Usa el botón "Compartir" del negocio en Google Maps.',
+        }));
+      }
+    } finally {
+      setExtracting(false);
+    }
+  }
+
+  /** GPS del dispositivo como alternativa al link (dueño parado en el local). */
+  async function handleUseGps() {
+    setLocating(true);
+    try {
+      const result = await getDeviceLocation();
+      if (result) {
+        setCoords(result.coords);
+        clearError('location');
+      }
+    } finally {
+      setLocating(false);
+    }
+  }
+
+  // En edición, guardar solo se habilita si algo cambió respecto a lo cargado
+  // (evita PATCH inútiles); al crear siempre está habilitado.
+  const dirty =
+    !isEdit ||
+    !!pendingLogo ||
+    legalName !== formatText('upper', editing?.legalName ?? '') ||
+    tradeName !== (editing?.tradeName ?? '') ||
+    identificationNumber !== (editing?.identificationNumber ?? '') ||
+    identificationTypeId !==
+      (editing?.identificationType
+        ? Number(editing.identificationType.id)
+        : undefined) ||
+    description !== (editing?.description ?? '') ||
+    normalizePhone(phone) !== (editing?.phone ?? '') ||
+    address !== (editing?.address ?? '') ||
+    coords?.latitude !== (editing?.latitude ?? undefined) ||
+    coords?.longitude !== (editing?.longitude ?? undefined) ||
+    muni.departmentId !==
+      (editing?.department ? Number(editing.department.id) : undefined) ||
+    muni.municipalityId !==
+      (editing?.municipality ? Number(editing.municipality.id) : undefined) ||
+    owner?.id !== (editing?.legalPerson?.id ?? undefined) ||
+    [...tagIds].sort((a, b) => a - b).join(',') !==
+      (editing?.tags?.map((t) => t.id) ?? []).sort((a, b) => a - b).join(',') ||
+    (!selfBusiness && isActive !== (editing?.isActive ?? true)) ||
+    openTime !== (editing?.openTime ?? '') ||
+    closeTime !== (editing?.closeTime ?? '') ||
+    daysToPayload(openDaysSel) !== daysToPayload(parseOpenDays(editing?.openDays)) ||
+    temporarilyClosed !== (editing?.temporarilyClosed ?? false);
+
   function validateForm() {
     return validate({
       legalName: legalName.trim() ? undefined : 'Ingresa la razón social.',
       identificationTypeId:
         identificationNumber.trim() && !identificationTypeId
           ? 'Selecciona el tipo.'
+          : undefined,
+      // Sin coordenadas el negocio NO aparece en el explorar (filtro por
+      // cercanía) ni se puede estimar la entrega.
+      location: coords
+        ? undefined
+        : 'Pega el link de Google Maps del negocio y toca "Extraer ubicación".',
+      // El horario va en pareja: con una sola hora no se puede saber si abre.
+      schedule:
+        (openTime && !closeTime) || (!openTime && closeTime)
+          ? 'Define la hora de apertura Y la de cierre (o deja ambas sin definir).'
           : undefined,
       ...(wantsAccount && {
         accountEmail: !accountEmail.trim()
@@ -167,12 +312,16 @@ export function BusinessFormModal({
 
     // En edición, los campos opcionales vacíos van en null para poder limpiarlos.
     const payload: AdminBusinessPayload = {
-      legalName: legalName.trim(),
+      legalName: legalName.trim().toUpperCase(),
       tradeName: tradeName.trim() || null,
       identificationNumber: identificationNumber.trim() || null,
       description: description.trim() || null,
-      phone: phone.trim() || null,
+      phone: normalizePhone(phone) || null,
       address: address.trim() || null,
+      ...(coords && {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      }),
       ...(identificationTypeId && { identificationTypeId }),
       ...(muni.departmentId && { departmentId: muni.departmentId }),
       ...(muni.municipalityId && { municipalityId: muni.municipalityId }),
@@ -185,6 +334,10 @@ export function BusinessFormModal({
         }),
       tagIds,
       ...(selfBusiness ? {} : { isActive }),
+      openTime: openTime || null,
+      closeTime: closeTime || null,
+      openDays: daysToPayload(openDaysSel),
+      temporarilyClosed,
     };
 
     try {
@@ -230,6 +383,7 @@ export function BusinessFormModal({
       saveLabel={isEdit ? 'Guardar cambios' : 'Crear negocio'}
       onSave={handleSave}
       saving={saving}
+      saveDisabled={!dirty}
     >
       <PhotoField
         label={
@@ -245,15 +399,17 @@ export function BusinessFormModal({
       <TextField
         label="Razón social"
         icon="business-outline"
+        format="upper"
         value={legalName}
         onChangeText={bind('legalName', setLegalName)}
         error={errors.legalName}
-        placeholder="Inversiones El Sabor S.A.S."
+        placeholder="INVERSIONES EL SABOR S.A.S."
       />
 
       <TextField
         label="Nombre comercial (el que ve el cliente)"
         icon="storefront-outline"
+        format="name"
         value={tradeName}
         onChangeText={bind('tradeName', setTradeName)}
         error={errors.tradeName}
@@ -275,8 +431,7 @@ export function BusinessFormModal({
       <TextField
         label="Número de identificación (NIT)"
         icon="id-card-outline"
-        autoCapitalize="none"
-        autoCorrect={false}
+        format="nit"
         value={identificationNumber}
         onChangeText={bind('identificationNumber', setIdentificationNumber)}
         error={errors.identificationNumber}
@@ -286,6 +441,7 @@ export function BusinessFormModal({
       <TextField
         label="Descripción"
         icon="document-text-outline"
+        format="text"
         value={description}
         onChangeText={bind('description', setDescription)}
         error={errors.description}
@@ -297,11 +453,11 @@ export function BusinessFormModal({
       <TextField
         label="Teléfono de contacto"
         icon="call-outline"
-        format="digits"
+        format="phone"
         value={phone}
         onChangeText={bind('phone', setPhone)}
         error={errors.phone}
-        placeholder="3001234567"
+        placeholder="+57 - 300 123 456 7"
       />
 
       <Select
@@ -338,11 +494,70 @@ export function BusinessFormModal({
       <TextField
         label="Dirección"
         icon="home-outline"
+        format="text"
         value={address}
         onChangeText={bind('address', setAddress)}
         error={errors.address}
         placeholder="Cra 5 # 10-23, Centro"
       />
+
+      {/* Ubicación exacta: link "Compartir" de Google Maps del negocio */}
+      <TextField
+        label="Ubicación (link de Google Maps)"
+        icon="map-outline"
+        value={mapsUrl}
+        onChangeText={(text) => {
+          setMapsUrl(text);
+          clearError('location');
+        }}
+        placeholder="https://maps.app.goo.gl/…"
+        autoCapitalize="none"
+      />
+      <Pressable
+        onPress={handleExtractLocation}
+        disabled={extracting || !mapsUrl.trim()}
+        className="-mt-2 mb-1 flex-row items-center gap-1.5 self-start"
+      >
+        {extracting ? (
+          <ActivityIndicator size="small" color="#FF5A3C" />
+        ) : (
+          <Ionicons
+            name={coords ? 'checkmark-circle' : 'locate-outline'}
+            size={16}
+            color="#FF5A3C"
+          />
+        )}
+        <Text className="text-[13px] font-bold text-primary">
+          {extracting
+            ? 'Leyendo el link…'
+            : coords
+              ? 'Ubicación guardada — pega otro link para cambiarla'
+              : 'Extraer ubicación del link (obligatorio)'}
+        </Text>
+      </Pressable>
+      {/* Alternativa para el dueño: marcar la ubicación parado en el local */}
+      {selfBusiness && (
+        <Pressable
+          onPress={handleUseGps}
+          disabled={locating}
+          className="mt-1 flex-row items-center gap-1.5 self-start"
+        >
+          {locating ? (
+            <ActivityIndicator size="small" color="#FF5A3C" />
+          ) : (
+            <Ionicons name="locate-outline" size={16} color="#FF5A3C" />
+          )}
+          <Text className="text-[13px] font-bold text-primary">
+            {locating
+              ? 'Obteniendo ubicación…'
+              : '…o usar mi ubicación actual (si estás en el negocio)'}
+          </Text>
+        </Pressable>
+      )}
+      {!!errors.location && (
+        <Text className="mb-3 text-xs text-red-600">{errors.location}</Text>
+      )}
+      <View className="mb-4" />
 
       {/* Dueño/representante y cuenta de acceso: solo los maneja el admin */}
       {!selfBusiness && (
@@ -390,6 +605,65 @@ export function BusinessFormModal({
           )}
         </>
       )}
+
+      {/* Horario de atención: fuera de él, el cliente ve el negocio "Cerrado"
+          y el backend rechaza los pedidos. Sin horas = siempre abierto. */}
+      <Text className="mb-1 text-sm font-bold text-gray-700">
+        Horario de atención
+      </Text>
+      <Text className="mb-3 text-xs text-muted">
+        Fuera del horario los clientes ven el negocio como &quot;Cerrado&quot; y
+        no pueden pedir. Deja las horas sin definir si atiende a toda hora. Si
+        cierra después de medianoche, pon la hora tal cual (ej. 18:00 a 02:00).
+      </Text>
+      <View className="flex-row gap-3">
+        <View className="flex-1">
+          <Select
+            label="Abre a las"
+            icon="time-outline"
+            options={TIME_OPTIONS}
+            value={openTime}
+            onSelect={(value) => {
+              setOpenTime(String(value));
+              clearError('schedule');
+            }}
+          />
+        </View>
+        <View className="flex-1">
+          <Select
+            label="Cierra a las"
+            icon="time-outline"
+            options={TIME_OPTIONS}
+            value={closeTime}
+            onSelect={(value) => {
+              setCloseTime(String(value));
+              clearError('schedule');
+            }}
+          />
+        </View>
+      </View>
+      {!!errors.schedule && (
+        <Text className="mb-3 -mt-2 text-xs text-red-600">
+          {errors.schedule}
+        </Text>
+      )}
+      <ChipMultiSelect
+        label="Días que abre"
+        items={DAY_ITEMS}
+        selectedIds={openDaysSel}
+        onToggle={(id) =>
+          setOpenDaysSel((prev) =>
+            prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id],
+          )
+        }
+      />
+      <View className="mb-4">
+        <Checkbox
+          checked={temporarilyClosed}
+          onChange={setTemporarilyClosed}
+          label="Cerrado temporalmente (no recibe pedidos)"
+        />
+      </View>
 
       <ChipMultiSelect
         label="Etiquetas"

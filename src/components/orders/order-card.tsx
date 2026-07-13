@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
+import { OrderEta } from '@/components/orders/order-eta';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/lib/price';
 import { stateMeta } from '@/lib/order-status';
@@ -14,6 +15,8 @@ type Props = {
   /** Icono junto al título. */
   titleIcon?: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
+  /** Rol que mira la lista: muestra el tiempo estimado vigente en la tarjeta. */
+  perspective?: 'client' | 'business' | 'delivery';
   /** Muestra la dirección de entrega (útil en la lista del repartidor). */
   showAddress?: boolean;
   /** Texto de ayuda/estado bajo la tarjeta (ej. "Esperando despacho"). */
@@ -47,6 +50,7 @@ export function OrderCard({
   title,
   titleIcon = 'storefront-outline',
   onPress,
+  perspective,
   showAddress = false,
   hint,
   action,
@@ -60,6 +64,9 @@ export function OrderCard({
     try {
       setWorking(true);
       await action.onPress();
+    } catch {
+      // El interceptor HTTP ya mostró el error (p. ej. otro repartidor tomó
+      // el pedido o la transición ya no aplica).
     } finally {
       setWorking(false);
     }
@@ -99,6 +106,9 @@ export function OrderCard({
           {formatPrice(order.total)}
         </Text>
       </View>
+
+      {/* Tiempo estimado vigente (listo aprox. / llega aprox.). */}
+      {perspective && <OrderEta order={order} perspective={perspective} compact />}
 
       {/* Nota de estado (ej. esperando que el negocio despache). */}
       {!!hint && (

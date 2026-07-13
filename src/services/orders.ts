@@ -35,6 +35,21 @@ export type Order = {
   notes: string | null;
   cancellationReason: string | null;
   createdAt: string | null;
+  // Cuándo ocurrió cada transición (null si aún no pasa por ahí).
+  acceptedAt: string | null;
+  preparingAt: string | null;
+  takenAt: string | null;
+  onRouteAt: string | null;
+  deliveredAt: string | null;
+  cancelledAt: string | null;
+  /** Minutos de preparación que prometió el negocio al aceptar. */
+  prepEstimatedMinutes: number | null;
+  /** Minutos de entrega estimados al despachar (distancia o fijo). */
+  deliveryEstimatedMinutes: number | null;
+  /** Código de recogida: SOLO lo recibe el repartidor asignado (lo dicta al negocio). */
+  pickupCode?: string | null;
+  /** Código de entrega: SOLO lo recibe el cliente dueño (lo dicta al repartidor). */
+  deliveryCode?: string | null;
   details?: OrderDetail[];
   organizational?: {
     id: number;
@@ -43,6 +58,9 @@ export type Order = {
     logoUrl: string | null;
     phone: string | null;
     address: string | null;
+    /** Punto de recogida (pin del negocio en el mapa del pedido). */
+    latitude?: number | null;
+    longitude?: number | null;
   } | null;
   // El cliente (visible para negocio/repartidor/admin).
   user?: { id: string; fullName: string; phone: string | null } | null;
@@ -63,15 +81,28 @@ type ListParams = {
   perPage?: number;
   /** Filtra por estados (códigos separados por coma). */
   stateCodes?: OrderStateCode[];
+  /** Orden por fecha de creación (DESC = más nuevos primero, el default). */
+  order?: 'ASC' | 'DESC';
+  /**
+   * Coords del repartidor (solo `available`): limita al radio de cercanía y
+   * ordena por distancia al negocio.
+   */
+  near?: { latitude: number; longitude: number } | null;
 };
 
 function listQuery(params: ListParams): string {
   const query = new URLSearchParams({
     page: String(params.page),
     perPage: String(params.perPage ?? 20),
+    // Sin esto el backend cae al default ASC del DTO de paginación.
+    order: params.order ?? 'DESC',
   });
   if (params.stateCodes?.length) {
     query.set('stateCodes', params.stateCodes.join(','));
+  }
+  if (params.near) {
+    query.set('lat', String(params.near.latitude));
+    query.set('lng', String(params.near.longitude));
   }
   return query.toString();
 }
@@ -102,6 +133,17 @@ export const ordersService = {
       auth: true,
     }),
 
+  /**
+   * Total de pedidos PENDIENTES (badge del panel del negocio). Reutiliza
+   * `/invoice/paginated` con `perPage=1`: solo interesa `pagination.total`.
+   * Silencioso: si falla no toastea — el badge simplemente no aparece.
+   */
+  pendingCount: () =>
+    http<Paginated<Order>>(
+      `/invoice/paginated?${listQuery({ page: 1, perPage: 1, stateCodes: ['PEND'] })}`,
+      { auth: true, toastError: false },
+    ).then((res) => res.pagination.total),
+
   /** Pedidos disponibles para tomar (rol DELI). */
   available: (params: ListParams) =>
     http<Paginated<Order>>(`/invoice/available?${listQuery(params)}`, {
@@ -119,11 +161,35 @@ export const ordersService = {
       toastSuccess: true,
     }),
 
-  /** Cambia el estado (aceptar/preparar/en ruta/entregar/cancelar). */
-  changeState: (id: number, stateCode: OrderStateCode, cancellationReason?: string) =>
+  /**
+   * Cambia el estado (aceptar/preparar/en ruta/entregar/cancelar). Al ACEPTAR
+   * el backend exige `prepEstimatedMinutes`; al CANCELAR, el motivo.
+   */
+  changeState: (
+    id: number,
+    stateCode: OrderStateCode,
+    extra?: {
+      cancellationReason?: string;
+      prepEstimatedMinutes?: number;
+      /** RUTA: código de recogida (lo dicta el repartidor al negocio);
+       *  ENTR: código de entrega (lo dicta el cliente al repartidor). */
+      verificationCode?: string;
+    },
+  ) =>
     http<{ message?: string }>(`/invoice/${id}/state`, {
       method: 'PATCH',
-      body: { stateCode, ...(cancellationReason ? { cancellationReason } : {}) },
+      body: {
+        stateCode,
+        ...(extra?.cancellationReason
+          ? { cancellationReason: extra.cancellationReason }
+          : {}),
+        ...(extra?.prepEstimatedMinutes
+          ? { prepEstimatedMinutes: extra.prepEstimatedMinutes }
+          : {}),
+        ...(extra?.verificationCode
+          ? { verificationCode: extra.verificationCode }
+          : {}),
+      },
       auth: true,
       toastSuccess: true,
     }),

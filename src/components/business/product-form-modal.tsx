@@ -7,6 +7,7 @@ import { FormModal } from '@/components/ui/form-modal';
 import { Select, SelectOption } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
 import { useFormErrors } from '@/hooks/use-form-errors';
+import { copToNumber, formatText } from '@/lib/text-format';
 import { adminCategoriesService } from '@/services/admin-catalogs';
 import {
   BusinessProduct,
@@ -61,7 +62,10 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
     setErrors({});
     setName(editing?.name ?? '');
     setCode(editing?.code ?? '');
-    setPrice(editing ? String(Math.round(editing.priceSale)) : '');
+    // El precio guardado se muestra con puntos de miles ("25.000").
+    setPrice(
+      editing ? formatText('cop', String(Math.round(editing.priceSale))) : '',
+    );
     setDiscount(
       editing && editing.discount > 0 ? String(editing.discount) : '',
     );
@@ -96,7 +100,7 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
   }, [visible]);
 
   function validateForm() {
-    const priceValue = Number(price);
+    const priceValue = copToNumber(price);
     const discountValue = Number(discount);
     return validate({
       name: name.trim() ? undefined : 'Ingresa el nombre del producto.',
@@ -120,7 +124,7 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
       code: code.trim() || null,
       description: description.trim() || null,
       categoryTypeId: categoryTypeId === NO_CATEGORY ? null : categoryTypeId,
-      priceSale: Number(price),
+      priceSale: copToNumber(price),
       discount: discount.trim() ? Number(discount) : 0,
       isActive,
     };
@@ -183,26 +187,27 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
       <TextField
         label="Nombre"
         icon="cube-outline"
+        format="name"
         value={name}
         onChangeText={(v) => {
           setName(v);
           clearError('name');
         }}
         error={errors.name}
-        placeholder="Hamburguesa doble"
+        placeholder="Hamburguesa Doble"
       />
 
       <TextField
-        label="Precio de venta"
+        label="Precio de venta (COP)"
         icon="cash-outline"
-        format="digits"
+        format="cop"
         value={price}
         onChangeText={(v) => {
           setPrice(v);
           clearError('price');
         }}
         error={errors.price}
-        placeholder="25000"
+        placeholder="25.000"
       />
 
       <TextField
@@ -240,6 +245,7 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
       <TextField
         label="Descripción (opcional)"
         icon="document-text-outline"
+        format="sentence"
         value={description}
         onChangeText={setDescription}
         placeholder="Doble carne, queso y tocineta."

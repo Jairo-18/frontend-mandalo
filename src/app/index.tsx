@@ -11,7 +11,10 @@ import {
 } from '@/lib/session';
 import { authService } from '@/services/auth';
 
-type Target = '/auth/login' | ReturnType<typeof homePathFor>;
+type Target =
+  | '/auth/login'
+  | '/auth/complete-registration'
+  | ReturnType<typeof homePathFor>;
 
 /**
  * Punto de entrada: restaura la sesión guardada (SecureStore) antes de decidir
@@ -42,12 +45,26 @@ export default function Index() {
           // El refresh no devuelve accessSessionId; se conserva el del sign-in
           // (el sign-out lo busca por id + userId).
           accessSessionId: session.accessSessionId,
+          // Un registro con Google a medias sigue pendiente tras reabrir.
+          needsOnboarding: session.needsOnboarding,
         });
-        if (!cancelled) setTarget(homePathFor(user));
+        if (!cancelled) {
+          setTarget(
+            session.needsOnboarding
+              ? '/auth/complete-registration'
+              : homePathFor(user),
+          );
+        }
       } catch (e) {
         // status 0 = sin red / timeout: no invalidar la sesión por estar offline.
         if (e instanceof HttpError && e.status === 0) {
-          if (!cancelled) setTarget(homePathFor(session.user));
+          if (!cancelled) {
+            setTarget(
+              session.needsOnboarding
+                ? '/auth/complete-registration'
+                : homePathFor(session.user),
+            );
+          }
           return;
         }
         await clearSession();

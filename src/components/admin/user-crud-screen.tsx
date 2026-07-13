@@ -30,6 +30,29 @@ const SEARCH_FIELDS: FilterChipOption<UserSearchField>[] = [
   { value: 'identificationNumber', label: 'Identificación' },
 ];
 
+/** Filtro por estado de la cuenta (chips bajo el buscador). */
+type AccountFilter = 'all' | 'active' | 'inactive' | 'banned' | 'unverified';
+
+const ACCOUNT_FILTERS: FilterChipOption<AccountFilter>[] = [
+  { value: 'all', label: 'Todas' },
+  { value: 'active', label: 'Activas' },
+  { value: 'inactive', label: 'Inactivas' },
+  { value: 'banned', label: 'Baneadas' },
+  { value: 'unverified', label: 'Sin verificar' },
+];
+
+/** Params del backend que aplica cada filtro de estado. */
+const ACCOUNT_FILTER_PARAMS: Record<
+  AccountFilter,
+  { isActive?: boolean; isBanned?: boolean; isEmailVerified?: boolean }
+> = {
+  all: {},
+  active: { isActive: true },
+  inactive: { isActive: false },
+  banned: { isBanned: true },
+  unverified: { isEmailVerified: false },
+};
+
 type Props = {
   /** Roles que lista esta pantalla (Usuarios = USER+NEGO+ADMIN, Repartidores = DELI). */
   roleCodes: RoleCode[];
@@ -55,6 +78,7 @@ export function UserCrudScreen({
   const insets = useSafeAreaInsets();
 
   const [searchField, setSearchField] = useState<UserSearchField>('search');
+  const [accountFilter, setAccountFilter] = useState<AccountFilter>('all');
 
   const list = usePaginatedList<AdminUser>(
     useCallback(
@@ -63,14 +87,18 @@ export function UserCrudScreen({
           ...params,
           roleTypeCodes: roleCodes,
           searchField,
+          ...ACCOUNT_FILTER_PARAMS[accountFilter],
         }),
-      [roleCodes, searchField],
+      [roleCodes, searchField, accountFilter],
     ),
   );
 
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [toDelete, setToDelete] = useState<AdminUser | null>(null);
+  // Activación rápida de repartidores pendientes (sin abrir el form).
+  const [toActivate, setToActivate] = useState<AdminUser | null>(null);
+  const [activatingId, setActivatingId] = useState<string | null>(null);
 
   // Con más de un rol en pantalla, cada tarjeta muestra el suyo.
   const showRoleBadge = roleCodes.length > 1;
@@ -99,6 +127,21 @@ export function UserCrudScreen({
       // El interceptor HTTP ya mostró el error.
     } finally {
       setToDelete(null);
+    }
+  }
+
+  /** Activa la cuenta de un repartidor pendiente directo desde la tarjeta. */
+  async function handleActivate() {
+    if (!toActivate) return;
+    try {
+      setActivatingId(toActivate.id);
+      await adminUsersService.update(toActivate.id, { isActive: true });
+      list.reload();
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setActivatingId(null);
+      setToActivate(null);
     }
   }
 
@@ -153,6 +196,26 @@ export function UserCrudScreen({
           {item.isBanned && <Badge label="Baneado" tone="red" />}
           {!item.isEmailVerified && <Badge label="Sin verificar" tone="amber" />}
         </View>
+
+        {/* Repartidor pendiente de revisión: activar sin abrir el form. */}
+        {createRoleCode === 'DELI' && !item.isActive && !item.isBanned && (
+          <Pressable
+            onPress={() => setToActivate(item)}
+            disabled={activatingId === item.id}
+            className="mt-3 h-10 flex-row items-center justify-center gap-1.5 rounded-xl bg-emerald-600 active:opacity-80"
+          >
+            {activatingId === item.id ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle-outline" size={16} color="#FFFFFF" />
+                <Text className="text-sm font-bold text-white">
+                  Activar cuenta
+                </Text>
+              </>
+            )}
+          </Pressable>
+        )}
       </View>
     );
   }
@@ -172,6 +235,15 @@ export function UserCrudScreen({
             options={SEARCH_FIELDS}
             value={searchField}
             onChange={setSearchField}
+          />
+        </View>
+
+        {/* Estado de la cuenta (Repartidores: "Inactivas" = pendientes de activar) */}
+        <View className="mt-1.5">
+          <FilterChips
+            options={ACCOUNT_FILTERS}
+            value={accountFilter}
+            onChange={setAccountFilter}
           />
         </View>
 
@@ -231,6 +303,17 @@ export function UserCrudScreen({
         editing={editing}
         onClose={() => setFormVisible(false)}
         onSaved={handleSaved}
+      />
+
+      <YesNoDialog
+        visible={!!toActivate}
+        icon="checkmark-circle-outline"
+        title="¿Activar esta cuenta?"
+        message={`${toActivate?.fullName ?? 'El repartidor'} podrá empezar a tomar pedidos. Revisa antes sus documentos (editar → fotos).`}
+        confirmLabel="Sí, activar"
+        cancelLabel="No"
+        onConfirm={handleActivate}
+        onCancel={() => setToActivate(null)}
       />
 
       <YesNoDialog

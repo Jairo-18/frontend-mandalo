@@ -6,6 +6,12 @@ export type Session = {
   accessToken: string;
   refreshToken: string;
   accessSessionId?: string;
+  /**
+   * Cuenta recién creada con Google que aún no completa el registro
+   * (elegir rol + datos). Mientras esté en true, la app entra a
+   * /auth/complete-registration en vez del home.
+   */
+  needsOnboarding?: boolean;
   user: {
     id: string;
     fullName: string;
@@ -26,12 +32,12 @@ export type Session = {
  */
 export function homePathFor(
   user?: Session['user'] | null,
-): '/admin/users' | '/business/products' | '/delivery' | '/home' {
+): '/admin/dashboard' | '/business/dashboard' | '/delivery' | '/home' {
   switch (user?.role?.code) {
     case 'ADMIN':
-      return '/admin/users';
+      return '/admin/dashboard';
     case 'NEGO':
-      return '/business/products';
+      return '/business/dashboard';
     case 'DELI':
       return '/delivery';
     default:
@@ -41,8 +47,24 @@ export function homePathFor(
 
 let current: Session | null = null;
 
+// Suscriptores de la sesión (useSession). Con React Compiler los componentes
+// NO pueden leer getSession() suelto en el render (JSX memoizado viejo, ver
+// regla en NOTAS §23): deben usar el hook, que re-renderiza al cambiar.
+const listeners = new Set<() => void>();
+
+function emitChange(): void {
+  listeners.forEach((listener) => listener());
+}
+
+/** Suscripción a cambios de sesión (para useSyncExternalStore). */
+export function subscribeSession(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 export async function setSession(s: Session): Promise<void> {
   current = s;
+  emitChange();
   try {
     await SecureStore.setItemAsync(KEY, JSON.stringify(s));
   } catch {
@@ -58,6 +80,7 @@ export async function loadSession(): Promise<Session | null> {
   } catch {
     current = null;
   }
+  if (current) emitChange();
   return current;
 }
 
@@ -68,6 +91,7 @@ export function getSession(): Session | null {
 
 export async function clearSession(): Promise<void> {
   current = null;
+  emitChange();
   try {
     await SecureStore.deleteItemAsync(KEY);
   } catch {

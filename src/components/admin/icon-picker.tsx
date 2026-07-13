@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { SearchBar } from '@/components/ui/search-bar';
 
@@ -186,6 +186,42 @@ const ICON_ENTRIES: IconEntry[] = [
   { name: 'layers-outline', keywords: 'capas niveles' },
   { name: 'grid-outline', keywords: 'cuadricula general categorias' },
   { name: 'apps-outline', keywords: 'aplicaciones variado surtido' },
+  // ---- Ampliación 2026-07-11 ----
+  { name: 'ticket-outline', keywords: 'boleta entrada eventos rifa' },
+  { name: 'barcode-outline', keywords: 'codigo de barras producto' },
+  { name: 'qr-code-outline', keywords: 'codigo qr escanear' },
+  { name: 'scale-outline', keywords: 'balanza peso carniceria granero' },
+  { name: 'speedometer-outline', keywords: 'velocimetro rapido taller motos' },
+  { name: 'id-card-outline', keywords: 'identificacion carnet documento' },
+  { name: 'globe-outline', keywords: 'mundo internet idiomas' },
+  { name: 'flag-outline', keywords: 'bandera meta pais' },
+  { name: 'bookmark-outline', keywords: 'marcador guardado favorito' },
+  { name: 'eye-outline', keywords: 'ojo optica vision mirar' },
+  { name: 'paper-plane-outline', keywords: 'avion de papel mensajeria envio' },
+  { name: 'stats-chart-outline', keywords: 'estadisticas grafica finanzas' },
+  { name: 'trending-up-outline', keywords: 'crecimiento subida inversion' },
+  { name: 'list-outline', keywords: 'lista items menu' },
+  { name: 'options-outline', keywords: 'opciones ajustes controles' },
+  { name: 'checkmark-circle-outline', keywords: 'chulo aprobado verificado' },
+  { name: 'warning-outline', keywords: 'advertencia peligro precaucion' },
+  { name: 'female-outline', keywords: 'mujer femenino genero' },
+  { name: 'male-outline', keywords: 'hombre masculino genero' },
+  { name: 'finger-print-outline', keywords: 'huella identidad biometria' },
+  { name: 'ear-outline', keywords: 'oreja audicion audifonos medicos' },
+  { name: 'easel-outline', keywords: 'caballete arte pintura tablero' },
+  { name: 'bowling-ball-outline', keywords: 'bolos boliche bola' },
+  { name: 'help-buoy-outline', keywords: 'salvavidas ayuda piscina rescate' },
+  { name: 'save-outline', keywords: 'guardar diskette respaldo' },
+  { name: 'scan-outline', keywords: 'escanear lector' },
+  { name: 'share-social-outline', keywords: 'compartir redes sociales' },
+  { name: 'link-outline', keywords: 'enlace cadena conexion' },
+  { name: 'pin-outline', keywords: 'chinche tachuela fijar' },
+  { name: 'journal-outline', keywords: 'diario cuaderno agenda' },
+  { name: 'reader-outline', keywords: 'lector documento lectura' },
+  { name: 'archive-outline', keywords: 'archivo caja almacenamiento bodega' },
+  { name: 'file-tray-outline', keywords: 'bandeja documentos oficina' },
+  { name: 'albums-outline', keywords: 'albumes coleccion fotos' },
+  { name: 'copy-outline', keywords: 'copiar duplicar fotocopias' },
 ];
 
 /** Sin tildes y en minúsculas, para que "cámara" encuentre "camara". */
@@ -254,8 +290,16 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
           No hay iconos para esa búsqueda.
         </Text>
       ) : (
-        <View className="flex-row flex-wrap gap-2">
-          {filtered.map((entry) => {
+        // Altura acotada con scroll propio (la lista creció) — nested para
+        // que funcione dentro del scroll del FormModal en Android.
+        <ScrollView
+          style={{ maxHeight: 272 }}
+          nestedScrollEnabled
+          contentContainerStyle={{ paddingVertical: 4 }}
+          className="rounded-xl border border-gray-100 bg-white"
+        >
+          <View className="flex-row flex-wrap justify-center gap-2 px-2">
+            {filtered.map((entry) => {
             const selected = value === entry.name;
             return (
               <Pressable
@@ -274,8 +318,9 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
                 />
               </Pressable>
             );
-          })}
-        </View>
+            })}
+          </View>
+        </ScrollView>
       )}
     </View>
   );

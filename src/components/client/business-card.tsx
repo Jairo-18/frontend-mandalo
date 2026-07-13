@@ -28,9 +28,19 @@ export function BusinessCard({ business, onPress }: Props) {
       />
 
       <View className="flex-1">
-        <Text numberOfLines={1} className="text-[15px] font-bold text-dark">
-          {businessDisplayName(business)}
-        </Text>
+        <View className="flex-row items-center gap-2">
+          <Text
+            numberOfLines={1}
+            className="shrink text-[15px] font-bold text-dark"
+          >
+            {businessDisplayName(business)}
+          </Text>
+          {business.isOpen === false && (
+            <View className="rounded-full bg-dark px-2 py-0.5">
+              <Text className="text-[10px] font-bold text-white">Cerrado</Text>
+            </View>
+          )}
+        </View>
 
         {!!business.description && (
           <Text numberOfLines={1} className="mt-0.5 text-xs text-muted">

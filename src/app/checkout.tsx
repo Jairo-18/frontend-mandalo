@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddressSheet } from '@/components/client/address-sheet';
+import { Avatar } from '@/components/ui/avatar';
 import { Select } from '@/components/ui/select';
 import { useCart } from '@/context/cart';
 import { useDeliveryFee, useUserAddresses } from '@/hooks/use-user-data';
@@ -157,8 +158,14 @@ export default function CheckoutScreen() {
             return (
               <View
                 key={item.product.id}
-                className={`flex-row items-center gap-2 ${idx > 0 ? 'mt-2.5' : ''}`}
+                className={`flex-row items-center gap-2.5 ${idx > 0 ? 'mt-2.5' : ''}`}
               >
+                <Avatar
+                  uri={item.product.images?.[0]}
+                  icon="cube-outline"
+                  size={40}
+                  shape="rounded"
+                />
                 <Text className="text-[13px] font-extrabold text-primary">
                   {item.quantity}×
                 </Text>

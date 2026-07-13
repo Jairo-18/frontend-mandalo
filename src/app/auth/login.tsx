@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -7,6 +8,7 @@ import { AuthHeader } from '@/components/auth/auth-header';
 import { GoogleButton } from '@/components/auth/google-button';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
 import {
@@ -15,9 +17,21 @@ import {
   saveCredentials,
 } from '@/lib/credentials';
 import { signInWithGoogle } from '@/lib/google-auth';
+import { HttpError } from '@/lib/http';
 import { getSession, homePathFor, setSession } from '@/lib/session';
 import { EMAIL_RE } from '@/lib/text-format';
 import { authService } from '@/services/auth';
+
+/** ¿El sign-in falló porque el correo no está verificado? (code del backend). */
+function isEmailNotVerified(e: unknown): boolean {
+  return (
+    e instanceof HttpError &&
+    e.status === 401 &&
+    typeof e.body === 'object' &&
+    e.body !== null &&
+    (e.body as { code?: string }).code === 'EMAIL_NOT_VERIFIED'
+  );
+}
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -26,6 +40,9 @@ export default function LoginScreen() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  // El sign-in rechazó por correo sin verificar: se ofrece reenviarlo.
+  const [showResend, setShowResend] = useState(false);
+  const [resending, setResending] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {},
   );
@@ -70,18 +87,38 @@ export default function LoginScreen() {
       }
 
       router.replace(homePathFor(user));
-    } catch {
+    } catch (e) {
       // El interceptor HTTP ya mostró el toast con el mensaje del backend.
+      if (isEmailNotVerified(e)) setShowResend(true);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    if (resending) return;
+    try {
+      setResending(true);
+      await authService.resendVerification(email.trim());
+      setShowResend(false);
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setResending(false);
     }
   }
 
   async function handleGoogle() {
     try {
       setGoogleLoading(true);
-      if (await signInWithGoogle()) {
-        router.replace(homePathFor(getSession()?.user));
+      const result = await signInWithGoogle();
+      if (result.ok) {
+        // Cuenta nueva: primero completa el registro (elegir rol + datos).
+        router.replace(
+          result.isNewUser
+            ? '/auth/complete-registration'
+            : homePathFor(getSession()?.user),
+        );
       }
     } finally {
       setGoogleLoading(false);
@@ -126,6 +163,8 @@ export default function LoginScreen() {
             }}
             error={errors.password}
             placeholder="••••••••"
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
           />
 
           <View className="mb-5 flex-row items-center justify-between">
@@ -141,8 +180,28 @@ export default function LoginScreen() {
             </Pressable>
           </View>
 
+          {/* Aparece cuando el sign-in rechaza por correo sin verificar. */}
+          {showResend && (
+            <Pressable
+              onPress={handleResendVerification}
+              disabled={resending}
+              className="mb-4 flex-row items-center gap-2.5 rounded-2xl bg-primary-tint px-4 py-3 active:opacity-70"
+            >
+              <Ionicons
+                name={resending ? 'hourglass-outline' : 'mail-unread-outline'}
+                size={18}
+                color="#FF5A3C"
+              />
+              <Text className="flex-1 text-[13px] font-bold text-primary">
+                {resending
+                  ? 'Reenviando correo…'
+                  : 'Reenviar correo de verificación'}
+              </Text>
+            </Pressable>
+          )}
+
           <Button
-            label="Iniciar Sesión"
+            label="Iniciar sesión"
             onPress={handleLogin}
             loading={loading}
           />
@@ -161,6 +220,10 @@ export default function LoginScreen() {
               variant="outline"
               onPress={() => router.push('/auth/register')}
             />
+          </View>
+
+          <View className="mt-6">
+            <DeveloperCredit />
           </View>
         </View>
       </KeyboardAwareScroll>

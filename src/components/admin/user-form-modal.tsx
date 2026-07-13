@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { UserDocuments } from '@/components/admin/user-documents';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,13 +11,19 @@ import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
-import { EMAIL_RE } from '@/lib/text-format';
+import {
+  DeviceCoords,
+  getDeviceLocation,
+  samePlaceName,
+} from '@/lib/location';
+import { EMAIL_RE, formatText, normalizePhone } from '@/lib/text-format';
 import {
   AdminUser,
   AdminUserPayload,
   adminUsersService,
   RoleCode,
 } from '@/services/admin-users';
+import { authService } from '@/services/auth';
 
 type Props = {
   visible: boolean;
@@ -64,8 +71,12 @@ export function UserFormModal({
   const [observations, setObservations] = useState('');
   // Foto recortada por el PhotoEditor pendiente de subir (se sube al guardar).
   const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
+  // Ubicación re-marcada con el GPS (solo edición del propio perfil).
+  const [coords, setCoords] = useState<DeviceCoords | null>(null);
+  const [locating, setLocating] = useState(false);
 
   const [saving, setSaving] = useState(false);
+  const [sendingRecovery, setSendingRecovery] = useState(false);
   const { errors, setErrors, clearError, bind, validate } = useFormErrors();
 
   const isEdit = !!editing;
@@ -78,10 +89,11 @@ export function UserFormModal({
     setPassword('');
     setConfirm('');
     setPendingAvatar(null);
+    setCoords(null);
     setFullName(editing?.fullName ?? '');
     setUsername(editing?.username ?? '');
     setEmail(editing?.email ?? '');
-    setPhone(editing?.phone ?? '');
+    setPhone(formatText('phone', editing?.phone ?? ''));
     setAddress(editing?.address ?? '');
     setIdentificationNumber(editing?.identificationNumber ?? '');
     setIdentificationTypeId(
@@ -110,6 +122,63 @@ export function UserFormModal({
     () => identificationTypes.map((t) => ({ label: t.name, value: t.id })),
     [identificationTypes],
   );
+
+  // En edición, guardar solo se habilita si algo cambió respecto a lo cargado
+  // (evita PATCH inútiles); al crear siempre está habilitado.
+  const dirty =
+    !isEdit ||
+    !!pendingAvatar ||
+    !!coords ||
+    fullName !== (editing?.fullName ?? '') ||
+    username !== (editing?.username ?? '') ||
+    email !== (editing?.email ?? '') ||
+    normalizePhone(phone) !== (editing?.phone ?? '') ||
+    address !== (editing?.address ?? '') ||
+    identificationNumber !== (editing?.identificationNumber ?? '') ||
+    identificationTypeId !==
+      (editing?.identificationType
+        ? Number(editing.identificationType.id)
+        : undefined) ||
+    muni.departmentId !==
+      (editing?.department ? Number(editing.department.id) : undefined) ||
+    muni.municipalityId !==
+      (editing?.municipality ? Number(editing.municipality.id) : undefined) ||
+    (!selfProfile &&
+      (isActive !== (editing?.isActive ?? true) ||
+        isBanned !== (editing?.isBanned ?? false) ||
+        observations !== (editing?.observations ?? '')));
+
+  /**
+   * Ubicación GPS del propio admin (espejo del perfil de cliente/repartidor):
+   * marca coordenadas, llena la dirección legible y preselecciona
+   * depto/municipio según el geocoder.
+   */
+  async function handleUseLocation() {
+    setLocating(true);
+    try {
+      const result = await getDeviceLocation();
+      if (result) {
+        setCoords(result.coords);
+        setAddress(
+          result.address ??
+            `Ubicación GPS (${result.coords.latitude.toFixed(5)}, ${result.coords.longitude.toFixed(5)})`,
+        );
+        clearError('address');
+        if (result.region) {
+          const dept = departments.find((d) =>
+            samePlaceName(d.name, result.region),
+          );
+          if (dept && result.city) {
+            const muns = await muni.preload(dept.id);
+            const mun = muns.find((m) => samePlaceName(m.name, result.city));
+            if (mun) muni.setMunicipalityId(mun.id);
+          }
+        }
+      }
+    } finally {
+      setLocating(false);
+    }
+  }
 
   function validateForm() {
     return validate({
@@ -140,6 +209,19 @@ export function UserFormModal({
     });
   }
 
+  /** Dispara el forgot-password del usuario (código de 6 dígitos a SU correo). */
+  async function handleSendRecovery() {
+    if (!editing?.email || sendingRecovery) return;
+    try {
+      setSendingRecovery(true);
+      await authService.forgotPassword(editing.email);
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setSendingRecovery(false);
+    }
+  }
+
   async function handleSave() {
     if (!validateForm()) return;
 
@@ -148,8 +230,12 @@ export function UserFormModal({
       fullName: fullName.trim(),
       email: email.trim(),
       username: username.trim() || null,
-      phone: phone.trim() || null,
+      phone: normalizePhone(phone) || null,
       address: address.trim() || null,
+      // Coordenadas: solo del GPS del propio perfil (para otro usuario el
+      // admin no está en la casa de esa persona).
+      ...(selfProfile &&
+        coords && { latitude: coords.latitude, longitude: coords.longitude }),
       identificationNumber: identificationNumber.trim() || null,
       ...(muni.departmentId && { departmentId: muni.departmentId }),
       ...(muni.municipalityId && { municipalityId: muni.municipalityId }),
@@ -195,6 +281,7 @@ export function UserFormModal({
       saveLabel={isEdit ? 'Guardar cambios' : `Crear ${entityName}`}
       onSave={handleSave}
       saving={saving}
+      saveDisabled={!dirty}
     >
       <PhotoField
         label={
@@ -238,9 +325,9 @@ export function UserFormModal({
       />
 
       <TextField
-        label="Teléfono"
+        label="Celular"
         icon="call-outline"
-        format="digits"
+        format="phone"
         value={phone}
         onChangeText={bind('phone', setPhone)}
         error={errors.phone}
@@ -302,13 +389,43 @@ export function UserFormModal({
       />
 
       <TextField
-        label="Dirección"
+        label={
+          selfProfile ? 'Dirección (se llena con tu ubicación)' : 'Dirección'
+        }
         icon="home-outline"
+        format="text"
         value={address}
         onChangeText={bind('address', setAddress)}
         error={errors.address}
-        placeholder="Calle 1 # 2-3"
+        placeholder={
+          selfProfile ? 'Toca «Usar mi ubicación actual»' : 'Calle 1 # 2-3'
+        }
+        editable={!selfProfile}
       />
+      {selfProfile && (
+        <Pressable
+          onPress={handleUseLocation}
+          disabled={locating}
+          className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+        >
+          {locating ? (
+            <ActivityIndicator size="small" color="#FF5A3C" />
+          ) : (
+            <Ionicons
+              name={coords ? 'checkmark-circle' : 'locate-outline'}
+              size={16}
+              color="#FF5A3C"
+            />
+          )}
+          <Text className="text-[13px] font-bold text-primary">
+            {locating
+              ? 'Obteniendo ubicación…'
+              : coords
+                ? 'Ubicación actualizada — se guarda al guardar cambios'
+                : 'Usar mi ubicación actual'}
+          </Text>
+        </Pressable>
+      )}
 
       <Select
         label="Tipo de identificación"
@@ -325,7 +442,7 @@ export function UserFormModal({
       <TextField
         label="Número de identificación"
         icon="id-card-outline"
-        format="digits"
+        format="identification"
         value={identificationNumber}
         onChangeText={bind('identificationNumber', setIdentificationNumber)}
         error={errors.identificationNumber}
@@ -367,6 +484,25 @@ export function UserFormModal({
             />
           )}
         </View>
+      )}
+
+      {/* El admin no maneja contraseñas ajenas: dispara el flujo de
+          recuperación (código de 6 dígitos al correo del usuario). */}
+      {!selfProfile && isEdit && (
+        <Pressable
+          onPress={handleSendRecovery}
+          disabled={sendingRecovery}
+          className="mb-6 flex-row items-center gap-2.5 rounded-2xl border border-gray-200 px-4 py-3 active:opacity-70"
+        >
+          {sendingRecovery ? (
+            <ActivityIndicator size="small" color="#FF5A3C" />
+          ) : (
+            <Ionicons name="key-outline" size={18} color="#FF5A3C" />
+          )}
+          <Text className="flex-1 text-[13px] font-bold text-dark">
+            Enviar correo de recuperación de contraseña
+          </Text>
+        </Pressable>
       )}
     </FormModal>
   );

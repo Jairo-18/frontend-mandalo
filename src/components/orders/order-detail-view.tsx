@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from 'react-native';
 
+import { OrderEta } from '@/components/orders/order-eta';
+import { OrderMap } from '@/components/orders/order-map';
 import { OrderTimeline } from '@/components/orders/order-timeline';
+import { Avatar } from '@/components/ui/avatar';
 import { formatPrice } from '@/lib/price';
 import { businessDisplayName } from '@/services/explore';
 import { Order } from '@/services/orders';
@@ -26,10 +29,38 @@ export function OrderDetailView({ order, perspective }: Props) {
 
   return (
     <View className="p-5">
-      {/* Progreso */}
+      {/* Progreso + estimado vigente */}
       <View className="mb-5 rounded-2xl bg-white p-4">
-        <OrderTimeline stateCode={order.stateType?.code ?? ''} />
+        <OrderTimeline order={order} />
+        <OrderEta order={order} perspective={perspective} />
       </View>
+
+      {/* Mapa en vivo (cliente y repartidor): negocio, entrega y la moto en
+          RUTA. El negocio no lo necesita (el pedido sale de su local). */}
+      {perspective !== 'business' &&
+        ['ACEP', 'PREP', 'RUTA'].includes(order.stateType?.code ?? '') && (
+          <OrderMap order={order} perspective={perspective} />
+        )}
+
+      {/* Códigos del flujo físico: el backend manda a cada rol SOLO el suyo. */}
+      {perspective === 'delivery' &&
+        !!order.pickupCode &&
+        order.stateType?.code === 'PREP' && (
+          <CodeBanner
+            label="Tu código de recogida"
+            code={order.pickupCode}
+            caption="Díctaselo al negocio cuando recojas el pedido."
+          />
+        )}
+      {perspective === 'client' &&
+        !!order.deliveryCode &&
+        ['ACEP', 'PREP', 'RUTA'].includes(order.stateType?.code ?? '') && (
+          <CodeBanner
+            label="Tu código de entrega"
+            code={order.deliveryCode}
+            caption="Díctaselo al repartidor cuando recibas tu pedido."
+          />
+        )}
 
       {!!order.cancellationReason && (
         <View className="mb-5 flex-row gap-2 rounded-2xl bg-red-50 p-3.5">
@@ -87,8 +118,15 @@ export function OrderDetailView({ order, perspective }: Props) {
         {(order.details ?? []).map((detail, idx) => (
           <View
             key={detail.id}
-            className={`flex-row items-center gap-2 ${idx > 0 ? 'mt-2.5' : ''}`}
+            className={`flex-row items-center gap-2.5 ${idx > 0 ? 'mt-2.5' : ''}`}
           >
+            {/* Foto del producto (si el negocio lo borró, queda el icono). */}
+            <Avatar
+              uri={detail.product?.images?.[0]}
+              icon="cube-outline"
+              size={40}
+              shape="rounded"
+            />
             <Text className="text-[13px] font-extrabold text-primary">
               {detail.quantity}×
             </Text>
@@ -192,6 +230,29 @@ function TotalRow({
       >
         {value}
       </Text>
+    </View>
+  );
+}
+
+/** Código de verificación en grande (recogida del DELI / entrega del cliente). */
+function CodeBanner({
+  label,
+  code,
+  caption,
+}: {
+  label: string;
+  code: string;
+  caption: string;
+}) {
+  return (
+    <View className="mb-5 items-center rounded-2xl bg-primary-tint p-4">
+      <Text className="text-[11px] font-bold uppercase tracking-widest text-primary">
+        {label}
+      </Text>
+      <Text className="mt-1 text-3xl font-extrabold tracking-[8px] text-dark">
+        {code}
+      </Text>
+      <Text className="mt-1 text-center text-xs text-muted">{caption}</Text>
     </View>
   );
 }

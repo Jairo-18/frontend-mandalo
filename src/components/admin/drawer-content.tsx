@@ -6,11 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { UserFormModal } from '@/components/admin/user-form-modal';
 import { Avatar } from '@/components/ui/avatar';
+import { useSession } from '@/hooks/use-session';
 import { getSession, setSession } from '@/lib/session';
+import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { AdminUser, adminUsersService } from '@/services/admin-users';
 
 type AdminRoute =
+  | '/admin/dashboard'
+  | '/admin/orders'
   | '/admin/businesses'
   | '/admin/users'
   | '/admin/deliveries'
@@ -25,6 +29,8 @@ type Item = {
 
 /** Secciones del panel de administración (orden del sidebar). */
 const ITEMS: Item[] = [
+  { label: 'Inicio', icon: 'home-outline', href: '/admin/dashboard' },
+  { label: 'Pedidos', icon: 'receipt-outline', href: '/admin/orders' },
   { label: 'Negocios', icon: 'storefront-outline', href: '/admin/businesses' },
   { label: 'Usuarios', icon: 'people-outline', href: '/admin/users' },
   { label: 'Repartidores', icon: 'bicycle-outline', href: '/admin/deliveries' },
@@ -54,7 +60,9 @@ export function AdminDrawerContent({ navigation }: Props) {
   const [headerName, setHeaderName] = useState<string>();
   const [headerAvatar, setHeaderAvatar] = useState<string | null>();
 
-  const user = getSession()?.user;
+  // Reactivo: leer getSession() suelto en el render deja JSX viejo con
+  // React Compiler (regla de NOTAS §23).
+  const user = useSession()?.user;
   const displayName = headerName ?? user?.fullName ?? 'Administrador';
   const avatarUrl =
     headerAvatar !== undefined ? headerAvatar : (user?.avatarUrl ?? null);
@@ -191,6 +199,7 @@ export function AdminDrawerContent({ navigation }: Props) {
             Cerrar sesión
           </Text>
         </Pressable>
+        <DeveloperCredit />
       </View>
 
       <UserFormModal

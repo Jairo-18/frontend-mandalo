@@ -6,12 +6,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BusinessFormModal } from '@/components/admin/business-form-modal';
 import { Avatar } from '@/components/ui/avatar';
-import { getSession } from '@/lib/session';
+import { DeveloperCredit } from '@/components/ui/developer-credit';
+import { usePendingOrdersCount } from '@/hooks/use-pending-orders-count';
+import { useSession } from '@/hooks/use-session';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { AdminBusiness } from '@/services/admin-businesses';
 import { businessService } from '@/services/business';
 
-type BusinessRoute = '/business/products' | '/business/orders';
+type BusinessRoute =
+  | '/business/dashboard'
+  | '/business/products'
+  | '/business/orders';
 
 type Item = {
   label: string;
@@ -21,6 +26,7 @@ type Item = {
 
 /** Secciones del panel del negocio. */
 const ITEMS: Item[] = [
+  { label: 'Inicio', icon: 'grid-outline', href: '/business/dashboard' },
   { label: 'Productos', icon: 'cube-outline', href: '/business/products' },
   { label: 'Pedidos', icon: 'receipt-outline', href: '/business/orders' },
 ];
@@ -45,7 +51,12 @@ export function BusinessDrawerContent({ navigation }: Props) {
   // Edición del propio negocio: se abre desde la tarjeta de la cabecera.
   const [formVisible, setFormVisible] = useState(false);
 
-  const user = getSession()?.user;
+  // Reactivo: leer getSession() suelto en el render deja JSX viejo con
+  // React Compiler (regla de NOTAS §23).
+  const user = useSession()?.user;
+
+  // Pedidos PENDIENTES en vivo (socket /orders) para el badge de "Pedidos".
+  const pendingCount = usePendingOrdersCount();
 
   const loadBusiness = useCallback(() => {
     businessService
@@ -124,6 +135,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
       <View className="flex-1 px-3 pt-4">
         {ITEMS.map((item) => {
           const active = pathname === item.href;
+          const badge = item.href === '/business/orders' ? pendingCount : 0;
           return (
             <Pressable
               key={item.href}
@@ -138,12 +150,19 @@ export function BusinessDrawerContent({ navigation }: Props) {
                 color={active ? '#FF5A3C' : '#7A7A8A'}
               />
               <Text
-                className={`text-[15px] ${
+                className={`flex-1 text-[15px] ${
                   active ? 'font-extrabold text-primary' : 'font-medium text-dark'
                 }`}
               >
                 {item.label}
               </Text>
+              {badge > 0 && (
+                <View className="min-w-[22px] items-center rounded-full bg-primary px-1.5 py-0.5">
+                  <Text className="text-xs font-extrabold text-white">
+                    {badge > 99 ? '99+' : badge}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           );
         })}
@@ -168,6 +187,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
             Cerrar sesión
           </Text>
         </Pressable>
+        <DeveloperCredit />
       </View>
 
       <BusinessFormModal

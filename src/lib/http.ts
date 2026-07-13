@@ -59,15 +59,28 @@ export async function http<T = unknown>(
 
   const bearer = token ?? (auth ? getSession()?.accessToken : undefined);
 
+  // Petición autenticada sin sesión: pasa cuando una pantalla aún montada
+  // refetchea justo después del logout (p. ej. el feed del explorar al
+  // vaciarse el caché de direcciones). Saldría sin Bearer y el backend
+  // contestaría 401 "Unauthorized" — se aborta acá, sin toast.
+  if (auth && !bearer) {
+    throw new HttpError('Sesión cerrada', 401, null);
+  }
+
   // FormData (subida de archivos): fetch pone solo el Content-Type multipart
   // con su boundary; forzar application/json lo rompería.
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(
-    () => controller.abort(),
-    isFormData ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
-  );
+  // El fetch de Expo (WinterCG) NO lanza `AbortError` al abortar: lanza
+  // TypeError "Failed fetch, request canceled". Se marca el timeout con un
+  // flag propio para distinguir "tardó demasiado" de "no hay conexión".
+  const timeoutMs = isFormData ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
+  let timedOut = false;
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
 
   let res: Response;
   try {
@@ -87,14 +100,16 @@ export async function http<T = unknown>(
     // En desarrollo se imprime el error crudo del fetch (sale en Metro):
     // el toast genérico esconde la causa real (timeout, DNS, TLS, archivo…).
     if (__DEV__) console.error(`[http] ${method} ${path} falló:`, e);
-    const message =
-      e instanceof Error && e.name === 'AbortError'
-        ? 'El servidor tardó demasiado en responder'
-        : 'No se pudo conectar con el servidor';
+    const isTimeout =
+      timedOut || (e instanceof Error && e.name === 'AbortError');
+    const message = isTimeout
+      ? 'El servidor tardó demasiado en responder'
+      : 'No se pudo conectar con el servidor';
     if (toastError) toast.error(message);
     // La causa cruda viaja en el body para poder diagnosticar en release
     // (p. ej. la pantalla de error del arranque la muestra en letra pequeña).
-    const cause = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    const raw = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    const cause = isTimeout ? `timeout ${timeoutMs / 1000}s (${raw})` : raw;
     throw new HttpError(message, 0, { cause });
   } finally {
     clearTimeout(timeoutId);

@@ -1,11 +1,13 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AcceptOrderDialog } from '@/components/orders/accept-order-dialog';
 import { ActionButton } from '@/components/orders/action-button';
 import { CancelOrderDialog } from '@/components/orders/cancel-order-dialog';
 import { OrderCard } from '@/components/orders/order-card';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
+import { VerificationCodeDialog } from '@/components/orders/verification-code-dialog';
 import { FilterChips } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
@@ -35,6 +37,11 @@ export default function BusinessOrdersScreen() {
   const [filter, setFilter] = useState<StateFilter>('all');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [cancelId, setCancelId] = useState<number | null>(null);
+  const [acceptId, setAcceptId] = useState<number | null>(null);
+  // Despacho (RUTA): exige el código de recogida que dicta el repartidor.
+  const [dispatchId, setDispatchId] = useState<number | null>(null);
+  // reload del detalle abierto, para refrescarlo tras aceptar desde el diálogo.
+  const detailReload = useRef<(() => void) | null>(null);
 
   const list = usePaginatedList<Order>(
     useCallback(
@@ -72,6 +79,7 @@ export default function BusinessOrdersScreen() {
             order={item}
             title={item.user?.fullName ?? 'Cliente'}
             titleIcon="person-outline"
+            perspective="business"
             onPress={() => setSelectedId(item.id)}
           />
         )}
@@ -115,7 +123,10 @@ export default function BusinessOrdersScreen() {
                 <ActionButton
                   label="Aceptar"
                   variant="success"
-                  onPress={() => setState(order.id, 'ACEP', reload)}
+                  onPress={() => {
+                    detailReload.current = reload;
+                    setAcceptId(order.id);
+                  }}
                 />
               </View>
             );
@@ -148,7 +159,10 @@ export default function BusinessOrdersScreen() {
                   <ActionButton
                     label="Entregar al repartidor"
                     variant="success"
-                    onPress={() => setState(order.id, 'RUTA', reload)}
+                    onPress={() => {
+                      detailReload.current = reload;
+                      setDispatchId(order.id);
+                    }}
                   />
                 </View>
               );
@@ -170,11 +184,47 @@ export default function BusinessOrdersScreen() {
         }}
       />
 
+      {/* Despacho verificado: el repartidor dicta su código de recogida. */}
+      <VerificationCodeDialog
+        visible={dispatchId != null}
+        title="Código de recogida"
+        message="Pídele al repartidor el código que ve en su app y digítalo para entregarle el pedido."
+        onConfirm={async (verificationCode) => {
+          if (dispatchId == null) return;
+          await ordersService.changeState(dispatchId, 'RUTA', {
+            verificationCode,
+          });
+          setDispatchId(null);
+          detailReload.current?.();
+          detailReload.current = null;
+          list.fetchPage(1, 'refresh');
+        }}
+        onCancel={() => setDispatchId(null)}
+      />
+
+      {/* El negocio se compromete con un tiempo de preparación al aceptar. */}
+      <AcceptOrderDialog
+        visible={acceptId != null}
+        onConfirm={async (minutes) => {
+          if (acceptId == null) return;
+          await ordersService.changeState(acceptId, 'ACEP', {
+            prepEstimatedMinutes: minutes,
+          });
+          setAcceptId(null);
+          detailReload.current?.();
+          detailReload.current = null;
+          list.fetchPage(1, 'refresh');
+        }}
+        onCancel={() => setAcceptId(null)}
+      />
+
       <CancelOrderDialog
         visible={cancelId != null}
         onConfirm={async (reason) => {
           if (cancelId == null) return;
-          await ordersService.changeState(cancelId, 'CANC', reason);
+          await ordersService.changeState(cancelId, 'CANC', {
+            cancellationReason: reason,
+          });
           setCancelId(null);
           setSelectedId(null);
           list.fetchPage(1, 'refresh');

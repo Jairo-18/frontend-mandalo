@@ -14,6 +14,8 @@ type Props = {
   saveLabel: string;
   onSave: () => void;
   saving?: boolean;
+  /** Deshabilita el guardar (p. ej. edición sin cambios: evita PATCH inútiles). */
+  saveDisabled?: boolean;
   /** Campos del formulario (van dentro del scroll con teclado). */
   children: ReactNode;
 };
@@ -30,6 +32,7 @@ export function FormModal({
   saveLabel,
   onSave,
   saving = false,
+  saveDisabled = false,
   children,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -54,7 +57,12 @@ export function FormModal({
           <View className="px-5 pt-5">
             {children}
 
-            <Button label={saveLabel} onPress={onSave} loading={saving} />
+            <Button
+              label={saveLabel}
+              onPress={onSave}
+              loading={saving}
+              disabled={saveDisabled}
+            />
             <View className="mt-3">
               <Button label="Cancelar" variant="outline" onPress={onClose} />
             </View>

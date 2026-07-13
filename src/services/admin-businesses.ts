@@ -25,6 +25,12 @@ export type AdminBusiness = {
   latitude: number | null;
   longitude: number | null;
   isActive: boolean;
+  /** Horario de atención (hora Colombia); null = siempre abierto. */
+  openTime: string | null;
+  closeTime: string | null;
+  /** Días que abre (números 0–6, 0=domingo) separados por coma; null = todos. */
+  openDays: string | null;
+  temporarilyClosed: boolean;
   identificationType: CatalogRef | null;
   municipality: CatalogRef | null;
   department: CatalogRef | null;
@@ -41,6 +47,9 @@ export type AdminBusinessPayload = {
   description?: string | null;
   phone?: string | null;
   address?: string | null;
+  /** Coordenadas del local (extraídas del link de Google Maps). */
+  latitude?: number;
+  longitude?: number;
   departmentId?: number;
   municipalityId?: number;
   /** Usuario dueño/representante legal (rol NEGO). */
@@ -54,6 +63,12 @@ export type AdminBusinessPayload = {
   /** Reemplaza el set completo de etiquetas del negocio. */
   tagIds?: number[];
   isActive?: boolean;
+  /** Horario de atención ("HH:MM" hora Colombia); null limpia el horario. */
+  openTime?: string | null;
+  closeTime?: string | null;
+  /** Días que abre (0–6, 0=domingo) separados por coma; null = todos. */
+  openDays?: string | null;
+  temporarilyClosed?: boolean;
 };
 
 /** Campo por el que busca el admin ('search' = nombre comercial/razón/NIT). */

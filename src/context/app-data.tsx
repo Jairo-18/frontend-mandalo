@@ -10,7 +10,9 @@ import {
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { API_URL } from '@/constants/api';
 import { loadCatalogCache, saveCatalogCache } from '@/lib/catalog-cache';
+import { HttpError } from '@/lib/http';
 import {
   catalogService,
   Department,
@@ -38,9 +40,28 @@ export function useAppData(): AppData {
 type State = {
   loading: boolean;
   error: string | null;
+  /** Causa técnica del fallo (TLS, DNS, timeout, HTTP xxx) para diagnóstico. */
+  errorDetail: string | null;
   departments: Department[];
   identificationTypes: IdentificationType[];
 };
+
+/**
+ * Extrae la causa técnica de un fallo de carga. Con un pantallazo de la
+ * pantalla de error se puede saber si el problema del dispositivo es TLS
+ * (Android viejo sin la raíz de Let's Encrypt), DNS, timeout o un HTTP real.
+ */
+function extractErrorDetail(e: unknown): string | null {
+  if (e instanceof HttpError) {
+    if (e.status !== 0) return `HTTP ${e.status}`;
+    const cause =
+      e.body && typeof e.body === 'object' && 'cause' in e.body
+        ? (e.body as { cause?: unknown }).cause
+        : null;
+    return cause ? String(cause) : null;
+  }
+  return e instanceof Error ? `${e.name}: ${e.message}` : null;
+}
 
 /**
  * Carga inicial de la app con caché en disco (stale-while-revalidate):
@@ -61,10 +82,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       ? {
           loading: false,
           error: null,
+          errorDetail: null,
           departments: cached.departments,
           identificationTypes: cached.identificationTypes,
         }
-      : { loading: true, error: null, departments: [], identificationTypes: [] },
+      : {
+          loading: true,
+          error: null,
+          errorDetail: null,
+          departments: [],
+          identificationTypes: [],
+        },
   );
 
   const municipalitiesCache = useRef<Record<number, Municipality[]>>(
@@ -94,7 +122,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           catalogService.getIdentificationTypes(),
         ]);
         latestData.current = { departments, identificationTypes };
-        setState({ loading: false, error: null, departments, identificationTypes });
+        setState({
+          loading: false,
+          error: null,
+          errorDetail: null,
+          departments,
+          identificationTypes,
+        });
         persist();
       } catch (e) {
         // Refresco en segundo plano fallido → se sigue con la caché, sin molestar.
@@ -103,6 +137,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           ...s,
           loading: false,
           error: e instanceof Error ? e.message : 'Error cargando la aplicación',
+          errorDetail: extractErrorDetail(e),
         }));
       }
     },
@@ -147,6 +182,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         <View className="w-full">
           <Button label="Reintentar" onPress={() => load()} />
         </View>
+        {/* Detalle técnico para soporte: con un pantallazo se diagnostica remoto. */}
+        <Text className="mt-6 text-center text-[10px] text-muted/70">
+          {API_URL.replace(/^https?:\/\//, '')}
+          {state.errorDetail ? `\n${state.errorDetail}` : ''}
+        </Text>
       </View>
     );
   }

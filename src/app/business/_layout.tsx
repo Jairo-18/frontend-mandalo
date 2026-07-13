@@ -1,5 +1,6 @@
 import { Redirect } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -38,17 +39,20 @@ export default function BusinessLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* Header oscuro de marca (espejo del panel del cliente). */}
+      <StatusBar style="light" />
       <Drawer
         drawerContent={(props) => <BusinessDrawerContent {...props} />}
         screenOptions={{
-          headerTintColor: '#1E1E2D',
-          headerTitleStyle: { fontWeight: '800', color: '#1E1E2D' },
-          headerStyle: { backgroundColor: '#FFFFFF' },
+          headerTintColor: '#FFFFFF',
+          headerTitleStyle: { fontWeight: '800', color: '#FFFFFF' },
+          headerStyle: { backgroundColor: '#1E1E2D' },
           headerShadowVisible: false,
           drawerStyle: { width: 300 },
           sceneStyle: { backgroundColor: '#F2F2F2' },
         }}
       >
+        <Drawer.Screen name="dashboard" options={{ title: 'Mi negocio' }} />
         <Drawer.Screen name="products" options={{ title: 'Productos' }} />
         <Drawer.Screen name="orders" options={{ title: 'Pedidos' }} />
       </Drawer>

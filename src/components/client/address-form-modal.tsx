@@ -54,6 +54,7 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
       const result = await getDeviceLocation();
       if (result) {
         setCoords(result.coords);
+        clearError('location');
         if (result.address) {
           setAddress(result.address);
           clearError('address');
@@ -68,13 +69,24 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
     const ok = validate({
       label: label.trim() ? undefined : 'Ponle un nombre (ej: Casa).',
       address: address.trim() ? undefined : 'Ingresa la dirección.',
+      // Sin coordenadas el explorar no puede filtrar por cercanía ni el
+      // repartidor ubicar la entrega: la ubicación GPS es obligatoria.
+      location: coords
+        ? undefined
+        : 'Marca la ubicación con "Usar mi ubicación actual".',
+      // El GPS marca el punto pero el texto suele quedar genérico ("Mocoa"):
+      // el barrio/casa/referencias los pone el usuario y son obligatorios
+      // para que el repartidor encuentre la puerta.
+      details: details.trim()
+        ? undefined
+        : 'Ingresa la dirección específica (barrio, casa, referencias).',
     });
     if (!ok) return;
 
     const payload: UserAddressPayload = {
       label: label.trim(),
       address: address.trim(),
-      details: details.trim() || null,
+      details: details.trim(),
       ...(coords ?? {}),
     };
 
@@ -140,17 +152,23 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
             ? 'Obteniendo ubicación…'
             : coords
               ? 'Ubicación marcada — toca para actualizar'
-              : 'Usar mi ubicación actual'}
+              : 'Usar mi ubicación actual (obligatorio)'}
         </Text>
       </Pressable>
+      {!!errors.location && (
+        <Text className="-mt-2 mb-3 text-xs text-red-600">
+          {errors.location}
+        </Text>
+      )}
 
       <TextField
-        label="Detalles (opcional)"
+        label="Dirección específica"
         icon="information-circle-outline"
         format="text"
         value={details}
-        onChangeText={setDetails}
-        placeholder="Torre 2 apto 301, portón café"
+        onChangeText={bind('details', setDetails)}
+        error={errors.details}
+        placeholder="Barrio Centro, casa esquinera, portón café"
       />
     </FormModal>
   );

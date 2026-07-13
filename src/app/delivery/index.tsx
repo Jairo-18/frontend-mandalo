@@ -1,38 +1,35 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { MenuButton } from '@/components/client/menu-button';
 import { DeliveryOrders } from '@/components/delivery/delivery-orders';
 import { Button } from '@/components/ui/button';
-import { getSession, homePathFor, setSession } from '@/lib/session';
+import { PanelHeader } from '@/components/ui/panel-header';
+import { useSession } from '@/hooks/use-session';
+import { setSession } from '@/lib/session';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { toast } from '@/lib/toast';
 import { authService } from '@/services/auth';
 
 /**
- * Vista del repartidor (rol DELI). Mientras un admin no active la cuenta
+ * Pedidos del repartidor (sección principal del panel DELI; el guard por rol
+ * vive en el _layout del drawer). Mientras un admin no active la cuenta
  * (`isActive`) muestra "Cuenta en proceso de habilitación" con la nota del
- * admin si la hay; al activarla, el panel de pedidos cercanos (pendiente,
- * llega con el módulo de pedidos).
+ * admin si la hay; al activarla, las pestañas Disponibles / Mis entregas.
  */
 export default function DeliveryScreen() {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
   const [checking, setChecking] = useState(false);
-  // La sesión en memoria cambia al refrescar; esto fuerza el re-render.
-  const [, forceRender] = useState(0);
 
-  const session = getSession();
+  // Reactiva: setSession (al consultar estado) re-renderiza solo, sin trucos
+  // (regla React Compiler: no leer getSession() suelto en el render).
+  const session = useSession();
   const user = session?.user;
-
-  // Guard: solo cuentas con rol DELI; el resto va a la vista de SU rol.
-  const role = user?.role?.code;
-  if (role !== 'DELI') {
-    return <Redirect href={homePathFor(user)} />;
-  }
 
   const pending = user?.isActive === false;
 
@@ -50,7 +47,6 @@ export default function DeliveryScreen() {
       if (res.data.user.isActive === false) {
         toast.error('Tu cuenta aún está en revisión. Te avisaremos pronto.');
       }
-      forceRender((n) => n + 1);
     } catch {
       toast.error('No se pudo consultar el estado. Intenta de nuevo.');
     } finally {
@@ -68,37 +64,31 @@ export default function DeliveryScreen() {
   // Cuenta activa: panel de pedidos (disponibles + mis entregas).
   if (!pending) {
     return (
-      <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
-        <StatusBar style="dark" />
-        <View className="flex-row items-center justify-between bg-surface px-5 pb-1 pt-2">
-          <View>
-            <Text className="text-xl font-extrabold text-dark">Repartir</Text>
-            <Text className="text-[11px] font-bold uppercase tracking-widest text-muted">
-              Panel del repartidor
-            </Text>
-          </View>
-          <Pressable
-            onPress={handleLogout}
-            disabled={signingOut}
-            hitSlop={8}
-            className="h-10 w-10 items-center justify-center rounded-full bg-white active:opacity-70"
-          >
-            {signingOut ? (
-              <ActivityIndicator size="small" color="#FF5A3C" />
-            ) : (
-              <Ionicons name="log-out-outline" size={20} color="#FF5A3C" />
-            )}
-          </Pressable>
+      <SafeAreaView className="flex-1 bg-dark" edges={['top']}>
+        <StatusBar style="light" />
+        <View className="flex-1 bg-surface">
+          <PanelHeader
+            title="Repartir"
+            subtitle="Panel del repartidor"
+            menu={<MenuButton parent="/delivery" />}
+          />
+          <DeliveryOrders />
         </View>
-        <DeliveryOrders />
       </SafeAreaView>
     );
   }
 
-  // Cuenta en proceso de habilitación.
+  // Cuenta en proceso de habilitación (el drawer sigue disponible: el perfil
+  // se puede editar mientras el admin revisa).
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+      <StatusBar style="light" />
+      <View className="flex-1 bg-white">
+      <PanelHeader
+        title="Repartir"
+        subtitle="Panel del repartidor"
+        menu={<MenuButton parent="/delivery" />}
+      />
       <View className="flex-1 items-center justify-center px-8">
         <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-tint">
           <Ionicons name="hourglass-outline" size={40} color="#FF5A3C" />
@@ -142,6 +132,7 @@ export default function DeliveryScreen() {
             loading={signingOut}
           />
         </View>
+      </View>
       </View>
     </SafeAreaView>
   );

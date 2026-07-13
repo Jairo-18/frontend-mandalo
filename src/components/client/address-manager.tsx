@@ -1,0 +1,200 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
+
+import { AddressFormModal } from '@/components/client/address-form-modal';
+import { YesNoDialog } from '@/components/ui/yes-no-dialog';
+import { useUserAddresses } from '@/hooks/use-user-data';
+import { refreshAddresses } from '@/lib/user-data';
+import { UserAddress, userAddressesService } from '@/services/user-addresses';
+
+type Props = {
+  /**
+   * true en la pantalla /addresses del drawer (la lista crece y scrollea a
+   * pantalla completa); false dentro de la hoja "Enviar a…" del home.
+   */
+  fullScreen?: boolean;
+};
+
+/**
+ * Gestión de direcciones del cliente: elegir a dónde enviar (tocar una la
+ * vuelve la principal), agregar, editar y eliminar. Lo comparten la hoja
+ * "Enviar a…" del home (`AddressSheet`) y la pantalla "Mis direcciones" del
+ * drawer. Lee el caché compartido (`use-user-data`) — las mutaciones fuerzan
+ * el refresh y el resto de pantallas se enteran solas.
+ */
+export function AddressManager({ fullScreen = false }: Props) {
+  const { addresses, loading } = useUserAddresses();
+  const [settingId, setSettingId] = useState<number | null>(null);
+
+  const [formVisible, setFormVisible] = useState(false);
+  const [editing, setEditing] = useState<UserAddress | null>(null);
+  const [toDelete, setToDelete] = useState<UserAddress | null>(null);
+
+  useEffect(() => {
+    // Al montar revalida si el TTL venció (normalmente no toca la red).
+    void refreshAddresses();
+  }, []);
+
+  /** Tocar una dirección = enviar ahí (se marca principal). */
+  async function choose(item: UserAddress) {
+    if (item.isDefault || settingId) return;
+    setSettingId(item.id);
+    try {
+      await userAddressesService.setDefault(item.id);
+      await refreshAddresses(true);
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setSettingId(null);
+    }
+  }
+
+  async function handleDelete() {
+    if (!toDelete) return;
+    try {
+      await userAddressesService.remove(toDelete.id);
+      await refreshAddresses(true);
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setToDelete(null);
+    }
+  }
+
+  function openCreate() {
+    setEditing(null);
+    setFormVisible(true);
+  }
+
+  function openEdit(item: UserAddress) {
+    setEditing(item);
+    setFormVisible(true);
+  }
+
+  function handleSaved() {
+    setFormVisible(false);
+    void refreshAddresses(true);
+  }
+
+  function renderItem({ item }: { item: UserAddress }) {
+    return (
+      <Pressable
+        onPress={() => choose(item)}
+        className="mb-2 flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 active:opacity-70"
+      >
+        {/* Radio de selección */}
+        {settingId === item.id ? (
+          <ActivityIndicator size="small" color="#FF5A3C" />
+        ) : (
+          <Ionicons
+            name={item.isDefault ? 'radio-button-on' : 'radio-button-off'}
+            size={22}
+            color={item.isDefault ? '#FF5A3C' : '#C9C9D4'}
+          />
+        )}
+
+        <View className="flex-1">
+          <View className="flex-row items-center gap-2">
+            <Text numberOfLines={1} className="text-[15px] font-bold text-dark">
+              {item.label}
+            </Text>
+            {item.isDefault && (
+              <View className="rounded-full bg-primary-tint px-2 py-0.5">
+                <Text className="text-[10px] font-bold uppercase text-primary">
+                  Principal
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text numberOfLines={1} className="text-xs text-muted">
+            {item.address}
+          </Text>
+          {!!item.details && (
+            <Text numberOfLines={1} className="text-xs text-muted">
+              {item.details}
+            </Text>
+          )}
+        </View>
+
+        <Pressable
+          onPress={() => openEdit(item)}
+          hitSlop={8}
+          className="h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-70"
+        >
+          <Ionicons name="pencil-outline" size={16} color="#1E1E2D" />
+        </Pressable>
+        <Pressable
+          onPress={() => setToDelete(item)}
+          hitSlop={8}
+          className="h-9 w-9 items-center justify-center rounded-full bg-red-50 active:opacity-70"
+        >
+          <Ionicons name="trash-outline" size={16} color="#DC2626" />
+        </Pressable>
+      </Pressable>
+    );
+  }
+
+  const content = (
+    <>
+      {loading ? (
+        <View className="items-center py-10">
+          <ActivityIndicator size="large" color="#FF5A3C" />
+        </View>
+      ) : (
+        <FlatList
+          className={fullScreen ? 'flex-1' : undefined}
+          data={addresses}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderItem}
+          ListEmptyComponent={
+            <View className="items-center py-8">
+              <Ionicons name="location-outline" size={40} color="#C9C9D4" />
+              <Text className="mt-2 text-center text-sm text-muted">
+                Aún no tienes direcciones guardadas.
+              </Text>
+            </View>
+          }
+        />
+      )}
+
+      {/* Agregar dirección */}
+      <Pressable
+        onPress={openCreate}
+        className="mt-2 flex-row items-center justify-center gap-2 rounded-xl border border-dashed border-primary px-4 py-3 active:opacity-70"
+      >
+        <Ionicons name="add-circle-outline" size={20} color="#FF5A3C" />
+        <Text className="text-[15px] font-bold text-primary">
+          Agregar dirección
+        </Text>
+      </Pressable>
+
+      <AddressFormModal
+        visible={formVisible}
+        editing={editing}
+        onClose={() => setFormVisible(false)}
+        onSaved={handleSaved}
+      />
+
+      <YesNoDialog
+        visible={!!toDelete}
+        destructive
+        title="¿Eliminar dirección?"
+        message={`Se eliminará "${toDelete?.label}".`}
+        confirmLabel="Eliminar"
+        onConfirm={handleDelete}
+        onCancel={() => setToDelete(null)}
+      />
+    </>
+  );
+
+  // En la hoja el layout lo pone el modal (max-h); a pantalla completa la
+  // lista debe crecer para que el botón de agregar quede siempre visible.
+  return fullScreen ? <View className="flex-1">{content}</View> : content;
+}

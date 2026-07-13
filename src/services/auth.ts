@@ -113,6 +113,14 @@ export const authService = {
       toastSuccess: true,
     }),
 
+  /** Reenvía el correo de verificación (botón del login tras el 401). */
+  resendVerification: (email: string) =>
+    http<{ message?: string }>('/user/resend-verification', {
+      method: 'POST',
+      body: { email },
+      toastSuccess: true,
+    }),
+
   /** Paso 2: valida el código y cambia la contraseña. */
   resetPassword: (email: string, code: string, newPassword: string) =>
     http<{ message?: string }>('/auth/reset-password', {

@@ -58,6 +58,9 @@ export type AdminUserPayload = {
   departmentId?: number;
   municipalityId?: number;
   address?: string | null;
+  /** Coordenadas GPS (solo las envía la edición del propio perfil). */
+  latitude?: number;
+  longitude?: number;
   identificationNumber?: string | null;
   identificationTypeId?: number;
   /** El backend lo resuelve a su uuid (tabla roleType). */
@@ -88,6 +91,10 @@ export const adminUsersService = {
     roleTypeCode?: RoleCode;
     /** Varios roles a la vez (Usuarios = USER+NEGO+ADMIN). */
     roleTypeCodes?: RoleCode[];
+    /** Filtros por estado de cuenta (chips del panel). */
+    isActive?: boolean;
+    isBanned?: boolean;
+    isEmailVerified?: boolean;
   }) => {
     const query = new URLSearchParams({
       page: String(params.page),
@@ -100,6 +107,15 @@ export const adminUsersService = {
     if (params.roleTypeCode) query.set('roleTypeCode', params.roleTypeCode);
     if (params.roleTypeCodes?.length) {
       query.set('roleTypeCodes', params.roleTypeCodes.join(','));
+    }
+    if (params.isActive !== undefined) {
+      query.set('isActive', String(params.isActive));
+    }
+    if (params.isBanned !== undefined) {
+      query.set('isBanned', String(params.isBanned));
+    }
+    if (params.isEmailVerified !== undefined) {
+      query.set('isEmailVerified', String(params.isEmailVerified));
     }
 
     return http<Paginated<AdminUser>>(`/user/paginated?${query.toString()}`, {

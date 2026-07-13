@@ -1,17 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/orders/action-button';
 import { OrderCard } from '@/components/orders/order-card';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
+import { VerificationCodeDialog } from '@/components/orders/verification-code-dialog';
+import { useDeliveryPositionBroadcast } from '@/lib/delivery-tracker';
+import {
+  ORDER_FILTER_CODES,
+  OrderFilter,
+  OrderFilters,
+} from '@/components/orders/order-filters';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { businessDisplayName } from '@/services/explore';
+import { DeviceCoords, getDeviceCoordsSilently } from '@/lib/location';
 import { useOrderEvents } from '@/lib/orders-socket';
-import { OrderStateCode } from '@/lib/order-status';
-import { getSession } from '@/lib/session';
+import { useSession } from '@/hooks/use-session';
 import { Order, ordersService } from '@/services/orders';
 
 type Tab = 'available' | 'mine';
@@ -25,13 +32,36 @@ export function DeliveryOrders() {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('available');
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const myId = getSession()?.user.id;
+  // Filtros de "Mis entregas" (los disponibles no se filtran: van por antigüedad).
+  const [filter, setFilter] = useState<OrderFilter>('all');
+  const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
+  // Reactivo (regla React Compiler: no leer getSession() suelto en el render).
+  const myId = useSession()?.user.id;
+
+  // Posición del repartidor: limita "Disponibles" al radio de cercanía y los
+  // ordena por distancia al negocio. Si niega el permiso o no hay fix, la
+  // lista sale SIN filtrar (mejor eso que una pantalla vacía).
+  const [coords, setCoords] = useState<DeviceCoords | null>(null);
+  useEffect(() => {
+    getDeviceCoordsSilently().then(setCoords);
+  }, []);
 
   const available = usePaginatedList<Order>(
-    useCallback((params) => ordersService.available(params), []),
+    useCallback(
+      (params) => ordersService.available({ ...params, near: coords }),
+      [coords],
+    ),
   );
   const mine = usePaginatedList<Order>(
-    useCallback((params) => ordersService.paginated(params), []),
+    useCallback(
+      (params) =>
+        ordersService.paginated({
+          ...params,
+          stateCodes: ORDER_FILTER_CODES[filter],
+          order,
+        }),
+      [filter, order],
+    ),
   );
 
   const refreshAll = useCallback(() => {
@@ -39,14 +69,18 @@ export function DeliveryOrders() {
     mine.fetchPage(1, 'refresh');
   }, [available.fetchPage, mine.fetchPage]);
 
+  // Tracking en vivo: mientras tenga pedidos EN RUTA, su GPS viaja por el
+  // socket al mapa del cliente (se apaga solo al entregar).
+  useDeliveryPositionBroadcast(
+    mine.items
+      .filter(
+        (o) => o.stateType?.code === 'RUTA' && o.deliveryUserId === myId,
+      )
+      .map((o) => o.id),
+  );
+
   // En vivo: pedidos que entran/salen de disponibles o cambian de estado.
   useOrderEvents(useCallback(() => refreshAll(), [refreshAll]));
-
-  async function setState(id: number, code: OrderStateCode, reload: () => void) {
-    await ordersService.changeState(id, code);
-    reload();
-    refreshAll();
-  }
 
   /** Tomar un pedido disponible directo desde la tarjeta. */
   async function take(id: number) {
@@ -54,11 +88,11 @@ export function DeliveryOrders() {
     refreshAll();
   }
 
-  /** Marca mi entrega como entregada al cliente (RUTA→entregado). */
-  async function deliver(order: Order) {
-    await ordersService.changeState(order.id, 'ENTR');
-    refreshAll();
-  }
+  // Entrega verificada: pide el código que el CLIENTE ve en su app.
+  const [deliverTarget, setDeliverTarget] = useState<{
+    id: number;
+    reload?: () => void;
+  } | null>(null);
 
   /**
    * Acción de la tarjeta según la pestaña y el estado. El repartidor NO marca
@@ -77,7 +111,7 @@ export function DeliveryOrders() {
       return {
         label: 'Marcar entregado',
         icon: 'checkmark-done-outline' as const,
-        onPress: () => deliver(order),
+        onPress: () => setDeliverTarget({ id: order.id }),
         tone: 'success' as const,
       };
     }
@@ -87,7 +121,10 @@ export function DeliveryOrders() {
   /** Nota de estado para mis entregas aún no despachadas por el negocio. */
   function cardHint(order: Order): string | undefined {
     if (tab === 'mine' && order.stateType?.code === 'PREP') {
-      return 'Ve por el pedido. El negocio confirmará la salida cuando te lo entregue.';
+      // El código de recogida es SU llave: se lo dicta al negocio al recoger.
+      return order.pickupCode
+        ? `Ve por el pedido y dile al negocio tu código de recogida: ${order.pickupCode}`
+        : 'Ve por el pedido. El negocio confirmará la salida cuando te lo entregue.';
     }
     return undefined;
   }
@@ -112,6 +149,17 @@ export function DeliveryOrders() {
         />
       </View>
 
+      {tab === 'mine' && (
+        <View className="px-4 pb-2">
+          <OrderFilters
+            filter={filter}
+            onFilter={setFilter}
+            order={order}
+            onOrder={setOrder}
+          />
+        </View>
+      )}
+
       <FlatList
         data={list.items}
         keyExtractor={(item) => String(item.id)}
@@ -120,6 +168,7 @@ export function DeliveryOrders() {
             order={item}
             title={bizName(item)}
             titleIcon="storefront-outline"
+            perspective="delivery"
             onPress={() => setSelectedId(item.id)}
             showAddress
             hint={cardHint(item)}
@@ -147,8 +196,12 @@ export function DeliveryOrders() {
               icon={tab === 'available' ? 'bicycle-outline' : 'cube-outline'}
               message={
                 tab === 'available'
-                  ? 'No hay pedidos disponibles ahora. ¡Vuelve a revisar en un momento!'
-                  : 'Aún no has tomado pedidos.'
+                  ? coords
+                    ? 'No hay pedidos disponibles cerca de ti. ¡Vuelve a revisar en un momento!'
+                    : 'No hay pedidos disponibles ahora. ¡Vuelve a revisar en un momento!'
+                  : filter === 'all'
+                    ? 'Aún no has tomado pedidos.'
+                    : 'No tienes entregas con este filtro.'
               }
             />
           )
@@ -181,12 +234,29 @@ export function DeliveryOrders() {
               <ActionButton
                 label="Marcar entregado"
                 variant="success"
-                onPress={() => setState(order.id, 'ENTR', reload)}
+                onPress={() => setDeliverTarget({ id: order.id, reload })}
               />
             );
           }
           return null;
         }}
+      />
+
+      {/* Entrega verificada: el cliente dicta su código de entrega. */}
+      <VerificationCodeDialog
+        visible={deliverTarget != null}
+        title="Código de entrega"
+        message="Pídele al cliente el código que ve en su app y digítalo para confirmar la entrega."
+        onConfirm={async (verificationCode) => {
+          if (!deliverTarget) return;
+          await ordersService.changeState(deliverTarget.id, 'ENTR', {
+            verificationCode,
+          });
+          deliverTarget.reload?.();
+          setDeliverTarget(null);
+          refreshAll();
+        }}
+        onCancel={() => setDeliverTarget(null)}
       />
     </View>
   );

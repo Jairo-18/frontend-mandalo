@@ -50,15 +50,28 @@ export function CatalogFormModal({
     setIcon(editing?.icon ?? '');
   }, [visible, editing, setErrors]);
 
+  /** "Comidas Rápidas" → "COMIDAS_RAPIDAS" (cuando no digitan el código). */
+  function codeFromName(value: string): string {
+    return Array.from(value.normalize('NFD'))
+      .filter((ch) => {
+        const chCode = ch.charCodeAt(0);
+        return chCode < 0x0300 || chCode > 0x036f;
+      })
+      .join('')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+  }
+
   async function handleSave() {
     const ok = validate({
       name: name.trim() ? undefined : 'Ingresa el nombre.',
-      code: code.trim() ? undefined : 'Ingresa el código.',
     });
     if (!ok) return;
 
     const payload: CatalogItemPayload = {
-      code: code.trim().toUpperCase(),
+      // El código es opcional: sin digitar, se genera del nombre.
+      code: code.trim() ? code.trim().toUpperCase() : codeFromName(name),
       name: name.trim(),
       icon: icon || null,
     };
@@ -101,7 +114,7 @@ export function CatalogFormModal({
       />
 
       <TextField
-        label="Código"
+        label="Código (opcional — se genera del nombre)"
         icon="key-outline"
         autoCapitalize="characters"
         autoCorrect={false}

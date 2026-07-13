@@ -6,6 +6,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProductCard } from '@/components/client/product-card';
+import { ProductDetailSheet } from '@/components/client/product-detail-sheet';
 import { Avatar } from '@/components/ui/avatar';
 import { FilterChips } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
@@ -13,6 +14,8 @@ import { SearchBar } from '@/components/ui/search-bar';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useCart } from '@/context/cart';
 import { formatPrice } from '@/lib/price';
+import { formatHour12 } from '@/lib/text-format';
+import { toast } from '@/lib/toast';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import {
   businessDisplayName,
@@ -40,6 +43,8 @@ export default function StoreScreen() {
   const [categoryValue, setCategoryValue] = useState('all');
   // Producto pendiente de agregar cuando el carrito es de OTRO negocio.
   const [switchTo, setSwitchTo] = useState<ExploreProduct | null>(null);
+  // Detalle abierto (tocar la tarjeta): fotos completas + descripción.
+  const [detail, setDetail] = useState<ExploreProduct | null>(null);
 
   const categoryTypeId =
     categoryValue === 'all' ? undefined : Number(categoryValue);
@@ -102,8 +107,19 @@ export default function StoreScreen() {
 
   const cartBiz = { id: storeId, name: businessDisplayName(business) };
 
+  const closed = business.isOpen === false;
+
   /** Suma 1 al carrito; si hay otro negocio en curso, pide confirmar. */
   function handleAdd(product: ExploreProduct) {
+    // Negocio cerrado: no se arma carrito (el backend igual lo rechazaría).
+    if (closed) {
+      toast.info(
+        business?.temporarilyClosed
+          ? 'El negocio está cerrado temporalmente. Intenta más tarde.'
+          : 'El negocio está cerrado en este momento. Podrás pedir dentro de su horario.',
+      );
+      return;
+    }
     if (cart.count > 0 && cart.businessId !== storeId) {
       setSwitchTo(product);
       return;
@@ -145,6 +161,25 @@ export default function StoreScreen() {
           )}
         </View>
       </View>
+
+      {/* Negocio cerrado: aviso arriba de todo (y el carrito queda bloqueado) */}
+      {closed && (
+        <View className="mx-5 mb-3 flex-row items-center gap-2.5 rounded-2xl bg-dark px-4 py-3">
+          <Ionicons name="moon-outline" size={18} color="#FF8C6E" />
+          <View className="flex-1">
+            <Text className="text-sm font-extrabold text-white">
+              Cerrado por ahora
+            </Text>
+            <Text className="text-xs text-white/70">
+              {business.temporarilyClosed
+                ? 'El negocio está cerrado temporalmente.'
+                : business.openTime && business.closeTime
+                  ? `Horario: ${formatHour12(business.openTime)} a ${formatHour12(business.closeTime)}. Vuelve más tarde.`
+                  : 'Vuelve más tarde para hacer tu pedido.'}
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Datos de contacto */}
       {(!!location || !!business.phone || !!business.description) && (
@@ -210,6 +245,7 @@ export default function StoreScreen() {
             renderItem={({ item }) => (
               <ProductCard
                 product={item}
+                onPress={() => setDetail(item)}
                 quantity={cart.quantityOf(item.id)}
                 onAdd={() => handleAdd(item)}
                 onDecrement={() => cart.decrement(item.id)}
@@ -273,6 +309,14 @@ export default function StoreScreen() {
           </Pressable>
         </View>
       )}
+
+      <ProductDetailSheet
+        product={detail}
+        quantity={detail ? cart.quantityOf(detail.id) : 0}
+        onAdd={() => detail && handleAdd(detail)}
+        onDecrement={() => detail && cart.decrement(detail.id)}
+        onClose={() => setDetail(null)}
+      />
 
       <YesNoDialog
         visible={!!switchTo}

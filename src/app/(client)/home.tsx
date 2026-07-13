@@ -3,19 +3,23 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import { AddressSheet } from '@/components/client/address-sheet';
 import { BusinessCard } from '@/components/client/business-card';
 import { CategoryCards } from '@/components/client/category-cards';
+import { MenuButton } from '@/components/client/menu-button';
 import { ProductCard } from '@/components/client/product-card';
 import { TagCards } from '@/components/client/tag-cards';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { SearchBar } from '@/components/ui/search-bar';
+import { SectionTitle } from '@/components/ui/section-title';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useExploreFilters, useUserAddresses } from '@/hooks/use-user-data';
-import { getSession } from '@/lib/session';
-import { signOutEverywhere } from '@/lib/sign-out';
+import { useSession } from '@/hooks/use-session';
 import {
   ExploreBusiness,
   ExploreProduct,
@@ -36,7 +40,7 @@ import {
  */
 export default function HomeScreen() {
   const router = useRouter();
-  const [signingOut, setSigningOut] = useState(false);
+  const insets = useSafeAreaInsets();
 
   // Caché compartida (lib/user-data): nada de refetch en cada montada.
   const { defaultAddress, loading: loadingAddress } = useUserAddresses();
@@ -49,7 +53,14 @@ export default function HomeScreen() {
     null,
   );
 
-  const user = getSession()?.user;
+  // Reactivo: el saludo refresca al guardar el perfil (regla React Compiler).
+  const user = useSession()?.user;
+
+  // Cercanía: el explorar se limita al radio alrededor de la dirección
+  // principal ("enviar a"). Primitivos en las deps (un objeto nuevo por
+  // render dispararía refetch infinito); sin coords no se filtra.
+  const nearLat = defaultAddress?.latitude ?? null;
+  const nearLng = defaultAddress?.longitude ?? null;
 
   const businessList = usePaginatedList<ExploreBusiness>(
     useCallback(
@@ -58,8 +69,12 @@ export default function HomeScreen() {
           page: params.page,
           perPage: params.perPage,
           tagIds: selectedTagIds,
+          near:
+            nearLat != null && nearLng != null
+              ? { latitude: nearLat, longitude: nearLng }
+              : null,
         }),
-      [selectedTagIds],
+      [selectedTagIds, nearLat, nearLng],
     ),
   );
 
@@ -69,8 +84,12 @@ export default function HomeScreen() {
         exploreService.allProducts({
           ...params,
           categoryTypeId: selectedCategoryId ?? undefined,
+          near:
+            nearLat != null && nearLng != null
+              ? { latitude: nearLat, longitude: nearLng }
+              : null,
         }),
-      [selectedCategoryId],
+      [selectedCategoryId, nearLat, nearLng],
     ),
   );
 
@@ -111,13 +130,6 @@ export default function HomeScreen() {
     }
   }
 
-  async function handleLogout() {
-    setSigningOut(true);
-    await signOutEverywhere();
-    setSigningOut(false);
-    router.replace('/auth/login');
-  }
-
   function openStore(organizationalId: number) {
     router.push({
       pathname: '/store/[id]',
@@ -136,14 +148,18 @@ export default function HomeScreen() {
   /** Cabecera scrolleable del feed (saludo, búsqueda y las 2 secciones). */
   const listHeader = (
     <View>
-      <View className="px-5 pb-3 pt-4">
-        <Text className="text-xl font-extrabold text-dark">
+      {/* Cierre del bloque oscuro de marca: saludo + buscador */}
+      <View className="rounded-b-[28px] bg-dark px-5 pb-6 pt-1">
+        <Text className="text-2xl font-extrabold text-white">
           ¡Hola{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}!
         </Text>
-        <Text className="mb-3 text-xs text-muted">
-          ¿Qué necesitas hoy? LO PIDES, LO LLEVAMOS.
+        <Text className="mb-4 mt-0.5 text-xs text-white/70">
+          ¿Qué necesitas hoy?{' '}
+          <Text className="font-extrabold text-primary-soft">
+            LO PIDES, LO MÁNDAMOS.
+          </Text>
         </Text>
-        <View className="rounded-xl border border-gray-200">
+        <View className="rounded-2xl bg-white">
           <SearchBar
             value={productList.search}
             onChangeText={handleSearchChange}
@@ -153,10 +169,8 @@ export default function HomeScreen() {
       </View>
 
       {tags.length > 0 && (
-        <View className="pb-3">
-          <Text className="mb-2 px-5 text-base font-extrabold text-dark">
-            Negocios
-          </Text>
+        <View className="pb-3 pt-4">
+          <SectionTitle label="Negocios" />
           <TagCards
             tags={tags}
             selectedIds={selectedTagIds}
@@ -169,9 +183,7 @@ export default function HomeScreen() {
 
       {categories.length > 0 && (
         <View className="pb-3">
-          <Text className="mb-2 px-5 text-base font-extrabold text-dark">
-            Categorías
-          </Text>
+          <SectionTitle label="Categorías" />
           <CategoryCards
             categories={categories}
             selectedId={selectedCategoryId}
@@ -180,9 +192,9 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <Text className="mb-2 mt-1 px-5 text-base font-extrabold text-dark">
-        {feedTitle}
-      </Text>
+      <View className="mt-1">
+        <SectionTitle label={feedTitle} />
+      </View>
     </View>
   );
 
@@ -195,11 +207,12 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-surface">
-      <StatusBar style="dark" />
+    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+      <StatusBar style="light" />
 
-      {/* Navbar fija: selector de dirección + cerrar sesión */}
-      <View className="flex-row items-center gap-3 bg-surface px-5 pb-1 pt-2">
+      {/* Navbar fija sobre el bloque oscuro de marca */}
+      <View className="flex-row items-center gap-3 bg-dark px-5 pb-3 pt-2">
+        <MenuButton />
         <Pressable
           onPress={() => setSheetVisible(true)}
           className="flex-1 flex-row items-center gap-2 rounded-full bg-white px-3.5 py-2.5 active:opacity-70"
@@ -229,25 +242,13 @@ export default function HomeScreen() {
         <Pressable
           onPress={() => router.push('/orders')}
           hitSlop={8}
-          className="h-10 w-10 items-center justify-center rounded-full bg-white active:opacity-70"
+          className="h-10 w-10 items-center justify-center rounded-full bg-primary active:opacity-80"
         >
-          <Ionicons name="receipt-outline" size={20} color="#FF5A3C" />
-        </Pressable>
-
-        <Pressable
-          onPress={handleLogout}
-          disabled={signingOut}
-          hitSlop={8}
-          className="h-10 w-10 items-center justify-center rounded-full bg-white active:opacity-70"
-        >
-          {signingOut ? (
-            <ActivityIndicator size="small" color="#FF5A3C" />
-          ) : (
-            <Ionicons name="log-out-outline" size={20} color="#FF5A3C" />
-          )}
+          <Ionicons name="receipt-outline" size={20} color="#FFFFFF" />
         </Pressable>
       </View>
 
+      <View className="flex-1 bg-surface">
       {businessMode ? (
         <FlatList
           data={businessList.items}
@@ -257,7 +258,7 @@ export default function HomeScreen() {
               <BusinessCard business={item} onPress={() => openStore(item.id)} />
             </View>
           )}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={listHeader}
           refreshing={businessList.refreshing}
@@ -300,7 +301,7 @@ export default function HomeScreen() {
               />
             </View>
           )}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={listHeader}
           refreshing={productList.refreshing}
@@ -328,6 +329,7 @@ export default function HomeScreen() {
           }
         />
       )}
+      </View>
 
       <AddressSheet
         visible={sheetVisible}

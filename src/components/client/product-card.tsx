@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
+import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { businessDisplayName, ExploreProduct } from '@/services/explore';
 
@@ -34,17 +36,35 @@ export function ProductCard({
   const cartEnabled = !!onAdd;
   const Wrapper = onPress ? Pressable : View;
 
+  // Galería del producto abierta (tocar la foto, sin entrar al negocio).
+  const [preview, setPreview] = useState(false);
+  const images = product.images ?? [];
+
   return (
     <Wrapper
       onPress={onPress}
       className="mb-3 flex-row items-center gap-3 rounded-2xl bg-white p-3.5 active:opacity-80"
     >
-      <Avatar
-        uri={product.images?.[0]}
-        icon="cube-outline"
-        size={64}
-        shape="rounded"
-      />
+      {/* Tocar la foto abre la preview (el Pressable anidado gana el toque,
+          así no navega al negocio ni agrega al carrito). */}
+      {images.length > 0 ? (
+        <Pressable
+          onPress={() => setPreview(true)}
+          className="active:opacity-80"
+        >
+          <Avatar
+            uri={images[0]}
+            icon="cube-outline"
+            size={64}
+            shape="rounded"
+          />
+          <View className="absolute bottom-0.5 right-0.5 h-5 w-5 items-center justify-center rounded-full bg-black/50">
+            <Ionicons name="expand-outline" size={11} color="#FFFFFF" />
+          </View>
+        </Pressable>
+      ) : (
+        <Avatar icon="cube-outline" size={64} shape="rounded" />
+      )}
 
       <View className="flex-1">
         <Text numberOfLines={1} className="text-[15px] font-bold text-dark">
@@ -78,9 +98,14 @@ export function ProductCard({
         {product.organizational ? (
           <View className="mt-1 flex-row items-center gap-1">
             <Ionicons name="storefront-outline" size={12} color="#7A7A8A" />
-            <Text numberOfLines={1} className="flex-1 text-[11px] font-semibold text-muted">
+            <Text numberOfLines={1} className="shrink text-[11px] font-semibold text-muted">
               {businessDisplayName(product.organizational)}
             </Text>
+            {product.organizational.isOpen === false && (
+              <View className="rounded-full bg-dark px-1.5 py-0.5">
+                <Text className="text-[9px] font-bold text-white">Cerrado</Text>
+              </View>
+            )}
           </View>
         ) : (
           !!product.categoryType?.name && (
@@ -124,6 +149,12 @@ export function ProductCard({
       ) : (
         onPress && <Ionicons name="chevron-forward" size={18} color="#C9C9D4" />
       )}
+
+      <PhotoPreviewModal
+        uri={preview ? (images[0] ?? null) : null}
+        uris={images}
+        onClose={() => setPreview(false)}
+      />
     </Wrapper>
   );
 }

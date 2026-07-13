@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "813129852015",
+    "project_id": "mandaloapp-7799d",
+    "storage_bucket": "mandaloapp-7799d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813129852015:android:88aa1d56e34c438613d99a",
+        "android_client_info": {
+          "package_name": "com.mandalo.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-kwBi6nvCfm6PNwp5Clpb1RoXXUSFwvY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

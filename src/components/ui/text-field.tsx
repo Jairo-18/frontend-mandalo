@@ -31,6 +31,12 @@ const FORMAT_DEFAULTS: Partial<Record<TextFormat, TextInputProps>> = {
   },
   name: { autoCorrect: false },
   username: { autoCorrect: false },
+  phone: { keyboardType: 'phone-pad', autoCorrect: false },
+  identification: { autoCorrect: false },
+  upper: { autoCapitalize: 'characters', autoCorrect: false },
+  // iOS muestra teclado numérico con signos; Android cae al teclado normal.
+  nit: { keyboardType: 'numbers-and-punctuation', autoCorrect: false },
+  cop: { keyboardType: 'number-pad' },
 };
 
 export function TextField({

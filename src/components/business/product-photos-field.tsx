@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Alert, Image, Pressable, Text, View } from 'react-native';
 
 import { PhotoEditor } from '@/components/ui/photo-editor';
+import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { toast } from '@/lib/toast';
 
 const TILE = 76;
@@ -38,6 +39,8 @@ export function ProductPhotosField({
     height: number;
   } | null>(null);
   const [editorVisible, setEditorVisible] = useState(false);
+  // Foto abierta a pantalla completa (tocar una miniatura).
+  const [preview, setPreview] = useState<string | null>(null);
 
   async function pick(source: 'library' | 'camera') {
     try {
@@ -93,11 +96,20 @@ export function ProductPhotosField({
       <View className="mb-5 flex-row flex-wrap gap-2">
         {photos.map((photo) => (
           <View key={photo.key}>
-            <Image
-              source={{ uri: photo.uri }}
-              style={{ width: TILE, height: TILE, borderRadius: 14 }}
-              resizeMode="cover"
-            />
+            {/* Tocar la miniatura la abre a pantalla completa (preview). */}
+            <Pressable
+              onPress={() => setPreview(photo.uri)}
+              className="active:opacity-80"
+            >
+              <Image
+                source={{ uri: photo.uri }}
+                style={{ width: TILE, height: TILE, borderRadius: 14 }}
+                resizeMode="cover"
+              />
+              <View className="absolute bottom-1 right-1 h-5 w-5 items-center justify-center rounded-full bg-black/50">
+                <Ionicons name="expand-outline" size={11} color="#FFFFFF" />
+              </View>
+            </Pressable>
             <Pressable
               onPress={() =>
                 photo.pending
@@ -124,6 +136,8 @@ export function ProductPhotosField({
           </Text>
         </Pressable>
       </View>
+
+      <PhotoPreviewModal uri={preview} onClose={() => setPreview(null)} />
 
       <PhotoEditor
         visible={editorVisible}

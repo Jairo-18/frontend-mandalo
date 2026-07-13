@@ -1,23 +1,46 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, View } from 'react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
+import { MenuButton } from '@/components/client/menu-button';
 import { OrderCard } from '@/components/orders/order-card';
+import { PanelHeader } from '@/components/ui/panel-header';
+import {
+  ORDER_FILTER_CODES,
+  OrderFilter,
+  OrderFilters,
+} from '@/components/orders/order-filters';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { businessDisplayName } from '@/services/explore';
 import { Order, ordersService } from '@/services/orders';
 
-/** "Mis pedidos" del cliente: historial con scroll infinito y pull-to-refresh. */
+/**
+ * "Mis pedidos" del cliente: historial con scroll infinito, pull-to-refresh,
+ * filtros por estado (Todos/En curso/Entregados/Cancelados) y orden por fecha.
+ */
 export default function ClientOrdersScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [filter, setFilter] = useState<OrderFilter>('all');
+  const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
 
   const list = usePaginatedList<Order>(
-    useCallback((params) => ordersService.paginated(params), []),
+    useCallback(
+      (params) =>
+        ordersService.paginated({
+          ...params,
+          stateCodes: ORDER_FILTER_CODES[filter],
+          order,
+        }),
+      [filter, order],
+    ),
   );
 
   // Al volver a la pantalla (p. ej. tras crear/cancelar) recarga la 1ª página.
@@ -34,18 +57,19 @@ export default function ClientOrdersScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-surface">
-      <StatusBar style="dark" />
+    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+      <StatusBar style="light" />
 
-      <View className="flex-row items-center gap-3 bg-surface px-5 pb-2 pt-2">
-        <Pressable
-          onPress={() => router.replace('/home')}
-          hitSlop={8}
-          className="h-10 w-10 items-center justify-center rounded-full bg-white active:opacity-70"
-        >
-          <Ionicons name="arrow-back" size={20} color="#1E1E2D" />
-        </Pressable>
-        <Text className="text-lg font-extrabold text-dark">Mis pedidos</Text>
+      <View className="flex-1 bg-surface">
+      <PanelHeader title="Mis pedidos" menu={<MenuButton />} />
+
+      <View className="px-5 pb-2 pt-3">
+        <OrderFilters
+          filter={filter}
+          onFilter={setFilter}
+          order={order}
+          onOrder={setOrder}
+        />
       </View>
 
       <FlatList
@@ -54,6 +78,7 @@ export default function ClientOrdersScreen() {
         renderItem={({ item }) => (
           <OrderCard
             order={item}
+            perspective="client"
             title={
               item.organizational
                 ? businessDisplayName(item.organizational)
@@ -64,7 +89,7 @@ export default function ClientOrdersScreen() {
             }
           />
         )}
-        contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24 }}
         refreshing={list.refreshing}
         onRefresh={() => list.fetchPage(1, 'refresh')}
         onEndReached={list.loadMore}
@@ -80,11 +105,16 @@ export default function ClientOrdersScreen() {
           ) : (
             <ListEmpty
               icon="receipt-outline"
-              message="Aún no has hecho pedidos. ¡Explora los negocios y pide algo rico!"
+              message={
+                filter === 'all'
+                  ? 'Aún no has hecho pedidos. ¡Explora los negocios y pide algo rico!'
+                  : 'No tienes pedidos con este filtro.'
+              }
             />
           )
         }
       />
+      </View>
     </SafeAreaView>
   );
 }

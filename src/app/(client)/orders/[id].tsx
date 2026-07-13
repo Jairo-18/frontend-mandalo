@@ -61,7 +61,9 @@ export default function ClientOrderDetailScreen() {
   );
 
   async function cancel() {
-    await ordersService.changeState(orderId, 'CANC', 'Cancelado por el cliente');
+    await ordersService.changeState(orderId, 'CANC', {
+      cancellationReason: 'Cancelado por el cliente',
+    });
     setConfirmCancel(false);
     load('refresh');
   }
