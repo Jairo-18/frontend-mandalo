@@ -62,6 +62,9 @@ export default function HomeScreen() {
   const nearLat = defaultAddress?.latitude ?? null;
   const nearLng = defaultAddress?.longitude ?? null;
 
+  /** Feed de negocios: hay un tag elegido o el chip "Todos" activo. */
+  const businessMode = allBusinesses || selectedTagIds.length > 0;
+
   const businessList = usePaginatedList<ExploreBusiness>(
     useCallback(
       (params) =>
@@ -76,6 +79,9 @@ export default function HomeScreen() {
         }),
       [selectedTagIds, nearLat, nearLng],
     ),
+    // Perezoso: solo se fetchea cuando el usuario abre el feed de negocios
+    // (tag o "Todos") — por defecto el home muestra productos.
+    { enabled: businessMode },
   );
 
   const productList = usePaginatedList<ExploreProduct>(
@@ -91,10 +97,10 @@ export default function HomeScreen() {
         }),
       [selectedCategoryId, nearLat, nearLng],
     ),
+    // Espera la dirección principal (caché instantánea salvo el primer
+    // arranque): evita fetchear sin coords y refetchear al llegar.
+    { enabled: !loadingAddress },
   );
-
-  /** Feed de negocios: hay un tag elegido o el chip "Todos" activo. */
-  const businessMode = allBusinesses || selectedTagIds.length > 0;
   const searching =
     productList.search.trim().length > 0 || selectedCategoryId != null;
 
@@ -153,9 +159,9 @@ export default function HomeScreen() {
         <Text className="text-2xl font-extrabold text-white">
           ¡Hola{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}!
         </Text>
-        <Text className="mb-4 mt-0.5 text-xs text-white/70">
+        <Text className="mb-4 mt-0.5 text-sm text-white/70">
           ¿Qué necesitas hoy?{' '}
-          <Text className="font-extrabold text-primary-soft">
+          <Text className="font-extrabold text-primary">
             LO PIDES, LO MÁNDAMOS.
           </Text>
         </Text>

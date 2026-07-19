@@ -49,21 +49,27 @@ export default function BusinessDashboardScreen() {
   const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     if (mode === 'refresh') setRefreshing(true);
     const page = { page: 1, perPage: 1 } as const;
-    const [pendingOrders, activeOrders, deliveredOrders, products] =
-      await Promise.all([
-        countOf(ordersService.paginated({ ...page, stateCodes: ['PEND'] })),
-        countOf(
-          ordersService.paginated({
-            ...page,
-            stateCodes: ['ACEP', 'PREP', 'RUTA'],
-          }),
-        ),
-        countOf(ordersService.paginated({ ...page, stateCodes: ['ENTR'] })),
-        countOf(businessService.products.paginated(page)),
-      ]);
-    setStats({ pendingOrders, activeOrders, deliveredOrders, products });
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const [pendingOrders, activeOrders, deliveredOrders, products] =
+        await Promise.all([
+          countOf(ordersService.paginated({ ...page, stateCodes: ['PEND'] })),
+          countOf(
+            ordersService.paginated({
+              ...page,
+              stateCodes: ['ACEP', 'PREP', 'RUTA'],
+            }),
+          ),
+          countOf(ordersService.paginated({ ...page, stateCodes: ['ENTR'] })),
+          countOf(businessService.products.paginated(page)),
+        ]);
+      setStats({ pendingOrders, activeOrders, deliveredOrders, products });
+    } catch {
+      // El interceptor HTTP ya mostró el error; sin esto el spinner quedaba
+      // infinito cuando alguna de las peticiones fallaba.
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
   useEffect(() => {

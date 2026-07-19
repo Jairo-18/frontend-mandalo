@@ -7,9 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/ui/avatar';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { useSession } from '@/hooks/use-session';
+import { useUnreadChats } from '@/hooks/use-unread-chats';
 import { signOutEverywhere } from '@/lib/sign-out';
 
-type ClientRoute = '/home' | '/orders' | '/addresses' | '/profile';
+type ClientRoute = '/home' | '/orders' | '/chats' | '/addresses' | '/profile';
 
 type Item = {
   label: string;
@@ -21,6 +22,7 @@ type Item = {
 const ITEMS: Item[] = [
   { label: 'Explorar', icon: 'home-outline', href: '/home' },
   { label: 'Mis pedidos', icon: 'receipt-outline', href: '/orders' },
+  { label: 'Mis chats', icon: 'chatbubbles-outline', href: '/chats' },
   { label: 'Mis direcciones', icon: 'location-outline', href: '/addresses' },
   { label: 'Mi perfil', icon: 'person-outline', href: '/profile' },
 ];
@@ -45,6 +47,9 @@ export function ClientDrawerContent({ navigation }: Props) {
   // getSession() suelto en el render deja JSX viejo con React Compiler).
   const user = useSession()?.user;
 
+  // Mensajes de chat sin leer (burbuja del item "Mis chats", en vivo).
+  const unreadChats = useUnreadChats();
+
   function go(href: ClientRoute) {
     navigation.closeDrawer();
     if (pathname !== href) router.navigate(href);
@@ -52,9 +57,9 @@ export function ClientDrawerContent({ navigation }: Props) {
 
   async function handleLogout() {
     setSigningOut(true);
+    // Navega al login por dentro, con el overlay "Cerrando sesión…".
     await signOutEverywhere();
     setSigningOut(false);
-    router.replace('/auth/login');
   }
 
   return (
@@ -94,6 +99,7 @@ export function ClientDrawerContent({ navigation }: Props) {
             item.href === '/orders'
               ? pathname.startsWith('/orders')
               : pathname === item.href;
+          const badge = item.href === '/chats' ? unreadChats : 0;
           return (
             <Pressable
               key={item.href}
@@ -114,6 +120,13 @@ export function ClientDrawerContent({ navigation }: Props) {
               >
                 {item.label}
               </Text>
+              {badge > 0 && (
+                <View className="ml-auto min-w-[22px] items-center rounded-full bg-primary px-1.5 py-0.5">
+                  <Text className="text-xs font-extrabold text-white">
+                    {badge > 99 ? '99+' : badge}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           );
         })}

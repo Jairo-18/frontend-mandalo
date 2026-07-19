@@ -21,8 +21,16 @@ type Fetcher<T> = (params: {
  *
  * Además del paginador, soporta scroll infinito (feeds del cliente): el modo
  * `more` AGREGA la página siguiente en vez de reemplazar (`loadMore()`).
+ *
+ * `enabled: false` pospone la carga (queda en `loading`) hasta que pase a
+ * true — para listas que dependen de un dato previo (coords de la dirección)
+ * o que viven ocultas tras un toggle (feed de negocios del home): así no se
+ * fetchea lo que no se va a mostrar.
  */
-export function usePaginatedList<T>(fetcher: Fetcher<T>) {
+export function usePaginatedList<T>(
+  fetcher: Fetcher<T>,
+  { enabled = true }: { enabled?: boolean } = {},
+) {
   const [items, setItems] = useState<T[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [perPage, setPerPage] = useState(20);
@@ -71,8 +79,9 @@ export function usePaginatedList<T>(fetcher: Fetcher<T>) {
 
   // Carga inicial y recarga cuando cambian búsqueda confirmada/filtros/perPage.
   useEffect(() => {
+    if (!enabled) return;
     fetchPage(1, 'initial');
-  }, [fetchPage]);
+  }, [fetchPage, enabled]);
 
   /** Recarga la página actual (tras crear/editar/eliminar). */
   const reload = useCallback(

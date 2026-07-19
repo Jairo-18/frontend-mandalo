@@ -32,6 +32,16 @@ export type ExploreBusiness = {
    * si el backend viejo no la manda, se asume abierto (`!== false`).
    */
   isOpen?: boolean;
+  /**
+   * Datos de pago (a dónde transferir + titular). Opcionales por
+   * compatibilidad con el backend viejo; el checkout solo ofrece los
+   * métodos que el negocio tenga diligenciados.
+   */
+  paymentHolderName?: string | null;
+  nequiNumber?: string | null;
+  nequiKey?: string | null;
+  bancolombiaAccount?: string | null;
+  bancolombiaQrUrl?: string | null;
 };
 
 /** Producto activo de un negocio (vista del cliente). */

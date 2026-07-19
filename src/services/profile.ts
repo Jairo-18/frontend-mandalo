@@ -52,9 +52,9 @@ export const profileService = {
       toastSuccess: true,
     }),
 
-  uploadAvatar: (uri: string) => {
+  uploadAvatar: async (uri: string) => {
     const form = new FormData();
-    form.append('file', filePart(uri));
+    form.append('file', await filePart(uri));
     return http<{ data: { avatarUrl: string } }>('/user/me/avatar', {
       method: 'POST',
       body: form,
@@ -92,16 +92,16 @@ export const profileService = {
    * identificación + fotos de verificación). La cuenta queda inactiva hasta
    * que un admin la revise.
    */
-  becomeDelivery: (
+  becomeDelivery: async (
     payload: { identificationNumber: string; identificationTypeId: number },
     photos: DeliveryPhotos,
   ) => {
     const form = new FormData();
     form.append('identificationNumber', payload.identificationNumber);
     form.append('identificationTypeId', String(payload.identificationTypeId));
-    form.append('avatar', filePart(photos.avatar), 'avatar.jpg');
-    form.append('idFront', filePart(photos.idFront), 'id-front.jpg');
-    form.append('idBack', filePart(photos.idBack), 'id-back.jpg');
+    form.append('avatar', await filePart(photos.avatar), 'avatar.jpg');
+    form.append('idFront', await filePart(photos.idFront), 'id-front.jpg');
+    form.append('idBack', await filePart(photos.idBack), 'id-back.jpg');
     return http<{ message?: string }>('/user/me/become-delivery', {
       method: 'POST',
       body: form,

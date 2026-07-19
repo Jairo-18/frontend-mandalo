@@ -61,14 +61,14 @@ export const authService = {
    * verificación (rostro y documento por ambos lados). La cuenta nace
    * inactiva hasta que un admin revise los documentos.
    */
-  registerDelivery: (payload: RegisterPayload, photos: DeliveryPhotos) => {
+  registerDelivery: async (payload: RegisterPayload, photos: DeliveryPhotos) => {
     const form = new FormData();
     for (const [key, value] of Object.entries(payload)) {
       if (value !== undefined && value !== null) form.append(key, String(value));
     }
-    form.append('avatar', filePart(photos.avatar), 'avatar.jpg');
-    form.append('idFront', filePart(photos.idFront), 'id-front.jpg');
-    form.append('idBack', filePart(photos.idBack), 'id-back.jpg');
+    form.append('avatar', await filePart(photos.avatar), 'avatar.jpg');
+    form.append('idFront', await filePart(photos.idFront), 'id-front.jpg');
+    form.append('idBack', await filePart(photos.idBack), 'id-back.jpg');
 
     return http<{ data: { rowId: string } }>('/user/register/delivery', {
       method: 'POST',

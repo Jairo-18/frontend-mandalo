@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, View } from 'react-native';
 import {
   SafeAreaView,
@@ -43,11 +43,23 @@ export default function ClientOrdersScreen() {
     ),
   );
 
-  // Al volver a la pantalla (p. ej. tras crear/cancelar) recarga la 1ª página.
+  // Al VOLVER a la pantalla (p. ej. tras crear/cancelar) recarga la 1ª página.
+  // El primer focus se salta: usePaginatedList ya hizo la carga inicial al
+  // montar (sin esto salían 2 peticiones idénticas al abrir). El ref evita el
+  // closure viejo: sin él, el refresh usaría el fetcher del primer render
+  // (filtro "Todos") aunque el usuario tenga otro filtro activo.
+  const firstFocusRef = useRef(true);
+  const refreshRef = useRef(() => {});
+  useEffect(() => {
+    refreshRef.current = () => list.fetchPage(1, 'refresh');
+  });
   useFocusEffect(
     useCallback(() => {
-      list.fetchPage(1, 'refresh');
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      if (firstFocusRef.current) {
+        firstFocusRef.current = false;
+        return;
+      }
+      refreshRef.current();
     }, []),
   );
 

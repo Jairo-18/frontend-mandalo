@@ -2,7 +2,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
 
 import { AuthHeader } from '@/components/auth/auth-header';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
@@ -420,21 +426,26 @@ export default function RegisterForm() {
             />
           </View>
 
-          <View className="my-[18px] flex-row items-center gap-3">
-            <View className="h-px flex-1 bg-gray-200" />
-            <Text className="text-[13px] text-muted">o</Text>
-            <View className="h-px flex-1 bg-gray-200" />
-          </View>
+          {/* El sign-in de Google es nativo — en la versión web no existe. */}
+          {Platform.OS !== 'web' && (
+            <>
+              <View className="my-[18px] flex-row items-center gap-3">
+                <View className="h-px flex-1 bg-gray-200" />
+                <Text className="text-[13px] text-muted">o</Text>
+                <View className="h-px flex-1 bg-gray-200" />
+              </View>
 
-          <GoogleButton
-            label={
-              isDelivery
-                ? 'Registrarme con Google'
-                : 'Continuar con Google'
-            }
-            onPress={handleGoogle}
-            loading={googleLoading}
-          />
+              <GoogleButton
+                label={
+                  isDelivery
+                    ? 'Registrarme con Google'
+                    : 'Continuar con Google'
+                }
+                onPress={handleGoogle}
+                loading={googleLoading}
+              />
+            </>
+          )}
 
           <View className="mt-5 flex-row justify-center">
             <Text className="text-sm text-muted">¿Ya tienes cuenta? </Text>

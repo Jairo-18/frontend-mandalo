@@ -84,7 +84,12 @@ export function DeliveryOrders() {
 
   /** Tomar un pedido disponible directo desde la tarjeta. */
   async function take(id: number) {
-    await ordersService.take(id);
+    try {
+      await ordersService.take(id);
+    } catch {
+      // Otro repartidor lo tomó primero (el interceptor ya mostró el error);
+      // igual se refresca para que el pedido salga de "Disponibles".
+    }
     refreshAll();
   }
 

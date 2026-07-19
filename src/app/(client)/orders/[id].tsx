@@ -109,7 +109,11 @@ export default function ClientOrderDetailScreen() {
               />
             }
           >
-            <OrderDetailView order={order} perspective="client" />
+            <OrderDetailView
+              order={order}
+              perspective="client"
+              onPaymentProofChanged={() => load('refresh')}
+            />
           </ScrollView>
 
           {canCancel && (

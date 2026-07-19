@@ -203,9 +203,9 @@ export default function CompleteRegistrationScreen() {
 
   async function handleExit() {
     setLeaving(true);
+    // Navega al login por dentro, con el overlay "Cerrando sesión…".
     await signOutEverywhere();
     setLeaving(false);
-    router.replace('/auth/login');
   }
 
   return (

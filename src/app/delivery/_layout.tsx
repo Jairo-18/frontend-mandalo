@@ -47,6 +47,7 @@ export default function DeliveryLayout() {
         }}
       >
         <Drawer.Screen name="index" options={{ title: 'Pedidos' }} />
+        <Drawer.Screen name="chats" options={{ title: 'Mis chats' }} />
         <Drawer.Screen name="profile" options={{ title: 'Mi perfil' }} />
         {/* Ruta propia, sin item en el sidebar: se llega desde Mi perfil. */}
         <Drawer.Screen

@@ -97,7 +97,7 @@ export function OrderMap({ order, perspective }: Props) {
         // tiles de Google en iOS: llenar ios.config.googleMapsApiKey y poner
         // PROVIDER_GOOGLE también acá.
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-        style={{ height: 240, width: '100%' }}
+        style={{ height: 320, width: '100%' }}
         initialRegion={regionFor(points)}
         showsUserLocation={perspective === 'delivery'}
         showsMyLocationButton={perspective === 'delivery'}

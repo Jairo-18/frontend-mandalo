@@ -111,9 +111,10 @@ export function AdminDrawerContent({ navigation }: Props) {
 
   async function handleLogout() {
     setSigningOut(true);
+    // Navega al login por dentro, con el overlay "Cerrando sesión…" tapando
+    // el flash de las pantallas vaciándose.
     await signOutEverywhere();
     setSigningOut(false);
-    router.replace('/auth/login');
   }
 
   return (

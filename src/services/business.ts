@@ -54,14 +54,24 @@ export const businessService = {
     }),
 
   /** Sube el logo del negocio propio (uri local del PhotoEditor). */
-  uploadMyLogo: (uri: string) => {
+  uploadMyLogo: async (uri: string) => {
     const form = new FormData();
-    form.append('file', filePart(uri), 'logo.jpg');
+    form.append('file', await filePart(uri), 'logo.jpg');
     return http<{ data: { logoUrl: string } }>('/organizational/mine/logo', {
       method: 'POST',
       body: form,
       auth: true,
     });
+  },
+
+  /** Sube/reemplaza el QR de Bancolombia del negocio propio. */
+  uploadMyPaymentQr: async (uri: string) => {
+    const form = new FormData();
+    form.append('file', await filePart(uri), 'payment-qr.jpg');
+    return http<{ data: { bancolombiaQrUrl: string } }>(
+      '/organizational/mine/payment-qr',
+      { method: 'POST', body: form, auth: true },
+    );
   },
 
   products: {
@@ -111,9 +121,9 @@ export const businessService = {
       }),
 
     /** Agrega una foto (uri local cuadrada que devuelve el PhotoEditor). */
-    uploadImage: (id: number, uri: string) => {
+    uploadImage: async (id: number, uri: string) => {
       const form = new FormData();
-      form.append('file', filePart(uri), 'product.jpg');
+      form.append('file', await filePart(uri), 'product.jpg');
       return http<{ data: { imageUrl: string; images: string[] } }>(
         `/product/${id}/image`,
         { method: 'POST', body: form, auth: true },

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,6 +39,7 @@ const ALL_TYPES = 0;
  */
 export function BusinessCrudScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { identificationTypes } = useAppData();
 
   const [searchField, setSearchField] = useState<BusinessSearchField>('search');
@@ -133,6 +135,19 @@ export function BusinessCrudScreen() {
             )}
           </View>
 
+          {/* Facturación: cuánto vendió y cuánto le debe a la plataforma. */}
+          <Pressable
+            onPress={() =>
+              router.navigate({
+                pathname: '/admin/billing',
+                params: { orgId: String(item.id), name: displayName },
+              })
+            }
+            hitSlop={8}
+            className="h-9 w-9 items-center justify-center rounded-full bg-primary-tint active:opacity-70"
+          >
+            <Ionicons name="cash-outline" size={17} color="#FF5A3C" />
+          </Pressable>
           <Pressable
             onPress={() => openEdit(item)}
             hitSlop={8}

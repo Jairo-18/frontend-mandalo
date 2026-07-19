@@ -1,13 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  Modal,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
 
 import { OrderEta } from '@/components/orders/order-eta';
 import { OrderMap } from '@/components/orders/order-map';
 import { OrderTimeline } from '@/components/orders/order-timeline';
 import { Avatar } from '@/components/ui/avatar';
+import { pickPhoto } from '@/lib/pick-photo';
 import { formatPrice } from '@/lib/price';
 import { businessDisplayName } from '@/services/explore';
-import { Order } from '@/services/orders';
+import { Order, ordersService } from '@/services/orders';
 
 type Perspective = 'client' | 'business' | 'delivery';
 
@@ -15,6 +25,8 @@ type Props = {
   order: Order;
   /** Quién mira: define qué contactos se muestran. */
   perspective: Perspective;
+  /** El cliente subió/cambió el soporte de pago (para recargar el pedido). */
+  onPaymentProofChanged?: () => void;
 };
 
 /**
@@ -22,10 +34,47 @@ type Props = {
  * de progreso, contactos relevantes, dirección, artículos, pago y totales.
  * Los botones de acción los pone cada pantalla como barra inferior.
  */
-export function OrderDetailView({ order, perspective }: Props) {
+export function OrderDetailView({
+  order,
+  perspective,
+  onPaymentProofChanged,
+}: Props) {
+  const router = useRouter();
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [proofViewerOpen, setProofViewerOpen] = useState(false);
+
   const businessName = order.organizational
     ? businessDisplayName(order.organizational)
     : 'Negocio';
+
+  // Soporte de pago: solo aplica a métodos distintos a efectivo. El cliente
+  // dueño puede subirlo/cambiarlo mientras el pedido no esté cancelado; el
+  // repartidor no lo necesita (el cobro es asunto cliente ↔ negocio).
+  const paidInCash = order.paidType?.code === 'EFEC';
+  const canAttachProof =
+    perspective === 'client' &&
+    !paidInCash &&
+    order.stateType?.code !== 'CANC';
+  const showProofSection =
+    perspective !== 'delivery' && (!!order.paymentProofUrl || canAttachProof);
+
+  function attachProof() {
+    pickPhoto('Soporte de pago', async (uri) => {
+      setUploadingProof(true);
+      try {
+        await ordersService.uploadPaymentProof(order.id, uri);
+        onPaymentProofChanged?.();
+      } catch {
+        // El interceptor HTTP ya mostró el error.
+      } finally {
+        setUploadingProof(false);
+      }
+    });
+  }
+
+  // Chat cliente ↔ repartidor: existe desde que hay repartidor asignado
+  // (queda de solo lectura al finalizar; la pantalla del chat lo maneja).
+  const chatAvailable = perspective !== 'business' && !!order.deliveryUser;
 
   return (
     <View className="p-5">
@@ -96,6 +145,21 @@ export function OrderDetailView({ order, perspective }: Props) {
         />
       )}
 
+      {/* Chat con la contraparte (cliente ↔ repartidor) */}
+      {chatAvailable && (
+        <Pressable
+          onPress={() => router.push(`/chat/${order.id}`)}
+          className="mb-3 h-12 flex-row items-center justify-center gap-2 rounded-2xl bg-dark active:opacity-80"
+        >
+          <Ionicons name="chatbubbles-outline" size={18} color="#FFFFFF" />
+          <Text className="text-[15px] font-bold text-white">
+            {perspective === 'client'
+              ? 'Chatear con el repartidor'
+              : 'Chatear con el cliente'}
+          </Text>
+        </Pressable>
+      )}
+
       {/* Dirección de entrega */}
       <Text className="mb-2 mt-1 text-sm font-bold text-gray-700">
         Dirección de entrega
@@ -155,7 +219,89 @@ export function OrderDetailView({ order, perspective }: Props) {
             <Text className="flex-1 text-[13px] text-dark">{order.notes}</Text>
           </View>
         )}
+
+        {/* Soporte de pago (transferencia/Nequi/Daviplata): el cliente lo
+            sube, el negocio lo revisa. Toca la imagen para verla completa. */}
+        {showProofSection && (
+          <View className="mt-3 border-t border-gray-200 pt-3">
+            <Text className="mb-2 text-[12px] font-bold uppercase tracking-wide text-muted">
+              Soporte de pago
+            </Text>
+
+            {order.paymentProofUrl ? (
+              <Pressable
+                onPress={() => setProofViewerOpen(true)}
+                className="h-44 overflow-hidden rounded-xl border border-gray-200 bg-white active:opacity-80"
+              >
+                <Image
+                  source={{ uri: order.paymentProofUrl }}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+                <View className="absolute bottom-2 right-2 flex-row items-center gap-1 rounded-full bg-dark/70 px-2.5 py-1">
+                  <Ionicons name="expand-outline" size={12} color="#FFFFFF" />
+                  <Text className="text-[11px] font-bold text-white">Ver</Text>
+                </View>
+              </Pressable>
+            ) : (
+              <Text className="text-[13px] text-muted">
+                {perspective === 'client'
+                  ? 'Aún no has subido el comprobante del pago.'
+                  : 'El cliente aún no sube el comprobante del pago.'}
+              </Text>
+            )}
+
+            {canAttachProof && (
+              <Pressable
+                onPress={attachProof}
+                disabled={uploadingProof}
+                className={`mt-2.5 h-11 flex-row items-center justify-center gap-2 rounded-xl border border-primary active:opacity-70 ${
+                  uploadingProof ? 'opacity-60' : ''
+                }`}
+              >
+                {uploadingProof ? (
+                  <ActivityIndicator size="small" color="#FF5A3C" />
+                ) : (
+                  <>
+                    <Ionicons name="receipt-outline" size={16} color="#FF5A3C" />
+                    <Text className="text-[14px] font-bold text-primary">
+                      {order.paymentProofUrl
+                        ? 'Cambiar soporte de pago'
+                        : 'Subir soporte de pago'}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            )}
+          </View>
+        )}
       </View>
+
+      {/* Visor a pantalla completa del soporte de pago */}
+      <Modal
+        visible={proofViewerOpen}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setProofViewerOpen(false)}
+        statusBarTranslucent
+      >
+        <View className="flex-1 items-center justify-center bg-black/90">
+          {!!order.paymentProofUrl && (
+            <Image
+              source={{ uri: order.paymentProofUrl }}
+              style={{ width: '100%', height: '80%' }}
+              resizeMode="contain"
+            />
+          )}
+          <Pressable
+            onPress={() => setProofViewerOpen(false)}
+            hitSlop={12}
+            className="absolute right-5 top-14 h-10 w-10 items-center justify-center rounded-full bg-white/20 active:opacity-70"
+          >
+            <Ionicons name="close" size={24} color="#FFFFFF" />
+          </Pressable>
+        </View>
+      </Modal>
 
       {/* Totales */}
       <View className="rounded-2xl bg-white p-4">

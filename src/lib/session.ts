@@ -1,4 +1,8 @@
-import * as SecureStore from 'expo-secure-store';
+import {
+  deviceStoreDelete,
+  deviceStoreGet,
+  deviceStoreSet,
+} from '@/lib/device-store';
 
 const KEY = 'mandalo.session';
 
@@ -65,17 +69,14 @@ export function subscribeSession(listener: () => void): () => void {
 export async function setSession(s: Session): Promise<void> {
   current = s;
   emitChange();
-  try {
-    await SecureStore.setItemAsync(KEY, JSON.stringify(s));
-  } catch {
-    // ignore (p. ej. web)
-  }
+  // Nativo: SecureStore · web: localStorage (ver device-store.ts).
+  await deviceStoreSet(KEY, JSON.stringify(s));
 }
 
 export async function loadSession(): Promise<Session | null> {
   if (current) return current;
   try {
-    const raw = await SecureStore.getItemAsync(KEY);
+    const raw = await deviceStoreGet(KEY);
     current = raw ? (JSON.parse(raw) as Session) : null;
   } catch {
     current = null;
@@ -92,9 +93,5 @@ export function getSession(): Session | null {
 export async function clearSession(): Promise<void> {
   current = null;
   emitChange();
-  try {
-    await SecureStore.deleteItemAsync(KEY);
-  } catch {
-    // ignore
-  }
+  await deviceStoreDelete(KEY);
 }

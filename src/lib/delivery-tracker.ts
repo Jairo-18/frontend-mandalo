@@ -1,8 +1,16 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { emitDeliveryPosition } from '@/lib/orders-socket';
+
+/**
+ * En web no hay tareas en background (expo-task-manager es nativo): el
+ * tracking cae al watcher de primer plano, que en el navegador usa la
+ * geolocalización estándar y funciona mientras la pestaña esté abierta.
+ */
+const BACKGROUND_SUPPORTED = Platform.OS !== 'web';
 
 /**
  * Tracking del repartidor con pedidos EN RUTA: transmite su GPS por el socket
@@ -26,24 +34,27 @@ let activeInvoiceIds: number[] = [];
 
 // La tarea debe definirse al cargar el módulo (antes de que el SO la dispare)
 // — este archivo se importa en el layout raíz.
-TaskManager.defineTask(TASK_NAME, ({ data, error }): Promise<void> => {
-  if (!error && data) {
-    const { locations } = data as { locations: Location.LocationObject[] };
-    const last = locations[locations.length - 1];
-    if (last) {
-      for (const id of activeInvoiceIds) {
-        emitDeliveryPosition(id, {
-          latitude: last.coords.latitude,
-          longitude: last.coords.longitude,
-        });
+if (BACKGROUND_SUPPORTED) {
+  TaskManager.defineTask(TASK_NAME, ({ data, error }): Promise<void> => {
+    if (!error && data) {
+      const { locations } = data as { locations: Location.LocationObject[] };
+      const last = locations[locations.length - 1];
+      if (last) {
+        for (const id of activeInvoiceIds) {
+          emitDeliveryPosition(id, {
+            latitude: last.coords.latitude,
+            longitude: last.coords.longitude,
+          });
+        }
       }
     }
-  }
-  return Promise.resolve();
-});
+    return Promise.resolve();
+  });
+}
 
 /** Arranca el tracking con foreground service; false si faltan permisos. */
 async function startBackgroundTracking(): Promise<boolean> {
+  if (!BACKGROUND_SUPPORTED) return false;
   try {
     const foreground = await Location.requestForegroundPermissionsAsync();
     if (!foreground.granted) return false;
@@ -78,6 +89,7 @@ async function startBackgroundTracking(): Promise<boolean> {
 /** Detiene el servicio si está corriendo (fin de las entregas o logout). */
 export async function stopDeliveryTracking(): Promise<void> {
   activeInvoiceIds = [];
+  if (!BACKGROUND_SUPPORTED) return;
   try {
     if (await Location.hasStartedLocationUpdatesAsync(TASK_NAME)) {
       await Location.stopLocationUpdatesAsync(TASK_NAME);

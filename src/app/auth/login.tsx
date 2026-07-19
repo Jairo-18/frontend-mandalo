@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 import { AuthHeader } from '@/components/auth/auth-header';
 import { GoogleButton } from '@/components/auth/google-button';
@@ -206,13 +206,18 @@ export default function LoginScreen() {
             loading={loading}
           />
 
-          <View className="my-[18px] flex-row items-center gap-3">
-            <View className="h-px flex-1 bg-gray-200" />
-            <Text className="text-[13px] text-muted">o</Text>
-            <View className="h-px flex-1 bg-gray-200" />
-          </View>
+          {/* El sign-in de Google es nativo — en la versión web no existe. */}
+          {Platform.OS !== 'web' && (
+            <>
+              <View className="my-[18px] flex-row items-center gap-3">
+                <View className="h-px flex-1 bg-gray-200" />
+                <Text className="text-[13px] text-muted">o</Text>
+                <View className="h-px flex-1 bg-gray-200" />
+              </View>
 
-          <GoogleButton onPress={handleGoogle} loading={googleLoading} />
+              <GoogleButton onPress={handleGoogle} loading={googleLoading} />
+            </>
+          )}
 
           <View className="mt-[14px]">
             <Button

@@ -6,10 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
 import { useSession } from '@/hooks/use-session';
+import { useUnreadChats } from '@/hooks/use-unread-chats';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { signOutEverywhere } from '@/lib/sign-out';
 
-type DeliveryRoute = '/delivery' | '/delivery/profile';
+type DeliveryRoute = '/delivery' | '/delivery/chats' | '/delivery/profile';
 
 type Item = {
   label: string;
@@ -20,6 +21,7 @@ type Item = {
 /** Secciones del panel del repartidor. */
 const ITEMS: Item[] = [
   { label: 'Pedidos', icon: 'bicycle-outline', href: '/delivery' },
+  { label: 'Mis chats', icon: 'chatbubbles-outline', href: '/delivery/chats' },
   { label: 'Mi perfil', icon: 'person-outline', href: '/delivery/profile' },
 ];
 
@@ -42,6 +44,9 @@ export function DeliveryDrawerContent({ navigation }: Props) {
   // React Compiler (regla de NOTAS §23).
   const user = useSession()?.user;
 
+  // Mensajes de chat sin leer (burbuja del item "Mis chats", en vivo).
+  const unreadChats = useUnreadChats();
+
   function go(href: DeliveryRoute) {
     navigation.closeDrawer();
     if (pathname !== href) router.navigate(href);
@@ -49,9 +54,9 @@ export function DeliveryDrawerContent({ navigation }: Props) {
 
   async function handleLogout() {
     setSigningOut(true);
+    // Navega al login por dentro, con el overlay "Cerrando sesión…".
     await signOutEverywhere();
     setSigningOut(false);
-    router.replace('/auth/login');
   }
 
   return (
@@ -88,6 +93,7 @@ export function DeliveryDrawerContent({ navigation }: Props) {
       <View className="flex-1 px-3 pt-4">
         {ITEMS.map((item) => {
           const active = pathname === item.href;
+          const badge = item.href === '/delivery/chats' ? unreadChats : 0;
           return (
             <Pressable
               key={item.href}
@@ -108,6 +114,13 @@ export function DeliveryDrawerContent({ navigation }: Props) {
               >
                 {item.label}
               </Text>
+              {badge > 0 && (
+                <View className="ml-auto min-w-[22px] items-center rounded-full bg-primary px-1.5 py-0.5">
+                  <Text className="text-xs font-extrabold text-white">
+                    {badge > 99 ? '99+' : badge}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           );
         })}

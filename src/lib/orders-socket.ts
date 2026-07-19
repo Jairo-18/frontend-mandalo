@@ -79,6 +79,36 @@ export function useDeliveryPosition(
   }, [handler]);
 }
 
+/** Mensaje de chat en vivo (relay del gateway a las salas de ambos). */
+export type ChatSocketEvent = {
+  invoiceId: number;
+  message: {
+    id: number;
+    senderUserId: string;
+    body: string;
+    createdAt: string;
+  };
+};
+
+/**
+ * Mensajes de chat en vivo. El payload trae el invoiceId — filtra el caller
+ * (la pantalla del chat filtra su hilo; la lista de chats refresca todo).
+ * El handler debe venir memoizado.
+ */
+export function useChatMessages(
+  handler: (event: ChatSocketEvent) => void,
+): void {
+  useEffect(() => {
+    const s = getOrdersSocket();
+    if (!s) return;
+    const cb = (payload: ChatSocketEvent) => handler(payload);
+    s.on('chat:message', cb);
+    return () => {
+      s.off('chat:message', cb);
+    };
+  }, [handler]);
+}
+
 /**
  * Suscribe un handler a los eventos de pedido en vivo. El handler debe venir
  * memoizado (useCallback). Es tolerante: si no hay sesión/socket, no hace

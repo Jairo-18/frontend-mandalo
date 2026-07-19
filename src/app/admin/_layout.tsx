@@ -53,6 +53,9 @@ export default function AdminLayout() {
         <Drawer.Screen name="dashboard" options={{ title: 'Inicio' }} />
         <Drawer.Screen name="orders" options={{ title: 'Pedidos' }} />
         <Drawer.Screen name="businesses" options={{ title: 'Negocios' }} />
+        {/* Facturación por negocio: no está en el sidebar — se entra desde
+            el botón de la tarjeta en Negocios. */}
+        <Drawer.Screen name="billing" options={{ title: 'Facturación' }} />
         <Drawer.Screen name="users" options={{ title: 'Usuarios' }} />
         <Drawer.Screen name="deliveries" options={{ title: 'Repartidores' }} />
         <Drawer.Screen name="tags" options={{ title: 'Etiquetas' }} />

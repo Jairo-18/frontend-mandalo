@@ -17,16 +17,22 @@ import { useSession } from '@/hooks/use-session';
  * en silencio y la app sigue normal (sin push). Ver tarea en NOTAS.
  */
 
-// La notificación también se muestra con la app ABIERTA (banner discreto).
-Notifications.setNotificationHandler({
-  handleNotification: () =>
-    Promise.resolve({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-});
+// En web no hay push (expo-notifications no soporta el navegador): los
+// eventos en vivo llegan igual por el socket con la pestaña abierta.
+const PUSH_SUPPORTED = Platform.OS !== 'web';
+
+// La notificación también se muestra con la app ABIERTA (banner + sonido).
+if (PUSH_SUPPORTED) {
+  Notifications.setNotificationHandler({
+    handleNotification: () =>
+      Promise.resolve({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+  });
+}
 
 /** Último token registrado en el backend (para retirarlo en el logout). */
 let registeredToken: string | null = null;
@@ -38,10 +44,14 @@ let handledResponseId: string | null = null;
 
 async function ensurePermissionsAndChannel(): Promise<boolean> {
   if (Platform.OS === 'android') {
-    // Canal que usa el backend (channelId: 'orders').
+    // Canal que usa el backend (channelId: 'orders-v2').
     // Sin `sound`: usa el sonido de notificación del sistema ('default' acá
     // significaría un archivo custom del build y expo-notifications se queja).
-    await Notifications.setNotificationChannelAsync('orders', {
+    // ⚠️ Es 'orders-v2' porque el canal 'orders' se llegó a crear MUDO en los
+    // teléfonos que instalaron el build con `sound: 'default'` — los canales
+    // de Android son inmutables (ni borrarlos sirve: resucitan con la config
+    // vieja), así que la única salida es estrenar id de canal.
+    await Notifications.setNotificationChannelAsync('orders-v2', {
       name: 'Pedidos',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
@@ -62,6 +72,7 @@ async function ensurePermissionsAndChannel(): Promise<boolean> {
  * Firebase configurado, emulador sin Play Services, permiso negado…).
  */
 export async function registerPushToken(): Promise<void> {
+  if (!PUSH_SUPPORTED) return;
   if (registering || registeredToken) return;
   registering = true;
   try {
@@ -69,8 +80,7 @@ export async function registerPushToken(): Promise<void> {
     if (!granted) return;
 
     const projectId = Constants.expoConfig?.extra?.eas?.projectId as
-      | string
-      | undefined;
+      string | undefined;
     const { data: token } = await Notifications.getExpoPushTokenAsync(
       projectId ? { projectId } : undefined,
     );
@@ -86,7 +96,10 @@ export async function registerPushToken(): Promise<void> {
     registeredToken = token;
   } catch (error) {
     if (__DEV__) {
-      console.log('[push] registro fallido (¿Firebase sin configurar?):', error);
+      console.log(
+        '[push] registro fallido (¿Firebase sin configurar?):',
+        error,
+      );
     }
   } finally {
     registering = false;
@@ -120,12 +133,17 @@ function navigateFromNotification(
   handledResponseId = id;
 
   const data = response.notification.request.content.data as
-    | { type?: string; invoiceId?: number }
-    | undefined;
-  if (data?.type !== 'order' || !data.invoiceId) return;
+    { type?: string; invoiceId?: number } | undefined;
+  if (!data?.invoiceId) return;
 
   const role = getSession()?.user.role?.code;
   try {
+    if (data.type === 'chat') {
+      // Mensaje de chat: directo al hilo del pedido.
+      router.push(`/chat/${data.invoiceId}`);
+      return;
+    }
+    if (data.type !== 'order') return;
     if (role === 'NEGO') router.push('/business/orders');
     else if (role === 'DELI') router.push('/delivery');
     else if (role === 'ADMIN') router.push('/admin/orders');
@@ -146,7 +164,7 @@ export function usePushNotifications(): void {
   const loggedIn = !!session;
 
   useEffect(() => {
-    if (!loggedIn) return;
+    if (!loggedIn || !PUSH_SUPPORTED) return;
     void registerPushToken();
 
     // App abierta desde la notificación (cold start).

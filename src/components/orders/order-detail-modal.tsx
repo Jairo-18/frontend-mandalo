@@ -70,16 +70,17 @@ export function OrderDetailModal({
     }
   }, [orderId, load]);
 
-  // En vivo: si cambia ESTE pedido, recarga y avisa al listado.
+  // En vivo: si cambia ESTE pedido, recarga el detalle. NO se llama
+  // `onChanged` aquí: las pantallas que reciben eventos de socket (negocio,
+  // repartidor) ya refrescan su listado con su propia suscripción — avisarles
+  // también desde acá duplicaba la petición del listado por cada evento.
+  // `onChanged` queda para las acciones explícitas (reloadAndNotify).
   useOrderEvents(
     useCallback(
       (payload) => {
-        if (payload.id === orderId) {
-          load();
-          onChanged?.();
-        }
+        if (payload.id === orderId) load();
       },
-      [orderId, load, onChanged],
+      [orderId, load],
     ),
   );
 

@@ -31,6 +31,12 @@ export type AdminBusiness = {
   /** Días que abre (números 0–6, 0=domingo) separados por coma; null = todos. */
   openDays: string | null;
   temporarilyClosed: boolean;
+  /** Datos de pago (los ve el cliente en el checkout si no paga en efectivo). */
+  paymentHolderName: string | null;
+  nequiNumber: string | null;
+  nequiKey: string | null;
+  bancolombiaAccount: string | null;
+  bancolombiaQrUrl: string | null;
   identificationType: CatalogRef | null;
   municipality: CatalogRef | null;
   department: CatalogRef | null;
@@ -69,6 +75,11 @@ export type AdminBusinessPayload = {
   /** Días que abre (0–6, 0=domingo) separados por coma; null = todos. */
   openDays?: string | null;
   temporarilyClosed?: boolean;
+  /** Datos de pago (`null` limpia el campo). El QR va por upload aparte. */
+  paymentHolderName?: string | null;
+  nequiNumber?: string | null;
+  nequiKey?: string | null;
+  bancolombiaAccount?: string | null;
 };
 
 /** Campo por el que busca el admin ('search' = nombre comercial/razón/NIT). */
@@ -127,13 +138,23 @@ export const adminBusinessesService = {
     }),
 
   /** Sube el logo del negocio (uri local cuadrada que devuelve el PhotoEditor). */
-  uploadLogo: (id: number, uri: string) => {
+  uploadLogo: async (id: number, uri: string) => {
     const form = new FormData();
-    form.append('file', filePart(uri), 'logo.jpg');
+    form.append('file', await filePart(uri), 'logo.jpg');
     return http<{ data: { logoUrl: string } }>(`/organizational/${id}/logo`, {
       method: 'POST',
       body: form,
       auth: true,
     });
+  },
+
+  /** Sube/reemplaza el QR de Bancolombia del negocio. */
+  uploadPaymentQr: async (id: number, uri: string) => {
+    const form = new FormData();
+    form.append('file', await filePart(uri), 'payment-qr.jpg');
+    return http<{ data: { bancolombiaQrUrl: string } }>(
+      `/organizational/${id}/payment-qr`,
+      { method: 'POST', body: form, auth: true },
+    );
   },
 };

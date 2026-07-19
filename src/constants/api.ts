@@ -10,7 +10,12 @@ import { Platform } from 'react-native';
  *   (Android emulador ve el localhost del PC como 10.0.2.2).
  * - `EXPO_PUBLIC_PROD_API_URL` → a qué API pegan los builds (APK/AAB).
  *   OJO: EAS no lee `.env.local`, así que en la nube aplica este default.
- * - `EXPO_PUBLIC_API_URL`      → override total (pisa a las dos anteriores).
+ * - `EXPO_PUBLIC_API_URL`      → override total, SOLO en desarrollo.
+ *
+ * ⚠️ REGLA DE ORO: los builds (APK/AAB, `__DEV__ === false`) apuntan a PROD
+ * SÍ O SÍ. El override `EXPO_PUBLIC_API_URL` se IGNORA al compilar release —
+ * existió un APK roto porque la variable quedó viva en la terminal de una
+ * prueba (`10.0.2.2:3000`) y se horneó en el bundle. Nunca más.
  *
  * Las `EXPO_PUBLIC_*` se inyectan al bundlear: tras cambiar `.env.local`,
  * reiniciar Metro con `npx expo start -c`.
@@ -24,7 +29,9 @@ const PROD_API_URL =
   'https://apimandaloprod.ecohotelsamawe.com';
 
 const RAW_API_URL = (
-  process.env.EXPO_PUBLIC_API_URL ?? (__DEV__ ? DEV_API_URL : PROD_API_URL)
+  __DEV__
+    ? (process.env.EXPO_PUBLIC_API_URL ?? DEV_API_URL)
+    : PROD_API_URL
 ).replace(/\/+$/, '');
 
 /**

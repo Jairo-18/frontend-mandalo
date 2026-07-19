@@ -150,9 +150,9 @@ export const adminUsersService = {
     }),
 
   /** Sube la foto de perfil (uri local cuadrada que devuelve el PhotoEditor). */
-  uploadAvatar: (id: string, uri: string) => {
+  uploadAvatar: async (id: string, uri: string) => {
     const form = new FormData();
-    form.append('file', filePart(uri), 'avatar.jpg');
+    form.append('file', await filePart(uri), 'avatar.jpg');
     return http<{ data: { avatarUrl: string } }>(`/user/${id}/avatar`, {
       method: 'POST',
       body: form,

@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { OwnerField } from '@/components/admin/owner-field';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChipMultiSelect } from '@/components/ui/chip-multi-select';
+import { DocumentPhotoField } from '@/components/ui/document-photo-field';
 import { FormModal } from '@/components/ui/form-modal';
 import { PhotoField } from '@/components/ui/photo-field';
 import { Select } from '@/components/ui/select';
@@ -19,6 +20,8 @@ import {
   formatHour12,
   formatText,
   normalizePhone,
+  PHONE_PREFIX,
+  phoneOrNull,
 } from '@/lib/text-format';
 import {
   AdminBusiness,
@@ -123,6 +126,13 @@ export function BusinessFormModal({
   const [temporarilyClosed, setTemporarilyClosed] = useState(false);
   // Logo recortado por el PhotoEditor pendiente de subir (se sube al guardar).
   const [pendingLogo, setPendingLogo] = useState<string | null>(null);
+  // Datos de pago (el cliente los ve en el checkout si no paga en efectivo).
+  const [paymentHolderName, setPaymentHolderName] = useState('');
+  const [nequiNumber, setNequiNumber] = useState('');
+  const [nequiKey, setNequiKey] = useState('');
+  const [bancolombiaAccount, setBancolombiaAccount] = useState('');
+  // QR de Bancolombia pendiente de subir (se sube al guardar, como el logo).
+  const [pendingQr, setPendingQr] = useState<string | null>(null);
 
   // Etiquetas disponibles para los chips.
   const [allTags, setAllTags] = useState<CatalogItem[]>([]);
@@ -148,7 +158,9 @@ export function BusinessFormModal({
         : undefined,
     );
     setDescription(editing?.description ?? '');
-    setPhone(formatText('phone', editing?.phone ?? ''));
+    // Al crear nace con el indicativo "+57 - " (borrable, como el registro);
+    // al editar muestra el guardado ya formateado.
+    setPhone(editing ? formatText('phone', editing.phone ?? '') : PHONE_PREFIX);
     setAddress(editing?.address ?? '');
     setMapsUrl('');
     setCoords(
@@ -166,6 +178,11 @@ export function BusinessFormModal({
     setCloseTime(editing?.closeTime ?? '');
     setOpenDaysSel(parseOpenDays(editing?.openDays));
     setTemporarilyClosed(editing?.temporarilyClosed ?? false);
+    setPaymentHolderName(editing?.paymentHolderName ?? '');
+    setNequiNumber(editing?.nequiNumber ?? '');
+    setNequiKey(editing?.nequiKey ?? '');
+    setBancolombiaAccount(editing?.bancolombiaAccount ?? '');
+    setPendingQr(null);
 
     muni.preload(
       editing?.department ? Number(editing.department.id) : undefined,
@@ -268,7 +285,12 @@ export function BusinessFormModal({
     openTime !== (editing?.openTime ?? '') ||
     closeTime !== (editing?.closeTime ?? '') ||
     daysToPayload(openDaysSel) !== daysToPayload(parseOpenDays(editing?.openDays)) ||
-    temporarilyClosed !== (editing?.temporarilyClosed ?? false);
+    temporarilyClosed !== (editing?.temporarilyClosed ?? false) ||
+    !!pendingQr ||
+    paymentHolderName !== (editing?.paymentHolderName ?? '') ||
+    nequiNumber !== (editing?.nequiNumber ?? '') ||
+    nequiKey !== (editing?.nequiKey ?? '') ||
+    bancolombiaAccount !== (editing?.bancolombiaAccount ?? '');
 
   function validateForm() {
     return validate({
@@ -286,6 +308,17 @@ export function BusinessFormModal({
       schedule:
         (openTime && !closeTime) || (!openTime && closeTime)
           ? 'Define la hora de apertura Y la de cierre (o deja ambas sin definir).'
+          : undefined,
+      // Un dato de pago sin titular no le sirve al cliente (¿a nombre de
+      // quién transfiere?).
+      paymentHolderName:
+        (nequiNumber.trim() ||
+          nequiKey.trim() ||
+          bancolombiaAccount.trim() ||
+          pendingQr ||
+          editing?.bancolombiaQrUrl) &&
+        !paymentHolderName.trim()
+          ? 'Ingresa el nombre del titular de los pagos.'
           : undefined,
       ...(wantsAccount && {
         accountEmail: !accountEmail.trim()
@@ -316,7 +349,8 @@ export function BusinessFormModal({
       tradeName: tradeName.trim() || null,
       identificationNumber: identificationNumber.trim() || null,
       description: description.trim() || null,
-      phone: normalizePhone(phone) || null,
+      // Solo el prefijo (sin número real) cuenta como vacío.
+      phone: phoneOrNull(phone),
       address: address.trim() || null,
       ...(coords && {
         latitude: coords.latitude,
@@ -338,6 +372,10 @@ export function BusinessFormModal({
       closeTime: closeTime || null,
       openDays: daysToPayload(openDaysSel),
       temporarilyClosed,
+      paymentHolderName: paymentHolderName.trim() || null,
+      nequiNumber: nequiNumber.trim() || null,
+      nequiKey: nequiKey.trim() || null,
+      bancolombiaAccount: bancolombiaAccount.trim() || null,
     };
 
     try {
@@ -346,6 +384,7 @@ export function BusinessFormModal({
         // Panel del negocio: el backend resuelve el id desde el JWT.
         await businessService.updateMine(payload);
         if (pendingLogo) await businessService.uploadMyLogo(pendingLogo);
+        if (pendingQr) await businessService.uploadMyPaymentQr(pendingQr);
         onSaved();
         return;
       }
@@ -357,9 +396,12 @@ export function BusinessFormModal({
         const created = await adminBusinessesService.create(payload);
         businessId = Number(created.data.rowId);
       }
-      // El logo se sube después de guardar (al crear recién existe el id).
+      // El logo y el QR se suben después de guardar (al crear recién existe el id).
       if (pendingLogo && businessId) {
         await adminBusinessesService.uploadLogo(businessId, pendingLogo);
+      }
+      if (pendingQr && businessId) {
+        await adminBusinessesService.uploadPaymentQr(businessId, pendingQr);
       }
       onSaved();
     } catch {
@@ -605,6 +647,64 @@ export function BusinessFormModal({
           )}
         </>
       )}
+
+      {/* Datos de pago: cuando el cliente elige un método distinto a efectivo,
+          el checkout le muestra ESTOS datos para transferir y subir el
+          soporte. Solo se ofrecen los métodos diligenciados. */}
+      <Text className="mb-1 text-sm font-bold text-gray-700">
+        Datos de pago (transferencias)
+      </Text>
+      <Text className="mb-3 text-xs text-muted">
+        El cliente ve estos datos al pagar por Nequi o Bancolombia. Llena solo
+        los que el negocio tenga; si no llenas ninguno, los clientes solo
+        podrán pagar en efectivo.
+      </Text>
+      <TextField
+        label="Titular (a nombre de quién transfieren)"
+        icon="person-outline"
+        format="name"
+        value={paymentHolderName}
+        onChangeText={bind('paymentHolderName', setPaymentHolderName)}
+        error={errors.paymentHolderName}
+        placeholder="Juan Pérez"
+      />
+      <TextField
+        label="Número de Nequi"
+        icon="phone-portrait-outline"
+        format="digits"
+        value={nequiNumber}
+        onChangeText={bind('nequiNumber', setNequiNumber)}
+        error={errors.nequiNumber}
+        placeholder="3001234567"
+      />
+      <TextField
+        label="Llave de Nequi"
+        icon="key-outline"
+        value={nequiKey}
+        onChangeText={bind('nequiKey', setNequiKey)}
+        error={errors.nequiKey}
+        placeholder="@elsabor"
+        autoCapitalize="none"
+      />
+      <TextField
+        label="Cuenta Bancolombia"
+        icon="business-outline"
+        format="nit"
+        value={bancolombiaAccount}
+        onChangeText={bind('bancolombiaAccount', setBancolombiaAccount)}
+        error={errors.bancolombiaAccount}
+        placeholder="123-456789-01"
+      />
+      <DocumentPhotoField
+        label={
+          pendingQr
+            ? 'QR de Bancolombia listo (se sube al guardar)'
+            : 'QR de Bancolombia'
+        }
+        uri={pendingQr ?? editing?.bancolombiaQrUrl}
+        onChange={setPendingQr}
+        placeholderIcon="qr-code-outline"
+      />
 
       {/* Horario de atención: fuera de él, el cliente ve el negocio "Cerrado"
           y el backend rechaza los pedidos. Sin horas = siempre abierto. */}

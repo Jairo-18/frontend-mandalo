@@ -1,0 +1,16 @@
+# Contexto del build web (Dockerfile.web) — Dokploy construye desde git,
+# pero esto protege también los builds locales.
+node_modules
+android
+ios
+dist
+.expo
+.git
+.eas
+
+# Secretos/overrides locales: la key va por build-arg, nunca en la imagen.
+.env*
+
+# Artefactos que no pinta empaquetar
+*.apk
+*.aab

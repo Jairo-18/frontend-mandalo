@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = {
@@ -12,26 +12,28 @@ type Props = {
  * Contenedor scrolleable que:
  * - respeta el área segura inferior (barra de gestos / navegación del teléfono),
  * - sube el contenido al abrir el teclado para que se vea el campo enfocado.
+ *
+ * Usa react-native-keyboard-controller: con el edge-to-edge de Android el
+ * `adjustResize` nativo no funciona y el KeyboardAvoidingView de RN no se
+ * entera del teclado (tampoco dentro de <Modal statusBarTranslucent>).
  */
 export function KeyboardAwareScroll({ children, extraBottom = 24 }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingBottom: insets.bottom + extraBottom,
+      }}
+      // Espacio entre el campo enfocado y el borde del teclado.
+      bottomOffset={24}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      showsVerticalScrollIndicator={false}
     >
-      <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingBottom: insets.bottom + extraBottom,
-        }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {children}
+    </KeyboardAwareScrollView>
   );
 }

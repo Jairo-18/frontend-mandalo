@@ -87,9 +87,9 @@ export function BusinessDrawerContent({ navigation }: Props) {
 
   async function handleLogout() {
     setSigningOut(true);
+    // Navega al login por dentro, con el overlay "Cerrando sesión…".
     await signOutEverywhere();
     setSigningOut(false);
-    router.replace('/auth/login');
   }
 
   return (

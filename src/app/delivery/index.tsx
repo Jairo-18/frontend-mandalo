@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
@@ -22,7 +21,6 @@ import { authService } from '@/services/auth';
  * admin si la hay; al activarla, las pestañas Disponibles / Mis entregas.
  */
 export default function DeliveryScreen() {
-  const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
   const [checking, setChecking] = useState(false);
 
@@ -56,9 +54,9 @@ export default function DeliveryScreen() {
 
   async function handleLogout() {
     setSigningOut(true);
+    // Navega al login por dentro, con el overlay "Cerrando sesión…".
     await signOutEverywhere();
     setSigningOut(false);
-    router.replace('/auth/login');
   }
 
   // Cuenta activa: panel de pedidos (disponibles + mis entregas).

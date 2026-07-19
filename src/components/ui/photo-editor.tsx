@@ -266,12 +266,12 @@ export function PhotoEditor({
             </Text>
           </View>
 
-          {/* Acciones */}
-          <View className="flex-row items-center justify-between gap-3 px-5">
+          {/* Acciones: rotar centrado arriba, "Usar foto" a todo el ancho */}
+          <View className="gap-3 px-5">
             <Pressable
               onPress={rotate}
               disabled={rotating || saving}
-              className="h-[52px] w-[52px] items-center justify-center rounded-full bg-white/10 active:opacity-70"
+              className="h-[52px] w-[52px] items-center justify-center self-center rounded-full bg-white/10 active:opacity-70"
             >
               <Ionicons name="refresh-outline" size={24} color="#FFFFFF" />
             </Pressable>
@@ -279,7 +279,7 @@ export function PhotoEditor({
             <Pressable
               onPress={confirm}
               disabled={rotating || saving}
-              className="h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-[26px] bg-primary active:opacity-80"
+              className="h-[52px] w-full flex-row items-center justify-center gap-2 rounded-[26px] bg-primary active:opacity-80"
             >
               {saving ? (
                 <ActivityIndicator color="#FFFFFF" />

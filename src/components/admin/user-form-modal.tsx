@@ -16,7 +16,13 @@ import {
   getDeviceLocation,
   samePlaceName,
 } from '@/lib/location';
-import { EMAIL_RE, formatText, normalizePhone } from '@/lib/text-format';
+import {
+  EMAIL_RE,
+  formatText,
+  normalizePhone,
+  PHONE_PREFIX,
+  phoneOrNull,
+} from '@/lib/text-format';
 import {
   AdminUser,
   AdminUserPayload,
@@ -93,7 +99,9 @@ export function UserFormModal({
     setFullName(editing?.fullName ?? '');
     setUsername(editing?.username ?? '');
     setEmail(editing?.email ?? '');
-    setPhone(formatText('phone', editing?.phone ?? ''));
+    // Al crear nace con el indicativo "+57 - " (borrable, como el registro);
+    // al editar muestra el guardado ya formateado.
+    setPhone(editing ? formatText('phone', editing.phone ?? '') : PHONE_PREFIX);
     setAddress(editing?.address ?? '');
     setIdentificationNumber(editing?.identificationNumber ?? '');
     setIdentificationTypeId(
@@ -230,7 +238,8 @@ export function UserFormModal({
       fullName: fullName.trim(),
       email: email.trim(),
       username: username.trim() || null,
-      phone: normalizePhone(phone) || null,
+      // Solo el prefijo (sin número real) cuenta como vacío.
+      phone: phoneOrNull(phone),
       address: address.trim() || null,
       // Coordenadas: solo del GPS del propio perfil (para otro usuario el
       // admin no está en la casa de esa persona).

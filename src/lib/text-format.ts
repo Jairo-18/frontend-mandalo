@@ -122,6 +122,16 @@ export function copToNumber(value: string): number {
 }
 
 /**
+ * Teléfono para el payload: normalizado si trae un número real (≥10 dígitos,
+ * mismo umbral del registro), null si quedó vacío o solo el prefijo "+57 - "
+ * prellenado. Evita guardar "+57" como teléfono.
+ */
+export function phoneOrNull(value: string): string | null {
+  const normalized = normalizePhone(value);
+  return normalized.replace(/\D/g, '').length >= 10 ? normalized : null;
+}
+
+/**
  * "HH:MM" (24 h, como se guarda en la DB) → "h:MM a. m./p. m." para mostrar.
  * "00:00" → "12:00 a. m." · "13:30" → "1:30 p. m.". Si no parsea, devuelve
  * el valor tal cual (no revienta con datos raros).

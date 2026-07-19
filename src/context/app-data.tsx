@@ -149,14 +149,32 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     // `cached` y `load` son estables: esto corre una sola vez al montar.
   }, [cached, load]);
 
+  // Deduplica peticiones concurrentes del mismo departamento (dos selects
+  // precargando a la vez harían 2 requests idénticos).
+  const municipalitiesInFlight = useRef<Record<number, Promise<Municipality[]>>>(
+    {},
+  );
+
   const getMunicipalities = useCallback(
     async (departmentId: number) => {
       const cachedMuns = municipalitiesCache.current[departmentId];
       if (cachedMuns) return cachedMuns;
-      const muns = await catalogService.getMunicipalities(departmentId);
-      municipalitiesCache.current[departmentId] = muns;
-      persist();
-      return muns;
+
+      const inFlight = municipalitiesInFlight.current[departmentId];
+      if (inFlight) return inFlight;
+
+      const promise = catalogService
+        .getMunicipalities(departmentId)
+        .then((muns) => {
+          municipalitiesCache.current[departmentId] = muns;
+          persist();
+          return muns;
+        })
+        .finally(() => {
+          delete municipalitiesInFlight.current[departmentId];
+        });
+      municipalitiesInFlight.current[departmentId] = promise;
+      return promise;
     },
     [persist],
   );

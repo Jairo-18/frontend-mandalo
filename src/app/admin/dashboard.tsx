@@ -53,29 +53,35 @@ export default function AdminDashboardScreen() {
   const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     if (mode === 'refresh') setRefreshing(true);
     const page = { page: 1, perPage: 1 } as const;
-    const [users, businesses, deliveries, pendingDeliveries, pendingOrders, activeOrders] =
-      await Promise.all([
-        countOf(adminUsersService.paginated({ ...page, roleTypeCodes: ['USER'] })),
-        countOf(adminBusinessesService.paginated(page)),
-        countOf(adminUsersService.paginated({ ...page, roleTypeCodes: ['DELI'] })),
-        countOf(
-          adminUsersService.paginated({
-            ...page,
-            roleTypeCodes: ['DELI'],
-            isActive: false,
-          }),
-        ),
-        countOf(ordersService.paginated({ ...page, stateCodes: ['PEND'] })),
-        countOf(
-          ordersService.paginated({
-            ...page,
-            stateCodes: ['PEND', 'ACEP', 'PREP', 'RUTA'],
-          }),
-        ),
-      ]);
-    setStats({ users, businesses, deliveries, pendingDeliveries, pendingOrders, activeOrders });
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const [users, businesses, deliveries, pendingDeliveries, pendingOrders, activeOrders] =
+        await Promise.all([
+          countOf(adminUsersService.paginated({ ...page, roleTypeCodes: ['USER'] })),
+          countOf(adminBusinessesService.paginated(page)),
+          countOf(adminUsersService.paginated({ ...page, roleTypeCodes: ['DELI'] })),
+          countOf(
+            adminUsersService.paginated({
+              ...page,
+              roleTypeCodes: ['DELI'],
+              isActive: false,
+            }),
+          ),
+          countOf(ordersService.paginated({ ...page, stateCodes: ['PEND'] })),
+          countOf(
+            ordersService.paginated({
+              ...page,
+              stateCodes: ['PEND', 'ACEP', 'PREP', 'RUTA'],
+            }),
+          ),
+        ]);
+      setStats({ users, businesses, deliveries, pendingDeliveries, pendingOrders, activeOrders });
+    } catch {
+      // El interceptor HTTP ya mostró el error; sin esto el spinner quedaba
+      // infinito cuando alguna de las peticiones fallaba.
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
   useEffect(() => {

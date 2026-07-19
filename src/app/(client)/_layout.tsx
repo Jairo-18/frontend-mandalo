@@ -54,6 +54,7 @@ export default function ClientLayout() {
       >
         <Drawer.Screen name="home" options={{ title: 'Explorar' }} />
         <Drawer.Screen name="orders" options={{ title: 'Mis pedidos' }} />
+        <Drawer.Screen name="chats" options={{ title: 'Mis chats' }} />
         <Drawer.Screen name="addresses" options={{ title: 'Mis direcciones' }} />
         <Drawer.Screen name="profile" options={{ title: 'Mi perfil' }} />
         {/* Ruta propia, sin item en el sidebar: se llega desde Mi perfil. */}

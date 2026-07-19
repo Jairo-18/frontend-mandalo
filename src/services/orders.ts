@@ -1,5 +1,6 @@
 import { http } from '@/lib/http';
 import { OrderStateCode } from '@/lib/order-status';
+import { filePart } from '@/lib/upload';
 import { Paginated } from '@/services/admin-users';
 
 /** Referencia de catálogo mínima (stateType / paidType). */
@@ -34,6 +35,8 @@ export type Order = {
   total: number;
   notes: string | null;
   cancellationReason: string | null;
+  /** Soporte del pago (foto/pantallazo) cuando el método no es efectivo. */
+  paymentProofUrl: string | null;
   createdAt: string | null;
   // Cuándo ocurrió cada transición (null si aún no pasa por ahí).
   acceptedAt: string | null;
@@ -88,6 +91,11 @@ type ListParams = {
    * ordena por distancia al negocio.
    */
   near?: { latitude: number; longitude: number } | null;
+  /** Solo ADMIN: pedidos de un negocio puntual (facturación). */
+  organizationalId?: number;
+  /** Solo ADMIN: entregados desde/hasta (YYYY-MM-DD, fecha local, inclusive). */
+  deliveredFrom?: string;
+  deliveredTo?: string;
 };
 
 function listQuery(params: ListParams): string {
@@ -104,6 +112,11 @@ function listQuery(params: ListParams): string {
     query.set('lat', String(params.near.latitude));
     query.set('lng', String(params.near.longitude));
   }
+  if (params.organizationalId) {
+    query.set('organizationalId', String(params.organizationalId));
+  }
+  if (params.deliveredFrom) query.set('deliveredFrom', params.deliveredFrom);
+  if (params.deliveredTo) query.set('deliveredTo', params.deliveredTo);
   return query.toString();
 }
 
@@ -152,6 +165,19 @@ export const ordersService = {
 
   get: (id: number) =>
     http<{ data: Order }>(`/invoice/${id}`, { auth: true }),
+
+  /**
+   * Sube/reemplaza el soporte de pago (solo el cliente dueño, métodos
+   * distintos a efectivo). El backend avisa al negocio (socket + push).
+   */
+  uploadPaymentProof: async (id: number, uri: string) => {
+    const form = new FormData();
+    form.append('file', await filePart(uri), 'payment-proof.jpg');
+    return http<{ data: { paymentProofUrl: string } }>(
+      `/invoice/${id}/payment-proof`,
+      { method: 'POST', body: form, auth: true, toastSuccess: true },
+    );
+  },
 
   /** El repartidor toma un pedido disponible. */
   take: (id: number) =>

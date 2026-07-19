@@ -2,7 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/google-button';
@@ -470,7 +476,9 @@ export function ProfileScreen({ menu, changePasswordHref }: Props) {
                   </Text>
                 </Pressable>
               </View>
-            ) : (
+            ) : Platform.OS !== 'web' ? (
+              // Vincular usa el sign-in NATIVO de Google → solo en la app.
+              // (Desvincular sí queda en web: es una llamada normal al API.)
               <View className="mb-4">
                 <GoogleButton
                   label="Vincular con Google"
@@ -478,7 +486,7 @@ export function ProfileScreen({ menu, changePasswordHref }: Props) {
                   loading={linkingGoogle}
                 />
               </View>
-            )}
+            ) : null}
 
             {/* Cambiar contraseña: pantalla propia */}
             <Pressable

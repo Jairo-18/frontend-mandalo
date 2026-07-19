@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 type Props = {
   visible: boolean;
@@ -59,63 +60,71 @@ export function VerificationCodeDialog({
       onRequestClose={working ? undefined : onCancel}
       statusBarTranslucent
     >
-      <Pressable
-        className="flex-1 items-center justify-center bg-black/50 px-8"
-        onPress={working ? undefined : onCancel}
-      >
-        <Pressable className="w-full rounded-3xl bg-white p-6" onPress={() => {}}>
-          <View className="mb-4 h-14 w-14 items-center justify-center self-center rounded-full bg-primary-tint">
-            <Ionicons name="keypad-outline" size={26} color="#FF5A3C" />
-          </View>
+      {/* Sube la tarjeta cuando el teclado numérico la taparía. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        <Pressable
+          className="flex-1 items-center justify-center bg-black/50 px-8"
+          onPress={working ? undefined : onCancel}
+        >
+          <Pressable
+            className="w-full rounded-3xl bg-white p-6"
+            onPress={() => {}}
+          >
+            <View className="mb-4 h-14 w-14 items-center justify-center self-center rounded-full bg-primary-tint">
+              <Ionicons name="keypad-outline" size={26} color="#FF5A3C" />
+            </View>
 
-          <Text className="text-center text-lg font-extrabold text-dark">
-            {title}
-          </Text>
-          <Text className="mt-2 text-center text-sm leading-5 text-muted">
-            {message}
-          </Text>
+            <Text className="text-center text-lg font-extrabold text-dark">
+              {title}
+            </Text>
+            <Text className="mt-2 text-center text-sm leading-5 text-muted">
+              {message}
+            </Text>
 
-          <TextInput
-            value={code}
-            onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 4))}
-            keyboardType="number-pad"
-            maxLength={4}
-            autoFocus
-            placeholder="••••"
-            placeholderTextColor="#9CA3AF"
-            className="mt-4 self-center rounded-2xl border border-gray-200 bg-surface px-6 py-3 text-center text-2xl font-extrabold tracking-[12px] text-dark"
-          />
+            <TextInput
+              value={code}
+              onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 4))}
+              keyboardType="number-pad"
+              maxLength={4}
+              autoFocus
+              placeholder="••••"
+              placeholderTextColor="#9CA3AF"
+              className="mt-4 self-center rounded-2xl border border-gray-200 bg-surface px-6 py-3 text-center text-2xl font-extrabold tracking-[12px] text-dark"
+            />
 
-          <View className="mt-5 flex-row gap-3">
-            <Pressable
-              onPress={onCancel}
-              disabled={working}
-              className="h-12 flex-1 items-center justify-center rounded-2xl border border-gray-200 active:opacity-70"
-            >
-              <Text className="text-[15px] font-bold text-dark">Cancelar</Text>
-            </Pressable>
-            <Pressable
-              onPress={confirm}
-              disabled={working || !ready}
-              className={`h-12 flex-1 items-center justify-center rounded-2xl active:opacity-80 ${
-                ready ? 'bg-primary' : 'bg-gray-200'
-              }`}
-            >
-              {working ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text
-                  className={`text-[15px] font-bold ${
-                    ready ? 'text-white' : 'text-muted'
-                  }`}
-                >
-                  Confirmar
+            <View className="mt-5 flex-row gap-3">
+              <Pressable
+                onPress={onCancel}
+                disabled={working}
+                className="h-12 flex-1 items-center justify-center rounded-2xl border border-gray-200 active:opacity-70"
+              >
+                <Text className="text-[15px] font-bold text-dark">
+                  Cancelar
                 </Text>
-              )}
-            </Pressable>
-          </View>
+              </Pressable>
+              <Pressable
+                onPress={confirm}
+                disabled={working || !ready}
+                className={`h-12 flex-1 items-center justify-center rounded-2xl active:opacity-80 ${
+                  ready ? 'bg-primary' : 'bg-gray-200'
+                }`}
+              >
+                {working ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text
+                    className={`text-[15px] font-bold ${
+                      ready ? 'text-white' : 'text-muted'
+                    }`}
+                  >
+                    Confirmar
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
