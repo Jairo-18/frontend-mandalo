@@ -39,4 +39,11 @@ FROM nginx:alpine AS production
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.web.conf /etc/nginx/conf.d/default.conf
 
+# Runtime env: al arrancar, escribe /env.js con las env del CONTENEDOR y lo
+# inyecta en el index.html (window.__MANDALO_ENV__, prioridad sobre lo
+# horneado). Los build args de arriba quedan como fallback, pero la vía
+# recomendada en Dokploy son las env normales + restart.
+COPY docker-entrypoint.web.sh /docker-entrypoint.d/40-mandalo-env.sh
+RUN chmod +x /docker-entrypoint.d/40-mandalo-env.sh
+
 EXPOSE 80

@@ -22,11 +22,38 @@ import { Platform } from 'react-native';
  */
 const DEV_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
 
+/**
+ * Env RUNTIME de la versión web: el contenedor nginx (Dockerfile.web) escribe
+ * `/env.js` al arrancar con las env del contenedor (`window.__MANDALO_ENV__`)
+ * y lo inyecta en el index.html ANTES del bundle. Prioridad sobre lo horneado:
+ * cambiar API/key en Dokploy solo pide restart, no rebuild. En nativo (y en
+ * prerender sin window) queda vacío y todo sigue saliendo de process.env.
+ */
+type RuntimeEnv = Partial<
+  Record<
+    | 'EXPO_PUBLIC_PROD_API_URL'
+    | 'EXPO_PUBLIC_CLIENT_API_KEY'
+    | 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
+    string
+  >
+>;
+
+const RUNTIME_ENV: RuntimeEnv =
+  Platform.OS === 'web' && typeof window !== 'undefined'
+    ? ((window as { __MANDALO_ENV__?: RuntimeEnv }).__MANDALO_ENV__ ?? {})
+    : {};
+
+/** Primer valor no vacío (el env.js escribe "" cuando la env no está seteada). */
+const pick = (...values: (string | undefined)[]) =>
+  values.find((v) => v != null && v !== '') ?? '';
+
 const DEV_API_URL =
   process.env.EXPO_PUBLIC_DEV_API_URL ?? `http://${DEV_HOST}:3000`;
-const PROD_API_URL =
-  process.env.EXPO_PUBLIC_PROD_API_URL ??
-  'https://apimandaloprod.ecohotelsamawe.com';
+const PROD_API_URL = pick(
+  RUNTIME_ENV.EXPO_PUBLIC_PROD_API_URL,
+  process.env.EXPO_PUBLIC_PROD_API_URL,
+  'https://apimandaloprod.ecohotelsamawe.com',
+);
 
 const RAW_API_URL = (
   __DEV__
@@ -54,7 +81,10 @@ export function apiUrl(path: string): string {
  * en los endpoints NO públicos. Se define en `.env.local`
  * (`EXPO_PUBLIC_CLIENT_API_KEY`) y debe coincidir con `APP_CLIENT_API_KEY`.
  */
-export const CLIENT_API_KEY = process.env.EXPO_PUBLIC_CLIENT_API_KEY ?? '';
+export const CLIENT_API_KEY = pick(
+  RUNTIME_ENV.EXPO_PUBLIC_CLIENT_API_KEY,
+  process.env.EXPO_PUBLIC_CLIENT_API_KEY,
+);
 
 /**
  * Client ID "Web application" de Google Cloud Console (el MISMO que usa el
@@ -62,5 +92,7 @@ export const CLIENT_API_KEY = process.env.EXPO_PUBLIC_CLIENT_API_KEY ?? '';
  * (`EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`). Sin él, el botón de Google avisa que
  * la función no está configurada.
  */
-export const GOOGLE_WEB_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+export const GOOGLE_WEB_CLIENT_ID = pick(
+  RUNTIME_ENV.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+);
