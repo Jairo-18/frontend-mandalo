@@ -1,5 +1,5 @@
 import { http } from '@/lib/http';
-import { filePart } from '@/lib/upload';
+import { appendDocument, DocumentValue, filePart } from '@/lib/upload';
 
 export type Tokens = { accessToken: string; refreshToken: string };
 export type AuthRole = { id: string; code: string; name: string };
@@ -16,11 +16,19 @@ export type AuthUser = {
   observations?: string | null;
 };
 
-/** Fotos de verificación obligatorias del registro de repartidor (uris locales). */
+/**
+ * Fotos/documentos de verificación obligatorios del registro de repartidor.
+ * `soat`/`technicalInspection` pueden ser foto o PDF (certificado de una sola
+ * página); el resto son siempre fotos (rostro, cédula, licencia).
+ */
 export type DeliveryPhotos = {
   avatar: string;
   idFront: string;
   idBack: string;
+  licenseFront: string;
+  licenseBack: string;
+  soat: DocumentValue;
+  technicalInspection: DocumentValue;
 };
 
 export type RegisterPayload = {
@@ -32,10 +40,14 @@ export type RegisterPayload = {
   departmentId?: number;
   municipalityId?: number;
   address?: string;
+  /** Referencia específica (apto/torre/portón) — solo cliente. */
+  details?: string;
   latitude?: number;
   longitude?: number;
   identificationNumber?: string;
   identificationTypeId?: number;
+  vehiclePlate?: string;
+  acceptedTerms: boolean;
 };
 
 /** Capa de acceso al API de autenticación / registro. */
@@ -57,9 +69,9 @@ export const authService = {
     }),
 
   /**
-   * Registro de repartidor: multipart con los datos + las 3 fotos de
-   * verificación (rostro y documento por ambos lados). La cuenta nace
-   * inactiva hasta que un admin revise los documentos.
+   * Registro de repartidor: multipart con los datos + los documentos de
+   * verificación (rostro, cédula, licencia, SOAT y tecnomecánica). La cuenta
+   * nace inactiva hasta que un admin revise los documentos.
    */
   registerDelivery: async (payload: RegisterPayload, photos: DeliveryPhotos) => {
     const form = new FormData();
@@ -69,6 +81,18 @@ export const authService = {
     form.append('avatar', await filePart(photos.avatar), 'avatar.jpg');
     form.append('idFront', await filePart(photos.idFront), 'id-front.jpg');
     form.append('idBack', await filePart(photos.idBack), 'id-back.jpg');
+    form.append(
+      'licenseFront',
+      await filePart(photos.licenseFront),
+      'license-front.jpg',
+    );
+    form.append(
+      'licenseBack',
+      await filePart(photos.licenseBack),
+      'license-back.jpg',
+    );
+    await appendDocument(form, 'soat', photos.soat);
+    await appendDocument(form, 'technicalInspection', photos.technicalInspection);
 
     return http<{ data: { rowId: string } }>('/user/register/delivery', {
       method: 'POST',

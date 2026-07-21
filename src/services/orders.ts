@@ -126,11 +126,28 @@ function listQuery(params: ListParams): string {
  * los que toma. Los mensajes salen del backend (toast del interceptor).
  */
 export const ordersService = {
-  /** Tarifa fija del domicilio (para mostrarla en el checkout). */
-  deliveryFee: () =>
-    http<{ data: { deliveryFee: number } }>('/invoice/delivery-fee', {
-      auth: true,
-    }),
+  /**
+   * Tarifa del domicilio EN VIVO por distancia (checkout): negocio +
+   * coordenadas de la dirección elegida. Sin coordenadas cae a la tarifa fija
+   * de respaldo (el backend decide) y `distanceKm` sale `null`.
+   */
+  deliveryFee: (params: {
+    organizationalId: number;
+    latitude?: number;
+    longitude?: number;
+  }) => {
+    const query = new URLSearchParams({
+      organizationalId: String(params.organizationalId),
+    });
+    if (params.latitude != null) query.set('latitude', String(params.latitude));
+    if (params.longitude != null) {
+      query.set('longitude', String(params.longitude));
+    }
+    return http<{ data: { deliveryFee: number; distanceKm: number | null } }>(
+      `/invoice/delivery-fee?${query.toString()}`,
+      { auth: true },
+    );
+  },
 
   create: (payload: CreateOrderPayload) =>
     http<{ data: { rowId: string } }>('/invoice/create', {

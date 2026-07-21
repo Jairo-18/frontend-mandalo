@@ -134,7 +134,7 @@ export default function AdminDashboardScreen() {
         />
         <StatCard
           icon="bicycle-outline"
-          label="Repartidores por activar"
+          label="Domiciliarios por activar"
           value={stats.pendingDeliveries}
           highlight={(stats.pendingDeliveries ?? 0) > 0}
           onPress={() => router.navigate('/admin/deliveries')}
@@ -159,7 +159,7 @@ export default function AdminDashboardScreen() {
         />
         <StatCard
           icon="bicycle-outline"
-          label="Repartidores"
+          label="Domiciliarios"
           value={stats.deliveries}
           onPress={() => router.navigate('/admin/deliveries')}
         />

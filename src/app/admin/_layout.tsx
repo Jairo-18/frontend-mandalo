@@ -57,7 +57,13 @@ export default function AdminLayout() {
             el botón de la tarjeta en Negocios. */}
         <Drawer.Screen name="billing" options={{ title: 'Facturación' }} />
         <Drawer.Screen name="users" options={{ title: 'Usuarios' }} />
-        <Drawer.Screen name="deliveries" options={{ title: 'Repartidores' }} />
+        <Drawer.Screen name="deliveries" options={{ title: 'Domiciliarios' }} />
+        {/* Pagos por repartidor: no está en el sidebar — se entra desde el
+            botón de la tarjeta en Domiciliarios (espejo de "billing"). */}
+        <Drawer.Screen
+          name="delivery-billing"
+          options={{ title: 'Pagos al domiciliario' }}
+        />
         <Drawer.Screen name="tags" options={{ title: 'Etiquetas' }} />
         <Drawer.Screen name="categories" options={{ title: 'Categorías' }} />
       </Drawer>

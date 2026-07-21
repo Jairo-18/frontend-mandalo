@@ -119,6 +119,9 @@ export function BusinessFormModal({
 
   const [tagIds, setTagIds] = useState<number[]>([]);
   const [isActive, setIsActive] = useState(true);
+  // Comisión sobre lo vendido: 5% el primer mes, 12% después (el admin la
+  // sube a mano cuando corresponda, sin lógica automática por fecha).
+  const [commissionOrderRate, setCommissionOrderRate] = useState(5);
   // Horario de atención (hora Colombia). Sin horas = siempre abierto.
   const [openTime, setOpenTime] = useState('');
   const [closeTime, setCloseTime] = useState('');
@@ -174,6 +177,7 @@ export function BusinessFormModal({
     setAccountConfirm('');
     setTagIds(editing?.tags?.map((t) => t.id) ?? []);
     setIsActive(editing?.isActive ?? true);
+    setCommissionOrderRate(editing?.commissionOrderRate ?? 5);
     setOpenTime(editing?.openTime ?? '');
     setCloseTime(editing?.closeTime ?? '');
     setOpenDaysSel(parseOpenDays(editing?.openDays));
@@ -282,6 +286,8 @@ export function BusinessFormModal({
     [...tagIds].sort((a, b) => a - b).join(',') !==
       (editing?.tags?.map((t) => t.id) ?? []).sort((a, b) => a - b).join(',') ||
     (!selfBusiness && isActive !== (editing?.isActive ?? true)) ||
+    (!selfBusiness &&
+      commissionOrderRate !== (editing?.commissionOrderRate ?? 5)) ||
     openTime !== (editing?.openTime ?? '') ||
     closeTime !== (editing?.closeTime ?? '') ||
     daysToPayload(openDaysSel) !== daysToPayload(parseOpenDays(editing?.openDays)) ||
@@ -367,7 +373,7 @@ export function BusinessFormModal({
           accountPassword,
         }),
       tagIds,
-      ...(selfBusiness ? {} : { isActive }),
+      ...(selfBusiness ? {} : { isActive, commissionOrderRate }),
       openTime: openTime || null,
       closeTime: closeTime || null,
       openDays: daysToPayload(openDaysSel),
@@ -774,6 +780,26 @@ export function BusinessFormModal({
       />
 
       {!selfBusiness && (
+        <View className="mb-4">
+          <Text className="mb-2 text-sm font-bold text-gray-700">
+            Comisión sobre lo vendido
+          </Text>
+          <View className="flex-row gap-2.5">
+            <CommissionChip
+              label="5% (primer mes)"
+              active={commissionOrderRate === 5}
+              onPress={() => setCommissionOrderRate(5)}
+            />
+            <CommissionChip
+              label="12% (regular)"
+              active={commissionOrderRate === 12}
+              onPress={() => setCommissionOrderRate(12)}
+            />
+          </View>
+        </View>
+      )}
+
+      {!selfBusiness && (
         <View className="mb-6 mt-1">
           <Checkbox
             checked={isActive}
@@ -783,5 +809,30 @@ export function BusinessFormModal({
         </View>
       )}
     </FormModal>
+  );
+}
+
+function CommissionChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`flex-1 items-center rounded-full border py-2.5 active:opacity-70 ${
+        active ? 'border-primary bg-primary-tint' : 'border-gray-200 bg-white'
+      }`}
+    >
+      <Text
+        className={`text-[13px] font-bold ${active ? 'text-primary' : 'text-muted'}`}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }

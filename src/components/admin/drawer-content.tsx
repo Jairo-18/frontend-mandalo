@@ -33,7 +33,7 @@ const ITEMS: Item[] = [
   { label: 'Pedidos', icon: 'receipt-outline', href: '/admin/orders' },
   { label: 'Negocios', icon: 'storefront-outline', href: '/admin/businesses' },
   { label: 'Usuarios', icon: 'people-outline', href: '/admin/users' },
-  { label: 'Repartidores', icon: 'bicycle-outline', href: '/admin/deliveries' },
+  { label: 'Domiciliarios', icon: 'bicycle-outline', href: '/admin/deliveries' },
   { label: 'Etiquetas', icon: 'pricetags-outline', href: '/admin/tags' },
   { label: 'Categorías', icon: 'grid-outline', href: '/admin/categories' },
 ];

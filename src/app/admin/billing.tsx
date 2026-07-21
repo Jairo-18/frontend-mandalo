@@ -1,228 +1,55 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Modal,
-  Pressable,
-  Text,
-  View,
-} from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SettlementPeriodCard } from '@/components/admin/settlement-period-card';
 import { OrderCard } from '@/components/orders/order-card';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
-import { Badge } from '@/components/ui/badge';
-import { FilterChips } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
+import { useSettlementDrillDown } from '@/hooks/use-settlement-drilldown';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { formatPrice } from '@/lib/price';
-import {
-  adminSettlementsService,
-  SettlementPeriod,
-  SettlementPeriodsResponse,
-  SettlementPeriodType,
-} from '@/services/admin-settlements';
+import { settlementPeriodLabel } from '@/lib/settlement-period-label';
+import { adminSettlementsService, SettlementPeriod } from '@/services/admin-settlements';
 import { Order, ordersService } from '@/services/orders';
 
-const PERIOD_OPTIONS: { value: SettlementPeriodType; label: string }[] = [
-  { value: 'week', label: 'Semana' },
-  { value: 'month', label: 'Mes' },
-  { value: 'year', label: 'Año' },
-];
-
-const MONTHS_SHORT = [
-  'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-  'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
-];
-const MONTHS_FULL = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-];
-
-/** "2026-07-13" → { y, m (1–12), d }. Sin new Date(str): evita líos de TZ. */
-function dateParts(iso: string) {
-  const [y, m, d] = iso.split('-').map(Number);
-  return { y, m, d };
-}
-
-/** Etiqueta humana del período: "7 – 13 jul 2026", "Julio 2026" o "2026". */
-function periodLabel(period: SettlementPeriod): string {
-  const start = dateParts(period.periodStart);
-  const end = dateParts(period.periodEnd);
-  switch (period.periodType) {
-    case 'week':
-      return start.m === end.m
-        ? `${start.d} – ${end.d} ${MONTHS_SHORT[end.m - 1]} ${end.y}`
-        : `${start.d} ${MONTHS_SHORT[start.m - 1]} – ${end.d} ${MONTHS_SHORT[end.m - 1]} ${end.y}`;
-    case 'month':
-      return `${MONTHS_FULL[start.m - 1]} ${start.y}`;
-    case 'year':
-      return String(start.y);
-  }
-}
-
-/** "13 jul 2026, 3:45 p. m." para la fecha en que se marcó el cobro. */
-function paidAtLabel(iso: string): string {
-  const date = new Date(iso);
-  const hours = date.getHours();
-  const h12 = hours % 12 || 12;
-  const min = String(date.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'p. m.' : 'a. m.';
-  return `${date.getDate()} ${MONTHS_SHORT[date.getMonth()]} ${date.getFullYear()}, ${h12}:${min} ${ampm}`;
-}
+const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
 
 /**
- * Facturación de UN negocio (rol ADMIN): cuánto vendió por semana/mes/año en
- * pedidos ENTREGADOS, cuánto le debe a la plataforma (% de ventas + % de
- * domicilios — toda la plata se trata con el negocio) y el check "Cobrado"
- * por período. Se llega desde el botón de la tarjeta en Negocios.
+ * Cobros de UN negocio (rol ADMIN, §42): año → mes → quincena. Solo la
+ * quincena se marca "cobrado" — mes y año son resúmenes. Se llega desde el
+ * botón de facturación de la tarjeta en Negocios.
  */
 export default function AdminBillingScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ orgId?: string; name?: string }>();
   const organizationalId = Number(params.orgId) || 0;
 
-  const [periodType, setPeriodType] = useState<SettlementPeriodType>('week');
-  const [data, setData] = useState<SettlementPeriodsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const fetcher = useCallback(
+    async (periodType: 'quincena' | 'month' | 'year') => {
+      const res = await adminSettlementsService.periods(organizationalId, periodType);
+      return res.data.periods;
+    },
+    [organizationalId],
+  );
+  const dd = useSettlementDrillDown<SettlementPeriod>(fetcher);
 
-  // Período cuyo check se está confirmando / cuyos pedidos se están viendo.
   const [toMark, setToMark] = useState<SettlementPeriod | null>(null);
   const [ordersOf, setOrdersOf] = useState<SettlementPeriod | null>(null);
 
-  const load = useCallback(
-    async (mode: 'initial' | 'refresh' = 'initial') => {
-      if (!organizationalId) return;
-      if (mode === 'initial') setLoading(true);
-      else setRefreshing(true);
-      try {
-        const res = await adminSettlementsService.periods(
-          organizationalId,
-          periodType,
-        );
-        setData(res.data);
-      } catch {
-        // El interceptor HTTP ya mostró el error.
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [organizationalId, periodType],
-  );
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
   async function handleMark() {
     if (!toMark) return;
-    try {
-      await adminSettlementsService.mark({
-        organizationalId,
-        periodType,
-        periodStart: toMark.periodStart,
-        isPaid: !toMark.settlement?.isPaid,
-      });
-      load();
-    } catch {
-      // El interceptor HTTP ya mostró el error.
-    } finally {
-      setToMark(null);
-    }
-  }
-
-  function renderPeriod({ item }: { item: SettlementPeriod }) {
-    const paid = item.settlement?.isPaid ?? false;
-    // Entraron entregas DESPUÉS de cobrar: lo vigente ya no es lo cobrado.
-    const outdated =
-      paid &&
-      item.settlement != null &&
-      item.commissionTotal !== item.settlement.commissionTotal;
-
-    return (
-      <Pressable
-        onPress={() => setOrdersOf(item)}
-        className="mb-3 rounded-2xl bg-white p-4 active:opacity-80"
-      >
-        <View className="flex-row items-center gap-2">
-          <Text className="flex-1 text-[15px] font-bold text-dark">
-            {periodLabel(item)}
-          </Text>
-          <Badge
-            label={paid ? 'Cobrado' : 'Por cobrar'}
-            tone={paid ? 'green' : 'amber'}
-          />
-        </View>
-
-        <Text className="mt-0.5 text-xs text-muted">
-          {item.ordersCount}{' '}
-          {item.ordersCount === 1 ? 'pedido entregado' : 'pedidos entregados'} ·
-          toca para verlos
-        </Text>
-
-        <View className="mt-3 gap-1">
-          <Row label="Ventas del negocio" value={formatPrice(item.salesTotal)} />
-          <Row label="Domicilios" value={formatPrice(item.deliveryTotal)} />
-          <Row
-            label={`Comisión ventas (${item.orderCommissionRate}%)`}
-            value={formatPrice(item.orderCommission)}
-          />
-          <Row
-            label={`Comisión domicilios (${item.deliveryCommissionRate}%)`}
-            value={formatPrice(item.deliveryCommission)}
-          />
-        </View>
-
-        <View className="mt-2 flex-row items-center justify-between border-t border-gray-100 pt-2">
-          <Text className="text-sm font-extrabold text-dark">Te debe</Text>
-          <Text className="text-base font-extrabold text-primary">
-            {formatPrice(item.commissionTotal)}
-          </Text>
-        </View>
-
-        {paid && item.settlement?.paidAt && (
-          <Text className="mt-1 text-xs text-muted">
-            Cobrado el {paidAtLabel(item.settlement.paidAt)}
-            {item.settlement.commissionTotal !== item.commissionTotal
-              ? ` (${formatPrice(item.settlement.commissionTotal)})`
-              : ''}
-          </Text>
-        )}
-        {outdated && (
-          <View className="mt-2 rounded-xl bg-amber-50 px-3 py-2">
-            <Text className="text-xs font-medium text-amber-600">
-              Entraron entregas después del cobro: lo vigente (
-              {formatPrice(item.commissionTotal)}) ya no coincide con lo
-              cobrado ({formatPrice(item.settlement!.commissionTotal)}).
-            </Text>
-          </View>
-        )}
-
-        {/* Check de control: ¿ya le cobraste este período al negocio? */}
-        <Pressable
-          onPress={() => setToMark(item)}
-          className={`mt-3 flex-row items-center justify-center gap-2 rounded-xl py-2.5 active:opacity-80 ${
-            paid ? 'bg-surface' : 'bg-primary'
-          }`}
-        >
-          <Ionicons
-            name={paid ? 'checkbox' : 'square-outline'}
-            size={18}
-            color={paid ? '#059669' : '#FFFFFF'}
-          />
-          <Text
-            className={`text-sm font-bold ${paid ? 'text-dark' : 'text-white'}`}
-          >
-            {paid ? 'Cobrado — tocar para deshacer' : 'Marcar como cobrado'}
-          </Text>
-        </Pressable>
-      </Pressable>
-    );
+    await adminSettlementsService.mark({
+      organizationalId,
+      periodStart: toMark.periodStart,
+      isPaid: !toMark.settlement?.isPaid,
+    });
+    setToMark(null);
+    dd.refresh();
   }
 
   if (!organizationalId) {
@@ -239,57 +66,111 @@ export default function AdminBillingScreen() {
 
   return (
     <View className="flex-1 bg-surface">
-      <View className="px-4 pb-1 pt-3">
-        {!!params.name && (
-          <View className="mb-2 flex-row items-center gap-2">
-            <Ionicons name="storefront-outline" size={16} color="#7A7A8A" />
-            <Text numberOfLines={1} className="flex-1 text-sm font-bold text-dark">
-              {params.name}
-            </Text>
-          </View>
-        )}
-        <FilterChips
-          options={PERIOD_OPTIONS}
-          value={periodType}
-          onChange={setPeriodType}
-        />
+      <View className="flex-row items-center gap-3 bg-white px-5 pb-3 pt-2">
+        <Pressable
+          onPress={() =>
+            // Es un Drawer.Screen hermano de "businesses" (no está en el
+            // sidebar): router.back() no es confiable entre pantallas del
+            // drawer (puede caer al Inicio) — se navega directo a la lista.
+            dd.level === 'year' ? router.navigate('/admin/businesses') : dd.goBack()
+          }
+          hitSlop={8}
+          className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
+        >
+          <Ionicons name="arrow-back" size={20} color="#1E1E2D" />
+        </Pressable>
+        <View className="flex-1">
+          <Text numberOfLines={1} className="text-base font-extrabold text-dark">
+            {params.name || 'Cobros del negocio'}
+          </Text>
+          <Text className="text-xs text-muted">
+            {dd.level === 'year'
+              ? 'Por año'
+              : dd.level === 'month'
+                ? `${dd.year} · por mes`
+                : `${dd.month} · quincenas`}
+          </Text>
+        </View>
       </View>
 
-      {loading ? (
+      {dd.loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#FF5A3C" />
         </View>
       ) : (
         <FlatList
-          data={data?.periods ?? []}
+          data={dd.items}
           keyExtractor={(item) => item.periodStart}
-          renderItem={renderPeriod}
-          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24 }}
-          refreshing={refreshing}
-          onRefresh={() => load('refresh')}
-          ListEmptyComponent={
-            <ListEmpty
-              icon="cash-outline"
-              message="Este negocio aún no tiene pedidos entregados."
+          renderItem={({ item }) => (
+            <SettlementPeriodCard
+              periodType={item.periodType}
+              periodStart={item.periodStart}
+              periodEnd={item.periodEnd}
+              ordersCount={item.ordersCount}
+              primaryLabel="Comisión"
+              primaryValue={formatPrice(item.commissionTotal)}
+              secondaryLabel="Vendió"
+              secondaryValue={formatPrice(item.salesTotal)}
+              isPaid={item.settlement?.isPaid}
+              paidLabel="Cobrado"
+              pendingLabel="Pendiente"
+              paidSubperiods={item.paidSubperiods}
+              totalSubperiods={item.totalSubperiods}
+              subperiodsLabel={dd.level === 'month' ? SUBPERIOD_LABEL.month : SUBPERIOD_LABEL.year}
+              onPress={() =>
+                item.periodType === 'quincena' ? setOrdersOf(item) : dd.drillInto(item.periodStart)
+              }
             />
+          )}
+          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24 }}
+          ListEmptyComponent={
+            <ListEmpty icon="cash-outline" message="Este negocio aún no tiene pedidos entregados." />
           }
         />
+      )}
+
+      {/* Solo en quincena: botón directo de marcar (además de tocar la tarjeta → ver pedidos). */}
+      {dd.level === 'quincena' && dd.items.length > 0 && (
+        <View
+          className="border-t border-gray-100 bg-white px-4 pb-2 pt-3"
+          style={{ paddingBottom: insets.bottom + 12 }}
+        >
+          {dd.items.map((item) => (
+            <Pressable
+              key={item.periodStart}
+              onPress={() => setToMark(item)}
+              className={`mb-2 flex-row items-center justify-center gap-2 rounded-xl py-2.5 active:opacity-80 ${
+                item.settlement?.isPaid ? 'bg-surface' : 'bg-primary'
+              }`}
+            >
+              <Ionicons
+                name={item.settlement?.isPaid ? 'checkbox' : 'square-outline'}
+                size={17}
+                color={item.settlement?.isPaid ? '#059669' : '#FFFFFF'}
+              />
+              <Text
+                className={`text-sm font-bold ${item.settlement?.isPaid ? 'text-dark' : 'text-white'}`}
+              >
+                {settlementPeriodLabel(item)} —{' '}
+                {item.settlement?.isPaid ? 'cobrado, tocar para deshacer' : 'marcar como cobrado'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       )}
 
       <YesNoDialog
         visible={!!toMark}
         destructive={toMark?.settlement?.isPaid ?? false}
         icon={toMark?.settlement?.isPaid ? 'close-circle-outline' : 'cash-outline'}
-        title={
-          toMark?.settlement?.isPaid ? '¿Deshacer el cobro?' : '¿Marcar como cobrado?'
-        }
+        title={toMark?.settlement?.isPaid ? '¿Deshacer el cobro?' : '¿Marcar como cobrado?'}
         message={
           toMark
             ? toMark.settlement?.isPaid
-              ? `El período ${periodLabel(toMark)} volverá a "Por cobrar".`
+              ? `La quincena ${settlementPeriodLabel(toMark)} volverá a "Pendiente".`
               : `Confirmas que el negocio ya te pagó ${formatPrice(
                   toMark.commissionTotal,
-                )} del período ${periodLabel(toMark)}.`
+                )} de la quincena ${settlementPeriodLabel(toMark)}.`
             : ''
         }
         confirmLabel={toMark?.settlement?.isPaid ? 'Deshacer' : 'Sí, cobrado'}
@@ -306,19 +187,7 @@ export default function AdminBillingScreen() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row items-center justify-between">
-      <Text className="text-sm text-muted">{label}</Text>
-      <Text className="text-sm font-semibold text-dark">{value}</Text>
-    </View>
-  );
-}
-
-/**
- * Pedidos ENTREGADOS de un período (modal): la evidencia de lo que se está
- * cobrando. Usa los filtros de admin de /invoice/paginated.
- */
+/** Pedidos ENTREGADOS de una quincena (evidencia de lo que se está cobrando). */
 function PeriodOrdersModal({
   organizationalId,
   period,
@@ -358,24 +227,15 @@ function PeriodOrdersModal({
   );
 
   return (
-    <Modal
-      visible={period != null}
-      animationType="slide"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
+    <Modal visible={period != null} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
         <View className="flex-row items-center gap-3 border-b border-gray-100 bg-white px-5 py-4">
           <Pressable onPress={onClose} hitSlop={10}>
             <Ionicons name="close" size={26} color="#1E1E2D" />
           </Pressable>
           <View className="flex-1">
-            <Text className="text-lg font-extrabold text-dark">
-              Pedidos entregados
-            </Text>
-            {period && (
-              <Text className="text-xs text-muted">{periodLabel(period)}</Text>
-            )}
+            <Text className="text-lg font-extrabold text-dark">Pedidos entregados</Text>
+            {period && <Text className="text-xs text-muted">{settlementPeriodLabel(period)}</Text>}
           </View>
         </View>
 
@@ -398,35 +258,19 @@ function PeriodOrdersModal({
           onEndReachedThreshold={0.4}
           ListFooterComponent={
             list.loadingMore ? (
-              <ActivityIndicator
-                size="small"
-                color="#FF5A3C"
-                style={{ paddingVertical: 12 }}
-              />
+              <ActivityIndicator size="small" color="#FF5A3C" style={{ paddingVertical: 12 }} />
             ) : null
           }
           ListEmptyComponent={
             list.loading ? (
-              <ActivityIndicator
-                size="large"
-                color="#FF5A3C"
-                style={{ paddingTop: 48 }}
-              />
+              <ActivityIndicator size="large" color="#FF5A3C" style={{ paddingTop: 48 }} />
             ) : (
-              <ListEmpty
-                icon="receipt-outline"
-                message="No hay pedidos entregados en este período."
-              />
+              <ListEmpty icon="receipt-outline" message="No hay pedidos entregados en esta quincena." />
             )
           }
         />
 
-        {/* Detalle solo lectura (mismo patrón que Pedidos del admin). */}
-        <OrderDetailModal
-          orderId={selectedId}
-          perspective="business"
-          onClose={() => setSelectedId(null)}
-        />
+        <OrderDetailModal orderId={selectedId} perspective="business" onClose={() => setSelectedId(null)} />
       </View>
     </Modal>
   );

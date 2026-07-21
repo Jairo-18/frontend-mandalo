@@ -2,7 +2,6 @@ import { File, Paths } from 'expo-file-system';
 
 import { getSession } from '@/lib/session';
 import { ExploreFilterItem, exploreService } from '@/services/explore';
-import { ordersService } from '@/services/orders';
 import { UserAddress, userAddressesService } from '@/services/user-addresses';
 
 export type ExploreFilters = {
@@ -12,49 +11,48 @@ export type ExploreFilters = {
 
 /**
  * Caché de datos del usuario autenticado (stale-while-revalidate, mismo
- * espíritu que `catalog-cache.ts`): direcciones, tarifa de domicilio y
- * filtros del explorar. Las pantallas leen al instante lo cacheado (memoria,
- * sembrada desde disco) y el store revalida contra el backend como mucho una
- * vez por TTL — nada de refetch en cada montada. Las mutaciones (crear/editar
- * dirección…) fuerzan el refresh y TODAS las pantallas suscritas se enteran.
+ * espíritu que `catalog-cache.ts`): direcciones y filtros del explorar. Las
+ * pantallas leen al instante lo cacheado (memoria, sembrada desde disco) y el
+ * store revalida contra el backend como mucho una vez por TTL — nada de
+ * refetch en cada montada. Las mutaciones (crear/editar dirección…) fuerzan
+ * el refresh y TODAS las pantallas suscritas se enteran.
  *
  * El caché es POR USUARIO: se guarda con el userId y se descarta si la sesión
  * cambia (y se borra al cerrar sesión, ver `signOutEverywhere`).
+ *
+ * La tarifa de domicilio NO se cachea acá (§42): es por distancia
+ * negocio↔dirección, no un dato global — el checkout la pide en vivo con
+ * `ordersService.deliveryFee()`.
  */
 type DiskCache = {
   userId: string;
   addresses: UserAddress[] | null;
-  deliveryFee: number | null;
   filters: ExploreFilters | null;
   savedAt: string;
 };
 
 const FILE_NAME = 'user-data-cache.json';
 
-type Key = 'addresses' | 'deliveryFee' | 'filters';
+type Key = 'addresses' | 'filters';
 
 /** Cada cuánto se revalida contra el backend (si nadie fuerza antes). */
 const TTL_MS: Record<Key, number> = {
   addresses: 5 * 60_000, // solo cambian desde esta app → mutaciones fuerzan
-  deliveryFee: 60 * 60_000, // config del backend, casi nunca cambia
   filters: 10 * 60_000, // tags/categorías del explorar
 };
 
 const data: {
   addresses: UserAddress[] | null;
-  deliveryFee: number | null;
   filters: ExploreFilters | null;
-} = { addresses: null, deliveryFee: null, filters: null };
+} = { addresses: null, filters: null };
 
 const fetchedAt: Record<Key, number> = {
   addresses: 0,
-  deliveryFee: 0,
   filters: 0,
 };
 /** Ya hubo al menos un intento de fetch (para que `loading` no sea eterno si falla). */
 const settled: Record<Key, boolean> = {
   addresses: false,
-  deliveryFee: false,
   filters: false,
 };
 const inFlight: Partial<Record<Key, Promise<void>>> = {};
@@ -84,10 +82,9 @@ function ensureHydrated(): void {
   if (!userId || hydratedFor === userId) return;
 
   data.addresses = null;
-  data.deliveryFee = null;
   data.filters = null;
-  fetchedAt.addresses = fetchedAt.deliveryFee = fetchedAt.filters = 0;
-  settled.addresses = settled.deliveryFee = settled.filters = false;
+  fetchedAt.addresses = fetchedAt.filters = 0;
+  settled.addresses = settled.filters = false;
   hydratedFor = userId;
 
   try {
@@ -97,8 +94,6 @@ function ensureHydrated(): void {
     // Caché de OTRA cuenta: se ignora (se sobreescribe al persistir).
     if (parsed.userId !== userId) return;
     data.addresses = Array.isArray(parsed.addresses) ? parsed.addresses : null;
-    data.deliveryFee =
-      typeof parsed.deliveryFee === 'number' ? parsed.deliveryFee : null;
     data.filters = parsed.filters ?? null;
   } catch {
     // Sin file system (web) o JSON corrupto → se llena desde el backend.
@@ -112,7 +107,6 @@ function persist(): void {
     const cache: DiskCache = {
       userId: hydratedFor,
       addresses: data.addresses,
-      deliveryFee: data.deliveryFee,
       filters: data.filters,
       savedAt: new Date().toISOString(),
     };
@@ -179,24 +173,6 @@ export function refreshAddresses(force = false): Promise<void> {
   );
 }
 
-// ---------- tarifa de domicilio ----------
-
-export function getDeliveryFee(): number | null {
-  ensureHydrated();
-  return data.deliveryFee;
-}
-
-export function refreshDeliveryFee(force = false): Promise<void> {
-  return revalidate(
-    'deliveryFee',
-    force,
-    async () => (await ordersService.deliveryFee()).data.deliveryFee,
-    (value) => {
-      data.deliveryFee = value;
-    },
-  );
-}
-
 // ---------- filtros del explorar (tags + categorías) ----------
 
 export function getExploreFilters(): ExploreFilters | null {
@@ -220,10 +196,9 @@ export function refreshExploreFilters(force = false): Promise<void> {
 export function clearUserData(): void {
   hydratedFor = null;
   data.addresses = null;
-  data.deliveryFee = null;
   data.filters = null;
-  fetchedAt.addresses = fetchedAt.deliveryFee = fetchedAt.filters = 0;
-  settled.addresses = settled.deliveryFee = settled.filters = false;
+  fetchedAt.addresses = fetchedAt.filters = 0;
+  settled.addresses = settled.filters = false;
   try {
     new File(Paths.cache, FILE_NAME).delete();
   } catch {

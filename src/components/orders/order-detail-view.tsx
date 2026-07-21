@@ -107,7 +107,7 @@ export function OrderDetailView({
           <CodeBanner
             label="Tu código de entrega"
             code={order.deliveryCode}
-            caption="Díctaselo al repartidor cuando recibas tu pedido."
+            caption="Díctaselo al domiciliario cuando recibas tu pedido."
           />
         )}
 
@@ -141,7 +141,7 @@ export function OrderDetailView({
           icon="bicycle-outline"
           label={order.deliveryUser.fullName}
           detail={order.deliveryUser.phone}
-          caption="Repartidor"
+          caption="Domiciliario"
         />
       )}
 
@@ -154,7 +154,7 @@ export function OrderDetailView({
           <Ionicons name="chatbubbles-outline" size={18} color="#FFFFFF" />
           <Text className="text-[15px] font-bold text-white">
             {perspective === 'client'
-              ? 'Chatear con el repartidor'
+              ? 'Chatear con el domiciliario'
               : 'Chatear con el cliente'}
           </Text>
         </Pressable>

@@ -1,6 +1,9 @@
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 
+/** Documento del vehículo (SOAT / tecnomecánica): puede ser foto o PDF. */
+export type DocumentValue = { uri: string; kind: 'image' | 'pdf' };
+
 /**
  * Part de archivo para FormData a partir de una uri local.
  *
@@ -20,4 +23,14 @@ export async function filePart(uri: string): Promise<Blob> {
     return response.blob();
   }
   return new File(uri) as unknown as Blob;
+}
+
+/** Agrega un `DocumentValue` (foto o PDF) a un FormData con la extensión correcta. */
+export async function appendDocument(
+  form: FormData,
+  field: string,
+  value: DocumentValue,
+): Promise<void> {
+  const ext = value.kind === 'pdf' ? 'pdf' : 'jpg';
+  form.append(field, await filePart(value.uri), `${field}.${ext}`);
 }

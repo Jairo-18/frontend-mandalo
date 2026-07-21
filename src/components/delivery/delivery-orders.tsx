@@ -140,8 +140,8 @@ export function DeliveryOrders() {
 
   return (
     <View className="flex-1 bg-surface">
-      {/* Pestañas */}
-      <View className="flex-row gap-2 px-4 pb-2 pt-1">
+      {/* Pestañas: más separación del navbar de arriba ("Repartir"). */}
+      <View className="flex-row gap-2 px-4 pb-2 pt-4">
         <TabButton
           label="Disponibles"
           active={tab === 'available'}

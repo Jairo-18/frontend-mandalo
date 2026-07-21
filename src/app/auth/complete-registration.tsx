@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AuthHeader } from '@/components/auth/auth-header';
 import { DeliveryVerification } from '@/components/auth/delivery-verification';
+import { TermsCheckbox } from '@/components/auth/terms-checkbox';
 import { Button } from '@/components/ui/button';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { FormSection } from '@/components/ui/form-section';
@@ -24,6 +25,7 @@ import {
 import { getSession, homePathFor, setSession } from '@/lib/session';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
+import { DocumentValue } from '@/lib/upload';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import { userAddressesService } from '@/services/user-addresses';
@@ -61,6 +63,14 @@ export default function CompleteRegistrationScreen() {
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [idFrontUri, setIdFrontUri] = useState<string | null>(null);
   const [idBackUri, setIdBackUri] = useState<string | null>(null);
+  const [vehiclePlate, setVehiclePlate] = useState('');
+  const [licenseFrontUri, setLicenseFrontUri] = useState<string | null>(null);
+  const [licenseBackUri, setLicenseBackUri] = useState<string | null>(null);
+  const [soat, setSoat] = useState<DocumentValue | null>(null);
+  const [technicalInspection, setTechnicalInspection] =
+    useState<DocumentValue | null>(null);
+
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -121,6 +131,9 @@ export default function CompleteRegistrationScreen() {
         : 'Marca tu ubicación con "Usar mi ubicación actual".',
       departmentId: muni.departmentId ? undefined : 'Selecciona un departamento.',
       municipalityId: muni.municipalityId ? undefined : 'Selecciona un municipio.',
+      acceptedTerms: acceptedTerms
+        ? undefined
+        : 'Debes aceptar los Términos y la Política de Tratamiento de Datos.',
       ...(isDelivery
         ? {
             identificationTypeId: identificationTypeId
@@ -136,6 +149,19 @@ export default function CompleteRegistrationScreen() {
             idBack: idBackUri
               ? undefined
               : 'Sube la foto del respaldo de tu documento.',
+            vehiclePlate: vehiclePlate.trim()
+              ? undefined
+              : 'Ingresa la placa de tu vehículo.',
+            licenseFront: licenseFrontUri
+              ? undefined
+              : 'Sube la foto del frente de tu licencia.',
+            licenseBack: licenseBackUri
+              ? undefined
+              : 'Sube la foto del respaldo de tu licencia.',
+            soat: soat ? undefined : 'Sube el SOAT (foto o PDF).',
+            technicalInspection: technicalInspection
+              ? undefined
+              : 'Sube la tecnomecánica (foto o PDF).',
           }
         : {
             details: details.trim()
@@ -159,6 +185,7 @@ export default function CompleteRegistrationScreen() {
         longitude: coords?.longitude,
         departmentId: muni.departmentId,
         municipalityId: muni.municipalityId,
+        acceptedTerms,
       });
 
       if (isDelivery) {
@@ -166,8 +193,18 @@ export default function CompleteRegistrationScreen() {
           {
             identificationNumber: identificationNumber.trim(),
             identificationTypeId: identificationTypeId!,
+            vehiclePlate: vehiclePlate.trim().toUpperCase(),
+            acceptedTerms,
           },
-          { avatar: avatarUri!, idFront: idFrontUri!, idBack: idBackUri! },
+          {
+            avatar: avatarUri!,
+            idFront: idFrontUri!,
+            idBack: idBackUri!,
+            licenseFront: licenseFrontUri!,
+            licenseBack: licenseBackUri!,
+            soat: soat!,
+            technicalInspection: technicalInspection!,
+          },
         );
         // La sesión debe reflejar el rol/estado nuevos (DELI inactivo) para
         // que homePathFor lleve a la pantalla "cuenta en proceso".
@@ -240,7 +277,7 @@ export default function CompleteRegistrationScreen() {
               <RoleCard
                 icon="bicycle-outline"
                 label="Quiero repartir"
-                caption="Repartidor"
+                caption="Domiciliario"
                 active={role === 'delivery'}
                 onPress={() => setRole('delivery')}
               />
@@ -344,7 +381,7 @@ export default function CompleteRegistrationScreen() {
 
               {isDelivery && (
                 <>
-                  <FormSection label="Identidad del repartidor" />
+                  <FormSection label="Identidad del domiciliario" />
                   <Select
                     label="Tipo de identificación"
                     icon="card-outline"
@@ -385,12 +422,42 @@ export default function CompleteRegistrationScreen() {
                       setIdBackUri(uri);
                       clearError('idBack');
                     }}
+                    vehiclePlate={vehiclePlate}
+                    onVehiclePlate={bind('vehiclePlate', setVehiclePlate)}
+                    licenseFrontUri={licenseFrontUri}
+                    licenseBackUri={licenseBackUri}
+                    onLicenseFront={(uri) => {
+                      setLicenseFrontUri(uri);
+                      clearError('licenseFront');
+                    }}
+                    onLicenseBack={(uri) => {
+                      setLicenseBackUri(uri);
+                      clearError('licenseBack');
+                    }}
+                    soat={soat}
+                    onSoat={(value) => {
+                      setSoat(value);
+                      clearError('soat');
+                    }}
+                    technicalInspection={technicalInspection}
+                    onTechnicalInspection={(value) => {
+                      setTechnicalInspection(value);
+                      clearError('technicalInspection');
+                    }}
                     errors={errors}
                   />
                 </>
               )}
 
               <View className="mt-2">
+                <TermsCheckbox
+                  checked={acceptedTerms}
+                  onChange={(value) => {
+                    setAcceptedTerms(value);
+                    clearError('acceptedTerms');
+                  }}
+                  error={errors.acceptedTerms}
+                />
                 <Button
                   label={isDelivery ? 'Enviar para revisión' : 'Empezar a pedir'}
                   onPress={handleSave}

@@ -55,6 +55,7 @@ export default function BusinessLayout() {
         <Drawer.Screen name="dashboard" options={{ title: 'Mi negocio' }} />
         <Drawer.Screen name="products" options={{ title: 'Productos' }} />
         <Drawer.Screen name="orders" options={{ title: 'Pedidos' }} />
+        <Drawer.Screen name="earnings" options={{ title: 'Mis cobros' }} />
       </Drawer>
     </GestureHandlerRootView>
   );

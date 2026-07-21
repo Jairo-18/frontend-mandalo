@@ -48,6 +48,12 @@ type Props = {
   menu: ReactNode;
   /** Ruta de la pantalla "Cambiar contraseña" del panel correspondiente. */
   changePasswordHref: '/change-password' | '/delivery/change-password';
+  /**
+   * Ruta de "Reenviar documentos" (solo repartidor): corregir un documento
+   * rechazado o renovar uno vencido (SOAT, tecnomecánica, licencia). Sin esto
+   * no se muestra la fila (el cliente no tiene documentos que subir).
+   */
+  resendDocumentsHref?: '/delivery/resend-documents';
 };
 
 /**
@@ -57,7 +63,11 @@ type Props = {
  * contraseña. Los datos de la cabecera del drawer (nombre/foto) se refrescan
  * en la sesión al guardar. Cada rol la monta desde su propia ruta.
  */
-export function ProfileScreen({ menu, changePasswordHref }: Props) {
+export function ProfileScreen({
+  menu,
+  changePasswordHref,
+  resendDocumentsHref,
+}: Props) {
   const router = useRouter();
   const { departments, identificationTypes } = useAppData();
   const muni = useMunicipalities();
@@ -487,6 +497,21 @@ export function ProfileScreen({ menu, changePasswordHref }: Props) {
                 />
               </View>
             ) : null}
+
+            {/* Reenviar documentos (solo repartidor): corregir un rechazo o
+                renovar uno vencido (SOAT, tecnomecánica, licencia). */}
+            {resendDocumentsHref && (
+              <Pressable
+                onPress={() => router.push(resendDocumentsHref)}
+                className="mb-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+              >
+                <Ionicons name="document-attach-outline" size={20} color="#FF5A3C" />
+                <Text className="flex-1 text-[14px] font-bold text-dark">
+                  Reenviar documentos
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color="#7A7A8A" />
+              </Pressable>
+            )}
 
             {/* Cambiar contraseña: pantalla propia */}
             <Pressable

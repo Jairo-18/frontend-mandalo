@@ -5,25 +5,30 @@ import { Image, Pressable, Text, View } from 'react-native';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 
 type Props = {
+  /** Título de la sección (identidad, licencia, etc.). */
+  title?: string;
   frontUrl?: string | null;
   backUrl?: string | null;
 };
 
 /**
- * Documento de identidad del repartidor (solo lectura): las fotos que subió
- * al registrarse, para que el admin las revise antes de activar la cuenta.
- * Tocar una foto la abre a pantalla completa (para leer bien el documento).
+ * Par de fotos de un documento del repartidor (solo lectura), por delante y
+ * por detrás — cédula o licencia de conducción, subidas al registrarse, para
+ * que el admin las revise antes de activar la cuenta. Tocar una foto la abre
+ * a pantalla completa (para leer bien el documento).
  */
-export function UserDocuments({ frontUrl, backUrl }: Props) {
+export function UserDocuments({
+  title = 'Documento de identidad (subido en el registro)',
+  frontUrl,
+  backUrl,
+}: Props) {
   const [preview, setPreview] = useState<string | null>(null);
 
   if (!frontUrl && !backUrl) return null;
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-bold text-gray-700">
-        Documento de identidad (subido en el registro)
-      </Text>
+      <Text className="mb-2 text-sm font-bold text-gray-700">{title}</Text>
       <View className="flex-row gap-3">
         {[
           { label: 'Frente', url: frontUrl },

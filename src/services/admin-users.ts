@@ -23,6 +23,12 @@ export type AdminUser = {
   /** Documento del repartidor (subido en el registro DELI). */
   identificationFrontUrl: string | null;
   identificationBackUrl: string | null;
+  /** Vehículo del repartidor: placa + licencia (fotos) + SOAT/tecnomecánica (foto o PDF). */
+  vehiclePlate: string | null;
+  licenseFrontUrl: string | null;
+  licenseBackUrl: string | null;
+  soatUrl: string | null;
+  technicalInspectionUrl: string | null;
   /** Nota del admin para el usuario (por qué no se activa su cuenta, etc.). */
   observations: string | null;
   isActive: boolean;
@@ -63,6 +69,8 @@ export type AdminUserPayload = {
   longitude?: number;
   identificationNumber?: string | null;
   identificationTypeId?: number;
+  /** Placa del vehículo (repartidor); `null` la limpia al editar. */
+  vehiclePlate?: string | null;
   /** El backend lo resuelve a su uuid (tabla roleType). */
   roleTypeCode?: RoleCode;
   isActive?: boolean;

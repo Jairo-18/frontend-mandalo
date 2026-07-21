@@ -25,6 +25,8 @@ export type AdminBusiness = {
   latitude: number | null;
   longitude: number | null;
   isActive: boolean;
+  /** Comisión sobre lo vendido (%): 5 el primer mes, 12 después (el admin la sube a mano). */
+  commissionOrderRate: number;
   /** Horario de atención (hora Colombia); null = siempre abierto. */
   openTime: string | null;
   closeTime: string | null;
@@ -69,6 +71,8 @@ export type AdminBusinessPayload = {
   /** Reemplaza el set completo de etiquetas del negocio. */
   tagIds?: number[];
   isActive?: boolean;
+  /** Comisión sobre lo vendido (%): solo el admin la cambia (5 → 12). */
+  commissionOrderRate?: number;
   /** Horario de atención ("HH:MM" hora Colombia); null limpia el horario. */
   openTime?: string | null;
   closeTime?: string | null;

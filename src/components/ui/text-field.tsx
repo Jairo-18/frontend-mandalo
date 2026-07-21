@@ -47,6 +47,8 @@ export function TextField({
   format,
   onChangeText,
   onBlur,
+  multiline,
+  numberOfLines,
   ...inputProps
 }: Props) {
   const [hidden, setHidden] = useState(true);
@@ -68,16 +70,28 @@ export function TextField({
     <View className="mb-4">
       <Text className="mb-2 text-sm font-bold text-gray-700">{label}</Text>
       <View
-        className={`h-[52px] flex-row items-center gap-2.5 rounded-xl border px-3.5 ${
-          error ? 'border-red-500' : 'border-gray-200'
-        }`}
+        className={`flex-row gap-2.5 rounded-xl border px-3.5 ${
+          multiline ? 'items-start py-3' : 'h-[52px] items-center'
+        } ${error ? 'border-red-500' : 'border-gray-200'}`}
       >
-        <Ionicons name={icon} size={20} color={PLACEHOLDER} />
+        <Ionicons
+          name={icon}
+          size={20}
+          color={PLACEHOLDER}
+          style={multiline ? { marginTop: 2 } : undefined}
+        />
         <TextInput
-          className="h-full flex-1 text-[15px] text-dark"
+          className={`flex-1 text-[15px] text-dark ${multiline ? '' : 'h-full'}`}
+          style={
+            multiline
+              ? { minHeight: (numberOfLines ?? 3) * 22, textAlignVertical: 'top' }
+              : undefined
+          }
           placeholderTextColor={PLACEHOLDER}
           autoCapitalize="none"
           secureTextEntry={secure ? hidden : false}
+          multiline={multiline}
+          numberOfLines={numberOfLines}
           {...(format ? FORMAT_DEFAULTS[format] : undefined)}
           {...inputProps}
           onChangeText={handleChangeText}

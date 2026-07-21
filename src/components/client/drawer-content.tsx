@@ -20,7 +20,7 @@ type Item = {
 
 /** Secciones del panel del cliente. */
 const ITEMS: Item[] = [
-  { label: 'Explorar', icon: 'home-outline', href: '/home' },
+  { label: 'Inicio', icon: 'home-outline', href: '/home' },
   { label: 'Mis pedidos', icon: 'receipt-outline', href: '/orders' },
   { label: 'Mis chats', icon: 'chatbubbles-outline', href: '/chats' },
   { label: 'Mis direcciones', icon: 'location-outline', href: '/addresses' },
@@ -71,7 +71,7 @@ export function ClientDrawerContent({ navigation }: Props) {
       >
         <Text className="text-2xl font-extrabold text-primary">Mándalo</Text>
         <Text className="mt-0.5 text-[11px] font-bold uppercase tracking-widest text-white/60">
-          LO PIDES, LO LLEVAMOS.
+          LO PIDES, LO MANDAMOS.
         </Text>
 
         {/* Tarjeta del usuario: tocarla abre Mi perfil */}

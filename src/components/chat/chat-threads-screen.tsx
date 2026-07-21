@@ -99,7 +99,7 @@ export function ChatThreadsScreen({ menu }: Props) {
                         className="shrink text-[15px] font-bold text-dark"
                       >
                         {counterpart?.fullName ??
-                          (roleCode === 'DELI' ? 'Cliente' : 'Repartidor')}
+                          (roleCode === 'DELI' ? 'Cliente' : 'Domiciliario')}
                       </Text>
                       {!item.active && (
                         <View className="rounded-full bg-surface px-2 py-0.5">
@@ -153,7 +153,7 @@ export function ChatThreadsScreen({ menu }: Props) {
                 message={
                   roleCode === 'DELI'
                     ? 'Aún no tienes chats. Cuando tomes un pedido podrás hablar con el cliente.'
-                    : 'Aún no tienes chats. Cuando un repartidor tome tu pedido podrás hablar con él.'
+                    : 'Aún no tienes chats. Cuando un domiciliario tome tu pedido podrás hablar con él.'
                 }
               />
             }

@@ -124,7 +124,7 @@ export function OrderMap({ order, perspective }: Props) {
         {courier && (
           <Marker
             coordinate={courier}
-            title="Repartidor"
+            title="Domiciliario"
             anchor={{ x: 0.5, y: 0.5 }}
           >
             <PinBubble icon="bicycle" color="#22C55E" />

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { UserDocuments } from '@/components/admin/user-documents';
+import { VehicleDocumentPreview } from '@/components/admin/vehicle-document-preview';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormModal } from '@/components/ui/form-modal';
 import { PhotoField } from '@/components/ui/photo-field';
@@ -71,6 +72,7 @@ export function UserFormModal({
   const [address, setAddress] = useState('');
   const [identificationNumber, setIdentificationNumber] = useState('');
   const [identificationTypeId, setIdentificationTypeId] = useState<number>();
+  const [vehiclePlate, setVehiclePlate] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [isBanned, setIsBanned] = useState(false);
   // Nota del admin PARA el usuario (p. ej. por qué su cuenta DELI no se activa).
@@ -107,6 +109,7 @@ export function UserFormModal({
     setIdentificationTypeId(
       editing?.identificationType ? Number(editing.identificationType.id) : undefined,
     );
+    setVehiclePlate(editing?.vehiclePlate ?? '');
     setIsActive(editing?.isActive ?? true);
     setIsBanned(editing?.isBanned ?? false);
     setObservations(editing?.observations ?? '');
@@ -147,6 +150,7 @@ export function UserFormModal({
       (editing?.identificationType
         ? Number(editing.identificationType.id)
         : undefined) ||
+    vehiclePlate !== (editing?.vehiclePlate ?? '') ||
     muni.departmentId !==
       (editing?.department ? Number(editing.department.id) : undefined) ||
     muni.municipalityId !==
@@ -246,6 +250,7 @@ export function UserFormModal({
       ...(selfProfile &&
         coords && { latitude: coords.latitude, longitude: coords.longitude }),
       identificationNumber: identificationNumber.trim() || null,
+      vehiclePlate: vehiclePlate.trim().toUpperCase() || null,
       ...(muni.departmentId && { departmentId: muni.departmentId }),
       ...(muni.municipalityId && { municipalityId: muni.municipalityId }),
       ...(identificationTypeId && { identificationTypeId }),
@@ -458,13 +463,41 @@ export function UserFormModal({
         placeholder="1090123456"
       />
 
-      {/* Documento del repartidor (solo lectura): lo subió al registrarse y
-          el admin lo revisa antes de marcar "Cuenta activa". */}
-      {!selfProfile && isEdit && (
-        <UserDocuments
-          frontUrl={editing?.identificationFrontUrl}
-          backUrl={editing?.identificationBackUrl}
+      {!selfProfile && roleCode === 'DELI' && (
+        <TextField
+          label="Placa del vehículo"
+          icon="bicycle-outline"
+          format="identification"
+          value={vehiclePlate}
+          onChangeText={bind('vehiclePlate', setVehiclePlate)}
+          error={errors.vehiclePlate}
+          placeholder="ABC12D"
         />
+      )}
+
+      {/* Documentos del repartidor (solo lectura): los subió al registrarse
+          y el admin los revisa antes de marcar "Cuenta activa". */}
+      {!selfProfile && isEdit && (
+        <>
+          <UserDocuments
+            frontUrl={editing?.identificationFrontUrl}
+            backUrl={editing?.identificationBackUrl}
+          />
+          <UserDocuments
+            title="Licencia de conducción"
+            frontUrl={editing?.licenseFrontUrl}
+            backUrl={editing?.licenseBackUrl}
+          />
+          {(editing?.soatUrl || editing?.technicalInspectionUrl) && (
+            <View className="mb-1 flex-row gap-3">
+              <VehicleDocumentPreview label="SOAT" url={editing?.soatUrl} />
+              <VehicleDocumentPreview
+                label="Tecnomecánica"
+                url={editing?.technicalInspectionUrl}
+              />
+            </View>
+          )}
+        </>
       )}
 
       {!selfProfile && isEdit && (
@@ -475,6 +508,7 @@ export function UserFormModal({
           onChangeText={setObservations}
           placeholder="Ej: La foto de tu documento está borrosa, vuelve a subirla."
           multiline
+          numberOfLines={6}
         />
       )}
 

@@ -16,7 +16,8 @@ import { businessService } from '@/services/business';
 type BusinessRoute =
   | '/business/dashboard'
   | '/business/products'
-  | '/business/orders';
+  | '/business/orders'
+  | '/business/earnings';
 
 type Item = {
   label: string;
@@ -29,6 +30,7 @@ const ITEMS: Item[] = [
   { label: 'Inicio', icon: 'grid-outline', href: '/business/dashboard' },
   { label: 'Productos', icon: 'cube-outline', href: '/business/products' },
   { label: 'Pedidos', icon: 'receipt-outline', href: '/business/orders' },
+  { label: 'Mis cobros', icon: 'cash-outline', href: '/business/earnings' },
 ];
 
 // Lo único que se usa de las props del drawer (evita el choque de tipos entre

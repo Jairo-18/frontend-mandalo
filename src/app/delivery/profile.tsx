@@ -7,6 +7,7 @@ export default function DeliveryProfileRoute() {
     <ProfileScreen
       menu={<MenuButton parent="/delivery" />}
       changePasswordHref="/delivery/change-password"
+      resendDocumentsHref="/delivery/resend-documents"
     />
   );
 }

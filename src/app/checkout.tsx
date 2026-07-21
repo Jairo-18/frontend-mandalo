@@ -18,7 +18,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { DocumentPhotoField } from '@/components/ui/document-photo-field';
 import { Select } from '@/components/ui/select';
 import { useCart } from '@/context/cart';
-import { useDeliveryFee, useUserAddresses } from '@/hooks/use-user-data';
+import { useUserAddresses } from '@/hooks/use-user-data';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { toast } from '@/lib/toast';
 import { ExploreBusiness, exploreService } from '@/services/explore';
@@ -33,10 +33,29 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const cart = useCart();
 
-  // Caché compartida: la dirección y la tarifa llegan al instante.
+  // Caché compartida: la dirección llega al instante.
   const { defaultAddress, loading: loadingAddr } = useUserAddresses();
-  const deliveryFee = useDeliveryFee();
   const [sheetVisible, setSheetVisible] = useState(false);
+
+  // Domicilio EN VIVO por distancia (negocio ↔ dirección elegida) — no es un
+  // dato global cacheable como antes, cambia con cada negocio/dirección.
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [loadingFee, setLoadingFee] = useState(false);
+  useEffect(() => {
+    if (!cart.businessId) return;
+    setLoadingFee(true);
+    ordersService
+      .deliveryFee({
+        organizationalId: cart.businessId,
+        latitude: defaultAddress?.latitude ?? undefined,
+        longitude: defaultAddress?.longitude ?? undefined,
+      })
+      .then((res) => setDeliveryFee(res.data.deliveryFee))
+      .catch(() => {
+        // El interceptor ya mostró el error; el total sigue sin domicilio.
+      })
+      .finally(() => setLoadingFee(false));
+  }, [cart.businessId, defaultAddress?.latitude, defaultAddress?.longitude]);
 
   const [payment, setPayment] = useState<string>('EFEC');
   const [notes, setNotes] = useState('');
@@ -334,7 +353,10 @@ export default function CheckoutScreen() {
         {/* Totales */}
         <View className="rounded-2xl bg-surface p-4">
           <Row label="Subtotal" value={formatPrice(cart.subtotal)} />
-          <Row label="Domicilio" value={formatPrice(deliveryFee)} />
+          <Row
+            label="Domicilio"
+            value={loadingFee ? 'Calculando…' : formatPrice(deliveryFee)}
+          />
           <View className="my-2 h-px bg-gray-200" />
           <Row label="Total" value={formatPrice(total)} bold />
         </View>
@@ -344,9 +366,9 @@ export default function CheckoutScreen() {
       <View className="border-t border-gray-100 px-5 pb-6 pt-3">
         <Pressable
           onPress={confirm}
-          disabled={submitting}
+          disabled={submitting || loadingFee}
           className={`h-[54px] flex-row items-center justify-center gap-2 rounded-2xl bg-primary active:opacity-80 ${
-            submitting ? 'opacity-60' : ''
+            submitting || loadingFee ? 'opacity-60' : ''
           }`}
         >
           {submitting ? (

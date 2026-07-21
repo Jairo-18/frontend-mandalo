@@ -82,7 +82,7 @@ export function OrderMap({ order }: Props) {
         <MapLink
           icon="bicycle"
           color="#22C55E"
-          label="Repartidor (posición en vivo)"
+          label="Domiciliario (posición en vivo)"
           coords={courier}
         />
       )}

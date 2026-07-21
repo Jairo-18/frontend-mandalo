@@ -10,7 +10,11 @@ import { useUnreadChats } from '@/hooks/use-unread-chats';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { signOutEverywhere } from '@/lib/sign-out';
 
-type DeliveryRoute = '/delivery' | '/delivery/chats' | '/delivery/profile';
+type DeliveryRoute =
+  | '/delivery'
+  | '/delivery/earnings'
+  | '/delivery/chats'
+  | '/delivery/profile';
 
 type Item = {
   label: string;
@@ -21,6 +25,7 @@ type Item = {
 /** Secciones del panel del repartidor. */
 const ITEMS: Item[] = [
   { label: 'Pedidos', icon: 'bicycle-outline', href: '/delivery' },
+  { label: 'Mis pagos', icon: 'cash-outline', href: '/delivery/earnings' },
   { label: 'Mis chats', icon: 'chatbubbles-outline', href: '/delivery/chats' },
   { label: 'Mi perfil', icon: 'person-outline', href: '/delivery/profile' },
 ];
@@ -68,7 +73,7 @@ export function DeliveryDrawerContent({ navigation }: Props) {
       >
         <Text className="text-2xl font-extrabold text-primary">Mándalo</Text>
         <Text className="mt-0.5 text-[11px] font-bold uppercase tracking-widest text-white/60">
-          Panel del repartidor
+          Panel del domiciliario
         </Text>
 
         {/* Tarjeta del usuario: tocarla abre Mi perfil */}

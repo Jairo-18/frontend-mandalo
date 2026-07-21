@@ -1,7 +1,10 @@
 import { http } from '@/lib/http';
 
-/** Agrupación del cobro: semana ISO (lunes), mes o año (hora Colombia). */
-export type SettlementPeriodType = 'week' | 'month' | 'year';
+/**
+ * Agrupación del cobro: la quincena es la única unidad cobrable; mes y año
+ * son resúmenes armados sumando quincenas (§42) — no se marcan por sí solos.
+ */
+export type SettlementPeriodType = 'quincena' | 'month' | 'year';
 
 /** Snapshot guardado al marcar "cobrado" (no cambia si entran más entregas). */
 export type SettlementSnapshot = {
@@ -11,7 +14,6 @@ export type SettlementSnapshot = {
   notes: string | null;
   ordersCount: number;
   salesTotal: number;
-  deliveryTotal: number;
   commissionTotal: number;
 };
 
@@ -21,28 +23,26 @@ export type SettlementPeriod = {
   /** Inicio y fin del período (YYYY-MM-DD, inclusive). */
   periodStart: string;
   periodEnd: string;
-  /** Vigente: pedidos ENTREGADOS del período y sus totales. */
   ordersCount: number;
   salesTotal: number;
-  deliveryTotal: number;
-  orderCommissionRate: number;
-  deliveryCommissionRate: number;
-  orderCommission: number;
-  deliveryCommission: number;
+  commissionRate: number;
   commissionTotal: number;
+  /** Solo quincena: el cobro real (se marca/desmarca). Null en mes/año. */
   settlement: SettlementSnapshot | null;
+  /** Solo mes/año: cuántas de sus quincenas/meses ya están cobrados. */
+  paidSubperiods?: number;
+  totalSubperiods?: number;
 };
 
 export type SettlementPeriodsResponse = {
-  orderRate: number;
-  deliveryRate: number;
+  commissionRate: number;
   periods: SettlementPeriod[];
 };
 
 /**
  * Cobros de la plataforma a los negocios (solo ADMIN). La comisión es % sobre
- * lo vendido + % sobre los domicilios de los pedidos entregados; los montos
- * los calcula SIEMPRE el backend.
+ * lo vendido (subtotal), la tasa propia de CADA negocio; los montos los
+ * calcula SIEMPRE el backend. El domicilio no se cobra al negocio (§42).
  */
 export const adminSettlementsService = {
   periods: (organizationalId: number, periodType: SettlementPeriodType) =>
@@ -51,18 +51,26 @@ export const adminSettlementsService = {
       { auth: true },
     ),
 
-  /** Marca un período como cobrado (true) o deshace el cobro (false). */
+  /** Marca una QUINCENA como cobrada (true) o deshace el cobro (false). */
   mark: (payload: {
     organizationalId: number;
-    periodType: SettlementPeriodType;
     periodStart: string;
     isPaid: boolean;
     notes?: string;
   }) =>
     http<{ message?: string }>('/settlement/mark', {
       method: 'PATCH',
-      body: payload,
+      body: { ...payload, periodType: 'quincena' as const },
       auth: true,
       toastSuccess: true,
     }),
+};
+
+/** "Mis pedidos" del propio negocio (self-scoped, rol NEGO, solo lectura). */
+export const myBusinessSettlementsService = {
+  periods: (periodType: SettlementPeriodType) =>
+    http<{ data: SettlementPeriodsResponse }>(
+      `/settlement/mine?periodType=${periodType}`,
+      { auth: true },
+    ),
 };

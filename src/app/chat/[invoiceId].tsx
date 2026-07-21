@@ -194,7 +194,7 @@ export default function ChatScreen() {
               numberOfLines={1}
               className="text-base font-extrabold text-white"
             >
-              {counterpart?.fullName ?? (iAmClient ? 'Repartidor' : 'Cliente')}
+              {counterpart?.fullName ?? (iAmClient ? 'Domiciliario' : 'Cliente')}
             </Text>
             <Text className="text-[11px] font-bold uppercase tracking-widest text-white/60">
               Pedido #{invoiceId}
@@ -337,7 +337,7 @@ export default function ChatScreen() {
                 <Text className="text-center text-xs text-muted">
                   {thread.delivery
                     ? 'El chat de este pedido está cerrado (pedido finalizado).'
-                    : 'El chat se habilita cuando un repartidor tome el pedido.'}
+                    : 'El chat se habilita cuando un domiciliario tome el pedido.'}
                 </Text>
               </View>
             ))}

@@ -157,7 +157,7 @@ export default function BusinessOrdersScreen() {
                     onPress={() => setCancelId(order.id)}
                   />
                   <ActionButton
-                    label="Entregar al repartidor"
+                    label="Entregar al domiciliario"
                     variant="success"
                     onPress={() => {
                       detailReload.current = reload;
@@ -170,7 +170,7 @@ export default function BusinessOrdersScreen() {
             return (
               <View className="gap-2">
                 <Text className="text-center text-xs text-muted">
-                  Esperando que un repartidor tome el pedido…
+                  Esperando que un domiciliario tome el pedido…
                 </Text>
                 <ActionButton
                   label="Cancelar pedido"
@@ -188,7 +188,7 @@ export default function BusinessOrdersScreen() {
       <VerificationCodeDialog
         visible={dispatchId != null}
         title="Código de recogida"
-        message="Pídele al repartidor el código que ve en su app y digítalo para entregarle el pedido."
+        message="Pídele al domiciliario el código que ve en su app y digítalo para entregarle el pedido."
         onConfirm={async (verificationCode) => {
           if (dispatchId == null) return;
           await ordersService.changeState(dispatchId, 'RUTA', {

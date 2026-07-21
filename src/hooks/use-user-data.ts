@@ -2,11 +2,9 @@ import { useEffect, useSyncExternalStore } from 'react';
 
 import {
   getAddresses,
-  getDeliveryFee,
   getExploreFilters,
   isAddressesLoading,
   refreshAddresses,
-  refreshDeliveryFee,
   refreshExploreFilters,
   subscribeUserData,
 } from '@/lib/user-data';
@@ -38,16 +36,6 @@ export function useUserAddresses() {
     /** true solo mientras no hay NADA que mostrar (ni caché ni respuesta). */
     loading,
   };
-}
-
-/** Tarifa fija del domicilio (checkout). */
-export function useDeliveryFee() {
-  const fee = useSyncExternalStore(subscribeUserData, getDeliveryFee);
-  useEffect(() => {
-    void refreshDeliveryFee();
-  }, []);
-
-  return fee ?? 0;
 }
 
 /** Tags + categorías del explorar (home). */

@@ -1,8 +1,12 @@
 import { Text } from 'react-native';
 
 import { DocumentPhotoField } from '@/components/ui/document-photo-field';
+import { FormSection } from '@/components/ui/form-section';
 import { PhotoField } from '@/components/ui/photo-field';
+import { TextField } from '@/components/ui/text-field';
+import { VehicleDocumentField } from '@/components/ui/vehicle-document-field';
 import { FormErrors } from '@/hooks/use-form-errors';
+import { DocumentValue } from '@/lib/upload';
 
 type Props = {
   avatarUri: string | null;
@@ -11,12 +15,24 @@ type Props = {
   onAvatar: (uri: string) => void;
   onIdFront: (uri: string) => void;
   onIdBack: (uri: string) => void;
+  vehiclePlate: string;
+  onVehiclePlate: (value: string) => void;
+  licenseFrontUri: string | null;
+  licenseBackUri: string | null;
+  onLicenseFront: (uri: string) => void;
+  onLicenseBack: (uri: string) => void;
+  soat: DocumentValue | null;
+  onSoat: (value: DocumentValue) => void;
+  technicalInspection: DocumentValue | null;
+  onTechnicalInspection: (value: DocumentValue) => void;
   errors: FormErrors;
 };
 
 /**
- * Fotos de verificación del registro de repartidor (obligatorias): rostro +
- * documento por ambos lados. Un admin las revisa y activa la cuenta.
+ * Fotos/documentos de verificación del registro de repartidor (obligatorios):
+ * rostro + cédula por ambos lados, placa del vehículo, licencia de conducción
+ * por ambos lados y SOAT/tecnomecánica (foto o PDF). Un admin los revisa y
+ * activa la cuenta.
  */
 export function DeliveryVerification({
   avatarUri,
@@ -25,6 +41,16 @@ export function DeliveryVerification({
   onAvatar,
   onIdFront,
   onIdBack,
+  vehiclePlate,
+  onVehiclePlate,
+  licenseFrontUri,
+  licenseBackUri,
+  onLicenseFront,
+  onLicenseBack,
+  soat,
+  onSoat,
+  technicalInspection,
+  onTechnicalInspection,
   errors,
 }: Props) {
   return (
@@ -34,7 +60,7 @@ export function DeliveryVerification({
       </Text>
       <Text className="mb-4 text-xs leading-4 text-muted">
         Estas fotos las revisa un administrador para activar tu cuenta de
-        repartidor.
+        domiciliario.
       </Text>
 
       <PhotoField
@@ -56,6 +82,43 @@ export function DeliveryVerification({
         uri={idBackUri}
         onChange={onIdBack}
         error={errors.idBack}
+      />
+
+      <FormSection label="Vehículo y documentos" />
+      <TextField
+        label="Placa del vehículo"
+        icon="bicycle-outline"
+        format="identification"
+        value={vehiclePlate}
+        onChangeText={onVehiclePlate}
+        error={errors.vehiclePlate}
+        placeholder="ABC12D"
+      />
+      <DocumentPhotoField
+        label="Licencia de conducción — por delante"
+        uri={licenseFrontUri}
+        onChange={onLicenseFront}
+        error={errors.licenseFront}
+        placeholderIcon="car-outline"
+      />
+      <DocumentPhotoField
+        label="Licencia de conducción — por detrás"
+        uri={licenseBackUri}
+        onChange={onLicenseBack}
+        error={errors.licenseBack}
+        placeholderIcon="car-outline"
+      />
+      <VehicleDocumentField
+        label="SOAT"
+        value={soat}
+        onChange={onSoat}
+        error={errors.soat}
+      />
+      <VehicleDocumentField
+        label="Tecnomecánica"
+        value={technicalInspection}
+        onChange={onTechnicalInspection}
+        error={errors.technicalInspection}
       />
     </>
   );

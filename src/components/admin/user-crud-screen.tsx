@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -76,6 +77,7 @@ export function UserCrudScreen({
   entityNamePlural,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [searchField, setSearchField] = useState<UserSearchField>('search');
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all');
@@ -169,6 +171,20 @@ export function UserCrudScreen({
             )}
           </View>
 
+          {createRoleCode === 'DELI' && (
+            <Pressable
+              onPress={() =>
+                router.navigate({
+                  pathname: '/admin/delivery-billing',
+                  params: { userId: item.id, name: item.fullName },
+                })
+              }
+              hitSlop={8}
+              className="h-9 w-9 items-center justify-center rounded-full bg-primary-tint active:opacity-70"
+            >
+              <Ionicons name="cash-outline" size={17} color="#FF5A3C" />
+            </Pressable>
+          )}
           <Pressable
             onPress={() => openEdit(item)}
             hitSlop={8}
@@ -309,7 +325,7 @@ export function UserCrudScreen({
         visible={!!toActivate}
         icon="checkmark-circle-outline"
         title="¿Activar esta cuenta?"
-        message={`${toActivate?.fullName ?? 'El repartidor'} podrá empezar a tomar pedidos. Revisa antes sus documentos (editar → fotos).`}
+        message={`${toActivate?.fullName ?? 'El domiciliario'} podrá empezar a tomar pedidos. Revisa antes sus documentos (editar → fotos).`}
         confirmLabel="Sí, activar"
         cancelLabel="No"
         onConfirm={handleActivate}

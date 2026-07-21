@@ -15,6 +15,7 @@ import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { FormSection } from '@/components/ui/form-section';
 import { DeliveryVerification } from '@/components/auth/delivery-verification';
 import { GoogleButton } from '@/components/auth/google-button';
+import { TermsCheckbox } from '@/components/auth/terms-checkbox';
 import { Button } from '@/components/ui/button';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { Select } from '@/components/ui/select';
@@ -26,6 +27,7 @@ import { signInWithGoogle } from '@/lib/google-auth';
 import { DeviceCoords, getDeviceLocation, samePlaceName } from '@/lib/location';
 import { getSession, homePathFor } from '@/lib/session';
 import { EMAIL_RE, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
+import { DocumentValue } from '@/lib/upload';
 import { authService, RegisterPayload } from '@/services/auth';
 
 export default function RegisterForm() {
@@ -45,6 +47,9 @@ export default function RegisterForm() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [address, setAddress] = useState('');
+  // Referencia específica (apto/torre/portón) — solo cliente, mismo campo
+  // que el onboarding post-Google (complete-registration.tsx).
+  const [details, setDetails] = useState('');
   const [identificationNumber, setIdentificationNumber] = useState('');
   const [identificationTypeId, setIdentificationTypeId] = useState<number>();
 
@@ -53,6 +58,17 @@ export default function RegisterForm() {
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [idFrontUri, setIdFrontUri] = useState<string | null>(null);
   const [idBackUri, setIdBackUri] = useState<string | null>(null);
+
+  // Vehículo del repartidor: placa + licencia (foto por delante y por
+  // detrás) + SOAT/tecnomecánica (foto o PDF).
+  const [vehiclePlate, setVehiclePlate] = useState('');
+  const [licenseFrontUri, setLicenseFrontUri] = useState<string | null>(null);
+  const [licenseBackUri, setLicenseBackUri] = useState<string | null>(null);
+  const [soat, setSoat] = useState<DocumentValue | null>(null);
+  const [technicalInspection, setTechnicalInspection] =
+    useState<DocumentValue | null>(null);
+
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [coords, setCoords] = useState<DeviceCoords>();
   const [locating, setLocating] = useState(false);
@@ -144,6 +160,14 @@ export default function RegisterForm() {
         : password !== confirm
           ? 'Las contraseñas no coinciden.'
           : undefined,
+      acceptedTerms: acceptedTerms
+        ? undefined
+        : 'Debes aceptar los Términos y la Política de Tratamiento de Datos.',
+      ...(!isDelivery && {
+        details: details.trim()
+          ? undefined
+          : 'Ingresa la dirección específica (barrio, casa, referencias).',
+      }),
       ...(isDelivery && {
         identificationTypeId: identificationTypeId
           ? undefined
@@ -158,6 +182,19 @@ export default function RegisterForm() {
         idBack: idBackUri
           ? undefined
           : 'Sube la foto del respaldo de tu documento.',
+        vehiclePlate: vehiclePlate.trim()
+          ? undefined
+          : 'Ingresa la placa de tu vehículo.',
+        licenseFront: licenseFrontUri
+          ? undefined
+          : 'Sube la foto del frente de tu licencia.',
+        licenseBack: licenseBackUri
+          ? undefined
+          : 'Sube la foto del respaldo de tu licencia.',
+        soat: soat ? undefined : 'Sube el SOAT (foto o PDF).',
+        technicalInspection: technicalInspection
+          ? undefined
+          : 'Sube la tecnomecánica (foto o PDF).',
       }),
     });
   }
@@ -175,10 +212,13 @@ export default function RegisterForm() {
       address: address.trim(),
       departmentId: muni.departmentId,
       municipalityId: muni.municipalityId,
+      acceptedTerms,
       ...(coords ?? {}),
+      ...(!isDelivery && { details: details.trim() }),
       ...(isDelivery && {
         identificationNumber: identificationNumber.trim(),
         identificationTypeId,
+        vehiclePlate: vehiclePlate.trim().toUpperCase(),
       }),
     };
 
@@ -189,6 +229,10 @@ export default function RegisterForm() {
           avatar: avatarUri!,
           idFront: idFrontUri!,
           idBack: idBackUri!,
+          licenseFront: licenseFrontUri!,
+          licenseBack: licenseBackUri!,
+          soat: soat!,
+          technicalInspection: technicalInspection!,
         });
       } else {
         await authService.registerClient(payload);
@@ -232,12 +276,12 @@ export default function RegisterForm() {
       <KeyboardAwareScroll>
         <AuthHeader
           compact
-          subtitle={isDelivery ? 'Registro de repartidor' : 'Registro de usuario'}
+          subtitle={isDelivery ? 'Registro de domiciliario' : 'Registro de usuario'}
         />
 
         <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">
           <Text className="mb-6 text-center text-[22px] font-extrabold text-dark">
-            {isDelivery ? 'Crea tu cuenta de repartidor' : 'Crea tu cuenta'}
+            {isDelivery ? 'Crea tu cuenta de domiciliario' : 'Crea tu cuenta'}
           </Text>
 
           <FormSection label="Tus datos" />
@@ -350,9 +394,21 @@ export default function RegisterForm() {
             </Text>
           )}
 
+          {!isDelivery && (
+            <TextField
+              label="Dirección específica"
+              icon="information-circle-outline"
+              format="text"
+              value={details}
+              onChangeText={bind('details', setDetails)}
+              error={errors.details}
+              placeholder="Barrio Centro, casa esquinera, portón café"
+            />
+          )}
+
           {isDelivery && (
             <>
-              <FormSection label="Identidad del repartidor" />
+              <FormSection label="Identidad del domiciliario" />
               <Select
                 label="Tipo de identificación"
                 icon="card-outline"
@@ -391,6 +447,28 @@ export default function RegisterForm() {
                   setIdBackUri(uri);
                   clearError('idBack');
                 }}
+                vehiclePlate={vehiclePlate}
+                onVehiclePlate={bind('vehiclePlate', setVehiclePlate)}
+                licenseFrontUri={licenseFrontUri}
+                licenseBackUri={licenseBackUri}
+                onLicenseFront={(uri) => {
+                  setLicenseFrontUri(uri);
+                  clearError('licenseFront');
+                }}
+                onLicenseBack={(uri) => {
+                  setLicenseBackUri(uri);
+                  clearError('licenseBack');
+                }}
+                soat={soat}
+                onSoat={(value) => {
+                  setSoat(value);
+                  clearError('soat');
+                }}
+                technicalInspection={technicalInspection}
+                onTechnicalInspection={(value) => {
+                  setTechnicalInspection(value);
+                  clearError('technicalInspection');
+                }}
                 errors={errors}
               />
             </>
@@ -419,6 +497,14 @@ export default function RegisterForm() {
           />
 
           <View className="mt-2">
+            <TermsCheckbox
+              checked={acceptedTerms}
+              onChange={(value) => {
+                setAcceptedTerms(value);
+                clearError('acceptedTerms');
+              }}
+              error={errors.acceptedTerms}
+            />
             <Button
               label="Crear cuenta"
               onPress={handleRegister}
