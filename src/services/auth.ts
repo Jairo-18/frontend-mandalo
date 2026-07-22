@@ -14,6 +14,8 @@ export type AuthUser = {
   isActive?: boolean;
   /** Nota del admin para el usuario (p. ej. por qué no se activa su cuenta). */
   observations?: string | null;
+  /** Cuándo aceptó Términos/Tratamiento de Datos (ISO) o null si nunca. */
+  termsAcceptedAt?: string | null;
 };
 
 /**
@@ -58,6 +60,18 @@ export const authService = {
     }>('/auth/sign-in', {
       method: 'POST',
       body: { email, password },
+      toastSuccess: true,
+    }),
+
+  /**
+   * Registra la aceptación de Términos/Tratamiento de Datos del usuario
+   * autenticado (gate de inicio de sesión). Si es dueño de un negocio, el
+   * backend marca también la aceptación del negocio.
+   */
+  acceptTerms: () =>
+    http<{ message?: string }>('/user/me/accept-terms', {
+      method: 'POST',
+      auth: true,
       toastSuccess: true,
     }),
 

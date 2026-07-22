@@ -196,6 +196,17 @@ export const ordersService = {
     );
   },
 
+  /**
+   * El negocio le pide al cliente el comprobante del pago (no cambia el
+   * estado; el backend notifica al cliente por socket + push).
+   */
+  requestPayment: (id: number) =>
+    http<{ message?: string }>(`/invoice/${id}/request-payment`, {
+      method: 'POST',
+      auth: true,
+      toastSuccess: true,
+    }),
+
   /** El repartidor toma un pedido disponible. */
   take: (id: number) =>
     http<{ message?: string }>(`/invoice/${id}/take`, {

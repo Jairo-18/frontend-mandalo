@@ -1,11 +1,30 @@
 import { Redirect } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ClientDrawerContent } from '@/components/client/drawer-content';
 import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
+import { toast } from '@/lib/toast';
+import {
+  PaymentRequestedEvent,
+  usePaymentRequested,
+} from '@/lib/orders-socket';
+
+/**
+ * Escucha el aviso "el negocio necesita tu comprobante de pago" mientras el
+ * cliente tiene la app abierta (el push cubre la app cerrada) y lo muestra
+ * como toast. Sin UI propia; vive dentro del panel del cliente.
+ */
+function PaymentRequestedListener() {
+  usePaymentRequested(
+    useCallback((event: PaymentRequestedEvent) => {
+      toast.error(event.message);
+    }, []),
+  );
+  return null;
+}
 
 /**
  * Panel del cliente (rol USER): drawer con sidebar a la izquierda (Explorar,
@@ -43,6 +62,7 @@ export default function ClientLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaymentRequestedListener />
       <Drawer
         drawerContent={(props) => <ClientDrawerContent {...props} />}
         screenOptions={{

@@ -55,8 +55,13 @@ export function OrderDetailView({
     perspective === 'client' &&
     !paidInCash &&
     order.stateType?.code !== 'CANC';
+  // El domiciliario ve el comprobante (solo lectura) para confirmar que sí se
+  // pagó; el cliente/negocio lo ven siempre (subir/verificar). Nunca en efectivo.
   const showProofSection =
-    perspective !== 'delivery' && (!!order.paymentProofUrl || canAttachProof);
+    !paidInCash &&
+    (perspective === 'delivery'
+      ? !!order.paymentProofUrl
+      : !!order.paymentProofUrl || canAttachProof);
 
   function attachProof() {
     pickPhoto('Soporte de pago', async (uri) => {

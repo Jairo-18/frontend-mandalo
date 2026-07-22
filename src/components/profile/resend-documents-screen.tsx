@@ -36,6 +36,8 @@ export function ResendDocumentsScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Cuenta ya verificada (activa): los documentos quedan congelados.
+  const [locked, setLocked] = useState(false);
 
   const [initialPlate, setInitialPlate] = useState('');
   const [vehiclePlate, setVehiclePlate] = useState('');
@@ -53,6 +55,7 @@ export function ResendDocumentsScreen() {
       .getMe()
       .then((res) => {
         const p = res.data;
+        setLocked(p.isActive);
         setInitialPlate(p.vehiclePlate ?? '');
         setVehiclePlate(p.vehiclePlate ?? '');
         setAvatarUri(p.avatarUrl ?? null);
@@ -126,6 +129,21 @@ export function ResendDocumentsScreen() {
 
       {loading ? (
         <ActivityIndicator size="large" color="#FF5A3C" style={{ marginTop: 48 }} />
+      ) : locked ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <Ionicons name="shield-checkmark-outline" size={52} color="#22C55E" />
+          <Text className="mt-4 text-center text-lg font-extrabold text-dark">
+            Documentos verificados
+          </Text>
+          <Text className="mt-2 text-center text-[14px] leading-5 text-muted">
+            Tu cuenta ya está verificada, así que tus documentos quedaron
+            congelados. Si necesitas actualizar alguno, contacta al
+            administrador.
+          </Text>
+          <Pressable onPress={() => router.back()} className="mt-6">
+            <Text className="text-[15px] font-bold text-primary">Volver</Text>
+          </Pressable>
+        </View>
       ) : (
         <KeyboardAwareScroll>
           <View className="px-5 pb-10">

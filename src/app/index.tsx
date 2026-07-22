@@ -5,7 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { HttpError } from '@/lib/http';
 import {
   clearSession,
-  homePathFor,
+  entryPathFor,
   loadSession,
   setSession,
 } from '@/lib/session';
@@ -14,7 +14,7 @@ import { authService } from '@/services/auth';
 type Target =
   | '/auth/login'
   | '/auth/complete-registration'
-  | ReturnType<typeof homePathFor>;
+  | ReturnType<typeof entryPathFor>;
 
 /**
  * Punto de entrada: restaura la sesión guardada (SecureStore) antes de decidir
@@ -52,7 +52,7 @@ export default function Index() {
           setTarget(
             session.needsOnboarding
               ? '/auth/complete-registration'
-              : homePathFor(user),
+              : entryPathFor(user),
           );
         }
       } catch (e) {
@@ -62,7 +62,7 @@ export default function Index() {
             setTarget(
               session.needsOnboarding
                 ? '/auth/complete-registration'
-                : homePathFor(session.user),
+                : entryPathFor(session.user),
             );
           }
           return;

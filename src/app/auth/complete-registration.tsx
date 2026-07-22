@@ -249,7 +249,11 @@ export default function CompleteRegistrationScreen() {
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
       <KeyboardAwareScroll>
-        <AuthHeader compact subtitle="Completa tu registro" />
+        <AuthHeader
+          compact
+          subtitle="Completa tu registro"
+          onBack={handleExit}
+        />
 
         <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">
           <Text className="text-[26px] font-extrabold text-dark">

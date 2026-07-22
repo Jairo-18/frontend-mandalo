@@ -277,6 +277,9 @@ export default function RegisterForm() {
         <AuthHeader
           compact
           subtitle={isDelivery ? 'Registro de domiciliario' : 'Registro de usuario'}
+          onBack={() =>
+            router.canGoBack() ? router.back() : router.replace('/auth/register')
+          }
         />
 
         <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">

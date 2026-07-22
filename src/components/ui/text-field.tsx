@@ -19,6 +19,12 @@ type Props = TextInputProps & {
    * text) + trim al salir del campo. NO usar en contraseñas.
    */
   format?: TextFormat;
+  /**
+   * Campo de solo lectura: se ve pero no se edita (fondo gris, texto atenuado).
+   * Para datos que asigna otro rol, p. ej. la razón social en el panel del
+   * negocio (la asigna el admin/vendedor).
+   */
+  readOnly?: boolean;
 };
 
 /** Props de teclado que cada formato trae por defecto (sobrescribibles). */
@@ -45,6 +51,7 @@ export function TextField({
   secure,
   error,
   format,
+  readOnly,
   onChangeText,
   onBlur,
   multiline,
@@ -72,16 +79,19 @@ export function TextField({
       <View
         className={`flex-row gap-2.5 rounded-xl border px-3.5 ${
           multiline ? 'items-start py-3' : 'h-[52px] items-center'
-        } ${error ? 'border-red-500' : 'border-gray-200'}`}
+        } ${error ? 'border-red-500' : 'border-gray-200'} ${
+          readOnly ? 'bg-gray-50' : ''
+        }`}
       >
         <Ionicons
-          name={icon}
+          name={readOnly ? 'lock-closed' : icon}
           size={20}
           color={PLACEHOLDER}
           style={multiline ? { marginTop: 2 } : undefined}
         />
         <TextInput
-          className={`flex-1 text-[15px] text-dark ${multiline ? '' : 'h-full'}`}
+          editable={!readOnly}
+          className={`flex-1 text-[15px] ${readOnly ? 'text-muted' : 'text-dark'} ${multiline ? '' : 'h-full'}`}
           style={
             multiline
               ? { minHeight: (numberOfLines ?? 3) * 22, textAlignVertical: 'top' }

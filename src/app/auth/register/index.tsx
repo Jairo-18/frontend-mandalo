@@ -77,7 +77,13 @@ export default function RegisterChooser() {
   return (
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
-      <AuthHeader compact subtitle="Únete a Mándalo" />
+      <AuthHeader
+        compact
+        subtitle="Únete a Mándalo"
+        onBack={() =>
+          router.canGoBack() ? router.back() : router.replace('/auth/login')
+        }
+      />
 
       <View
         className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pt-8"

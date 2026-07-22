@@ -26,6 +26,11 @@ export type Session = {
     isActive?: boolean;
     /** Nota del admin para el usuario (por qué no se activa su cuenta, etc.). */
     observations?: string | null;
+    /**
+     * Cuándo aceptó Términos/Tratamiento de Datos (ISO) o null si nunca. Si es
+     * null, la app lo lleva al gate `/auth/accept-terms` antes de entrar (§41).
+     */
+    termsAcceptedAt?: string | null;
   };
 };
 
@@ -47,6 +52,20 @@ export function homePathFor(
     default:
       return '/home';
   }
+}
+
+/**
+ * A dónde entra el usuario tras autenticarse: si aún no aceptó Términos y
+ * Tratamiento de Datos, al gate bloqueante `/auth/accept-terms`; si ya aceptó,
+ * a su panel/home según el rol. Se usa en el login, el sign-in con Google y el
+ * auto-login (index). El onboarding post-Google tiene prioridad y se resuelve
+ * antes (complete-registration ya incluye la aceptación).
+ */
+export function entryPathFor(
+  user?: Session['user'] | null,
+): ReturnType<typeof homePathFor> | '/auth/accept-terms' {
+  if (user && !user.termsAcceptedAt) return '/auth/accept-terms';
+  return homePathFor(user);
 }
 
 let current: Session | null = null;

@@ -13,7 +13,7 @@ import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
-import { DeviceCoords, getDeviceLocation } from '@/lib/location';
+import { DeviceCoords } from '@/lib/location';
 import { extractCoordsFromMapsUrl } from '@/lib/maps-url';
 import {
   EMAIL_RE,
@@ -108,8 +108,6 @@ export function BusinessFormModal({
   const [mapsUrl, setMapsUrl] = useState('');
   const [coords, setCoords] = useState<DeviceCoords | null>(null);
   const [extracting, setExtracting] = useState(false);
-  // GPS del dueño (solo panel NEGO: el dueño suele estar EN el negocio).
-  const [locating, setLocating] = useState(false);
   // Dueño/representante: usuario existente elegido con el buscador…
   const [owner, setOwner] = useState<BusinessOwner | null>(null);
   // …o cuenta nueva del negocio (correo + contraseña, solo al crear).
@@ -193,11 +191,14 @@ export function BusinessFormModal({
       editing?.municipality ? Number(editing.municipality.id) : undefined,
     );
 
-    // Etiquetas para los chips.
-    adminTagsService
-      .paginated({ page: 1, perPage: 200 })
-      .then((res) => setAllTags(res.data))
-      .catch(() => {});
+    // Etiquetas para los chips (solo el admin las edita; el negocio ve las
+    // suyas desde editing.tags, así que no hace falta cargar el catálogo).
+    if (!selfBusiness) {
+      adminTagsService
+        .paginated({ page: 1, perPage: 200 })
+        .then((res) => setAllTags(res.data))
+        .catch(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, editing]);
 
@@ -247,20 +248,6 @@ export function BusinessFormModal({
     }
   }
 
-  /** GPS del dispositivo como alternativa al link (dueño parado en el local). */
-  async function handleUseGps() {
-    setLocating(true);
-    try {
-      const result = await getDeviceLocation();
-      if (result) {
-        setCoords(result.coords);
-        clearError('location');
-      }
-    } finally {
-      setLocating(false);
-    }
-  }
-
   // En edición, guardar solo se habilita si algo cambió respecto a lo cargado
   // (evita PATCH inútiles); al crear siempre está habilitado.
   const dirty =
@@ -300,16 +287,20 @@ export function BusinessFormModal({
 
   function validateForm() {
     return validate({
-      legalName: legalName.trim() ? undefined : 'Ingresa la razón social.',
+      // La identidad legal y la ubicación las asigna el admin; en el panel del
+      // negocio son de solo lectura, así que no se validan (no las puede tocar).
+      legalName:
+        selfBusiness || legalName.trim() ? undefined : 'Ingresa la razón social.',
       identificationTypeId:
-        identificationNumber.trim() && !identificationTypeId
+        !selfBusiness && identificationNumber.trim() && !identificationTypeId
           ? 'Selecciona el tipo.'
           : undefined,
       // Sin coordenadas el negocio NO aparece en el explorar (filtro por
       // cercanía) ni se puede estimar la entrega.
-      location: coords
-        ? undefined
-        : 'Pega el link de Google Maps del negocio y toca "Extraer ubicación".',
+      location:
+        selfBusiness || coords
+          ? undefined
+          : 'Pega el link de Google Maps del negocio y toca "Extraer ubicación".',
       // El horario va en pareja: con una sola hora no se puede saber si abre.
       schedule:
         (openTime && !closeTime) || (!openTime && closeTime)
@@ -387,8 +378,24 @@ export function BusinessFormModal({
     try {
       setSaving(true);
       if (selfBusiness) {
-        // Panel del negocio: el backend resuelve el id desde el JWT.
-        await businessService.updateMine(payload);
+        // Panel del negocio: el backend resuelve el id desde el JWT y solo
+        // acepta lo que el negocio puede tocar. Se envía únicamente eso (la
+        // identidad legal, ubicación y etiquetas las asigna el admin/vendedor);
+        // el backend igual las descarta por si acaso (updateMine).
+        const minePayload: Partial<AdminBusinessPayload> = {
+          tradeName: payload.tradeName,
+          description: payload.description,
+          phone: payload.phone,
+          openTime: payload.openTime,
+          closeTime: payload.closeTime,
+          openDays: payload.openDays,
+          temporarilyClosed: payload.temporarilyClosed,
+          paymentHolderName: payload.paymentHolderName,
+          nequiNumber: payload.nequiNumber,
+          nequiKey: payload.nequiKey,
+          bancolombiaAccount: payload.bancolombiaAccount,
+        };
+        await businessService.updateMine(minePayload);
         if (pendingLogo) await businessService.uploadMyLogo(pendingLogo);
         if (pendingQr) await businessService.uploadMyPaymentQr(pendingQr);
         onSaved();
@@ -444,6 +451,19 @@ export function BusinessFormModal({
         placeholderIcon="storefront-outline"
       />
 
+      {/* En el panel del negocio, la identidad legal, la ubicación y las
+          etiquetas las asigna el admin/vendedor: se ven bloqueadas (🔒). */}
+      {selfBusiness && (
+        <View className="mb-4 flex-row gap-2.5 rounded-xl bg-primary-tint px-3.5 py-3">
+          <Ionicons name="lock-closed" size={18} color="#FF5A3C" />
+          <Text className="flex-1 text-[13px] text-dark">
+            Los campos con candado (razón social, identificación, ubicación y
+            etiquetas) los asigna el administrador y no se pueden editar aquí.
+            Puedes cambiar el resto.
+          </Text>
+        </View>
+      )}
+
       <TextField
         label="Razón social"
         icon="business-outline"
@@ -452,6 +472,7 @@ export function BusinessFormModal({
         onChangeText={bind('legalName', setLegalName)}
         error={errors.legalName}
         placeholder="INVERSIONES EL SABOR S.A.S."
+        readOnly={selfBusiness}
       />
 
       <TextField
@@ -474,6 +495,7 @@ export function BusinessFormModal({
           clearError('identificationTypeId');
         }}
         error={errors.identificationTypeId}
+        disabled={selfBusiness}
       />
 
       <TextField
@@ -484,6 +506,7 @@ export function BusinessFormModal({
         onChangeText={bind('identificationNumber', setIdentificationNumber)}
         error={errors.identificationNumber}
         placeholder="901234567-8"
+        readOnly={selfBusiness}
       />
 
       <TextField
@@ -518,6 +541,7 @@ export function BusinessFormModal({
           muni.onSelectDepartment(id);
         }}
         error={errors.departmentId}
+        disabled={selfBusiness}
       />
 
       <Select
@@ -529,7 +553,7 @@ export function BusinessFormModal({
           muni.setMunicipalityId(id);
           clearError('municipalityId');
         }}
-        disabled={!muni.departmentId}
+        disabled={selfBusiness || !muni.departmentId}
         loading={muni.loadingMuns}
         placeholder={
           muni.departmentId
@@ -547,65 +571,64 @@ export function BusinessFormModal({
         onChangeText={bind('address', setAddress)}
         error={errors.address}
         placeholder="Cra 5 # 10-23, Centro"
+        readOnly={selfBusiness}
       />
 
-      {/* Ubicación exacta: link "Compartir" de Google Maps del negocio */}
-      <TextField
-        label="Ubicación (link de Google Maps)"
-        icon="map-outline"
-        value={mapsUrl}
-        onChangeText={(text) => {
-          setMapsUrl(text);
-          clearError('location');
-        }}
-        placeholder="https://maps.app.goo.gl/…"
-        autoCapitalize="none"
-      />
-      <Pressable
-        onPress={handleExtractLocation}
-        disabled={extracting || !mapsUrl.trim()}
-        className="-mt-2 mb-1 flex-row items-center gap-1.5 self-start"
-      >
-        {extracting ? (
-          <ActivityIndicator size="small" color="#FF5A3C" />
-        ) : (
-          <Ionicons
-            name={coords ? 'checkmark-circle' : 'locate-outline'}
-            size={16}
-            color="#FF5A3C"
-          />
-        )}
-        <Text className="text-[13px] font-bold text-primary">
-          {extracting
-            ? 'Leyendo el link…'
-            : coords
-              ? 'Ubicación guardada — pega otro link para cambiarla'
-              : 'Extraer ubicación del link (obligatorio)'}
-        </Text>
-      </Pressable>
-      {/* Alternativa para el dueño: marcar la ubicación parado en el local */}
-      {selfBusiness && (
-        <Pressable
-          onPress={handleUseGps}
-          disabled={locating}
-          className="mt-1 flex-row items-center gap-1.5 self-start"
-        >
-          {locating ? (
-            <ActivityIndicator size="small" color="#FF5A3C" />
-          ) : (
-            <Ionicons name="locate-outline" size={16} color="#FF5A3C" />
-          )}
-          <Text className="text-[13px] font-bold text-primary">
-            {locating
-              ? 'Obteniendo ubicación…'
-              : '…o usar mi ubicación actual (si estás en el negocio)'}
+      {selfBusiness ? (
+        /* Ubicación de solo lectura: la asigna el administrador. */
+        <View className="mb-4 flex-row items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3">
+          <Ionicons name="lock-closed" size={20} color="#9CA3AF" />
+          <Text className="flex-1 text-[15px] text-muted">
+            {coords
+              ? 'Ubicación exacta asignada por el administrador.'
+              : 'El administrador aún no asignó la ubicación exacta.'}
           </Text>
-        </Pressable>
+          {coords && (
+            <Ionicons name="checkmark-circle" size={18} color="#FF5A3C" />
+          )}
+        </View>
+      ) : (
+        <>
+          {/* Ubicación exacta: link "Compartir" de Google Maps del negocio */}
+          <TextField
+            label="Ubicación (link de Google Maps)"
+            icon="map-outline"
+            value={mapsUrl}
+            onChangeText={(text) => {
+              setMapsUrl(text);
+              clearError('location');
+            }}
+            placeholder="https://maps.app.goo.gl/…"
+            autoCapitalize="none"
+          />
+          <Pressable
+            onPress={handleExtractLocation}
+            disabled={extracting || !mapsUrl.trim()}
+            className="-mt-2 mb-1 flex-row items-center gap-1.5 self-start"
+          >
+            {extracting ? (
+              <ActivityIndicator size="small" color="#FF5A3C" />
+            ) : (
+              <Ionicons
+                name={coords ? 'checkmark-circle' : 'locate-outline'}
+                size={16}
+                color="#FF5A3C"
+              />
+            )}
+            <Text className="text-[13px] font-bold text-primary">
+              {extracting
+                ? 'Leyendo el link…'
+                : coords
+                  ? 'Ubicación guardada — pega otro link para cambiarla'
+                  : 'Extraer ubicación del link (obligatorio)'}
+            </Text>
+          </Pressable>
+          {!!errors.location && (
+            <Text className="mb-3 text-xs text-red-600">{errors.location}</Text>
+          )}
+          <View className="mb-4" />
+        </>
       )}
-      {!!errors.location && (
-        <Text className="mb-3 text-xs text-red-600">{errors.location}</Text>
-      )}
-      <View className="mb-4" />
 
       {/* Dueño/representante y cuenta de acceso: solo los maneja el admin */}
       {!selfBusiness && (
@@ -773,10 +796,12 @@ export function BusinessFormModal({
 
       <ChipMultiSelect
         label="Etiquetas"
-        items={allTags}
+        // En solo lectura se muestran las ya asignadas (sin esperar el catálogo).
+        items={selfBusiness ? (editing?.tags ?? []) : allTags}
         selectedIds={tagIds}
         onToggle={toggleTag}
         emptyMessage="Aún no hay etiquetas creadas (se crean en la sección Etiquetas)."
+        readOnly={selfBusiness}
       />
 
       {!selfBusiness && (

@@ -126,13 +126,9 @@ export default function CheckoutScreen() {
       setSheetVisible(true);
       return;
     }
-    // Sin comprobante no hay pedido por transferencia: el negocio necesita
-    // verificar que el pago sí llegó antes de preparar.
-    if (payment !== 'EFEC' && !proofUri) {
-      setProofError('Sube el comprobante del pago para confirmar el pedido.');
-      toast.error('Sube el comprobante del pago.');
-      return;
-    }
+    // El comprobante es OPCIONAL al crear el pedido: el cliente puede subirlo
+    // ahora o después, pero el negocio no podrá pasar el pedido a preparación
+    // (métodos distintos a efectivo) hasta que el comprobante esté cargado.
     setSubmitting(true);
     try {
       const res = await ordersService.create({
@@ -232,7 +228,8 @@ export default function CheckoutScreen() {
           </Pressable>
         )}
 
-        {/* Productos */}
+        {/* Productos: editables mientras el pedido no se haya enviado al
+            negocio (aún en el carrito) — sumar, restar o quitar cada uno. */}
         <Text className="mb-2 text-sm font-bold text-gray-700">Tu pedido</Text>
         <View className="mb-5 rounded-2xl bg-surface p-3.5">
           {cart.items.map((item, idx) => {
@@ -243,7 +240,7 @@ export default function CheckoutScreen() {
             return (
               <View
                 key={item.product.id}
-                className={`flex-row items-center gap-2.5 ${idx > 0 ? 'mt-2.5' : ''}`}
+                className={`flex-row items-center gap-2.5 ${idx > 0 ? 'mt-3' : ''}`}
               >
                 <Avatar
                   uri={item.product.images?.[0]}
@@ -251,18 +248,49 @@ export default function CheckoutScreen() {
                   size={40}
                   shape="rounded"
                 />
-                <Text className="text-[13px] font-extrabold text-primary">
-                  {item.quantity}×
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  className="flex-1 text-[13px] text-dark"
+                <View className="flex-1">
+                  <Text numberOfLines={1} className="text-[13px] text-dark">
+                    {item.product.name}
+                  </Text>
+                  <Text className="text-[12px] font-semibold text-dark">
+                    {formatPrice(price * item.quantity)}
+                  </Text>
+                </View>
+
+                {/* Stepper: restar (quita al llegar a 0) / cantidad / sumar */}
+                <View className="flex-row items-center gap-2 rounded-full bg-white px-1.5 py-1">
+                  <Pressable
+                    onPress={() => cart.decrement(item.product.id)}
+                    hitSlop={6}
+                    className="h-7 w-7 items-center justify-center rounded-full bg-surface active:opacity-70"
+                  >
+                    <Ionicons name="remove" size={16} color="#1E1E2D" />
+                  </Pressable>
+                  <Text className="min-w-[18px] text-center text-[14px] font-extrabold text-dark">
+                    {item.quantity}
+                  </Text>
+                  <Pressable
+                    onPress={() =>
+                      cart.add(item.product, {
+                        id: cart.businessId!,
+                        name: cart.businessName ?? '',
+                      })
+                    }
+                    hitSlop={6}
+                    className="h-7 w-7 items-center justify-center rounded-full bg-primary active:opacity-70"
+                  >
+                    <Ionicons name="add" size={16} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+
+                {/* Quitar el producto por completo */}
+                <Pressable
+                  onPress={() => cart.remove(item.product.id)}
+                  hitSlop={6}
+                  className="ml-0.5 active:opacity-70"
                 >
-                  {item.product.name}
-                </Text>
-                <Text className="text-[13px] font-semibold text-dark">
-                  {formatPrice(price * item.quantity)}
-                </Text>
+                  <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                </Pressable>
               </View>
             );
           })}
@@ -318,7 +346,7 @@ export default function CheckoutScreen() {
             </View>
 
             <DocumentPhotoField
-              label="Comprobante del pago (obligatorio)"
+              label="Comprobante del pago (opcional)"
               uri={proofUri}
               onChange={(uri) => {
                 setProofUri(uri);
@@ -328,8 +356,8 @@ export default function CheckoutScreen() {
               placeholderIcon="receipt-outline"
             />
             <Text className="-mt-2 mb-4 text-xs text-muted">
-              Haz la transferencia y sube el pantallazo — el negocio lo verá
-              para verificar tu pago.
+              Puedes subir el pantallazo ahora o desde el detalle del pedido. El
+              negocio necesita verlo para poder preparar tu pedido.
             </Text>
           </View>
         )}

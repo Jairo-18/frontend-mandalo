@@ -10,6 +10,11 @@ type Props = {
   onToggle: (id: number) => void;
   /** Mensaje cuando no hay items para elegir. */
   emptyMessage?: string;
+  /**
+   * Solo lectura: muestra únicamente las etiquetas seleccionadas, sin poder
+   * tocarlas (p. ej. en el panel del negocio, donde las asigna el vendedor).
+   */
+  readOnly?: boolean;
 };
 
 /** Multi-selección con chips (p. ej. las etiquetas del negocio). */
@@ -19,22 +24,31 @@ export function ChipMultiSelect({
   selectedIds,
   onToggle,
   emptyMessage,
+  readOnly,
 }: Props) {
+  // En solo lectura únicamente interesan las etiquetas ya asignadas.
+  const visibleItems = readOnly
+    ? items.filter((item) => selectedIds.includes(item.id))
+    : items;
+
   return (
     <>
       <Text className="mb-2 text-sm font-bold text-gray-700">{label}</Text>
-      {items.length === 0 ? (
+      {visibleItems.length === 0 ? (
         <Text className="mb-4 text-sm text-muted">
-          {emptyMessage ?? 'No hay opciones disponibles.'}
+          {readOnly
+            ? 'El administrador aún no te asignó etiquetas.'
+            : (emptyMessage ?? 'No hay opciones disponibles.')}
         </Text>
       ) : (
         <View className="mb-4 flex-row flex-wrap gap-2">
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const selected = selectedIds.includes(item.id);
             return (
               <Pressable
                 key={item.id}
                 onPress={() => onToggle(item.id)}
+                disabled={readOnly}
                 className={`flex-row items-center gap-1.5 rounded-full border px-3.5 py-2 ${
                   selected
                     ? 'border-primary bg-primary-tint'

@@ -94,7 +94,11 @@ export default function ForgotPasswordScreen() {
     <View className="flex-1 bg-white">
       <StatusBar style="dark" />
       <KeyboardAwareScroll>
-        <AuthHeader />
+        <AuthHeader
+          onBack={() =>
+            router.canGoBack() ? router.back() : router.replace('/auth/login')
+          }
+        />
 
         <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">
           <Text className="text-center text-[22px] font-extrabold text-dark">

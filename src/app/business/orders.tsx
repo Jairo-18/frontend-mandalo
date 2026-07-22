@@ -65,6 +65,16 @@ export default function BusinessOrdersScreen() {
     list.fetchPage(1, 'refresh');
   }
 
+  // Le pide al cliente el comprobante del pago (no cambia el estado; el backend
+  // lo notifica por socket + push). El interceptor muestra el mensaje.
+  async function requestPayment(id: number) {
+    try {
+      await ordersService.requestPayment(id);
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    }
+  }
+
   return (
     <View className="flex-1 bg-surface">
       <View className="px-4 pb-1 pt-3">
@@ -132,17 +142,35 @@ export default function BusinessOrdersScreen() {
             );
           }
           if (code === 'ACEP') {
+            // Métodos distintos a efectivo: no se puede preparar hasta que el
+            // cliente suba el comprobante. Mientras falte, se ofrece pedírselo.
+            const needsProof =
+              order.paidType?.code !== 'EFEC' && !order.paymentProofUrl;
             return (
-              <View className="flex-row gap-3">
-                <ActionButton
-                  label="Cancelar"
-                  variant="danger-outline"
-                  onPress={() => setCancelId(order.id)}
-                />
-                <ActionButton
-                  label="Preparar"
-                  onPress={() => setState(order.id, 'PREP', reload)}
-                />
+              <View className="gap-2">
+                {needsProof && (
+                  <Text className="text-center text-xs text-muted">
+                    Falta el comprobante del pago del cliente para preparar.
+                  </Text>
+                )}
+                <View className="flex-row gap-3">
+                  <ActionButton
+                    label="Cancelar"
+                    variant="danger-outline"
+                    onPress={() => setCancelId(order.id)}
+                  />
+                  {needsProof ? (
+                    <ActionButton
+                      label="Solicitar pago"
+                      onPress={() => requestPayment(order.id)}
+                    />
+                  ) : (
+                    <ActionButton
+                      label="Preparar"
+                      onPress={() => setState(order.id, 'PREP', reload)}
+                    />
+                  )}
+                </View>
               </View>
             );
           }

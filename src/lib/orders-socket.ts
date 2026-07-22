@@ -109,6 +109,27 @@ export function useChatMessages(
   }, [handler]);
 }
 
+/** El negocio le pidió al cliente el comprobante del pago (relay del gateway). */
+export type PaymentRequestedEvent = { invoiceId: number; message: string };
+
+/**
+ * Aviso en vivo de "el negocio necesita tu comprobante de pago" al cliente
+ * dueño. El handler debe venir memoizado. Complementa el push (app cerrada).
+ */
+export function usePaymentRequested(
+  handler: (event: PaymentRequestedEvent) => void,
+): void {
+  useEffect(() => {
+    const s = getOrdersSocket();
+    if (!s) return;
+    const cb = (payload: PaymentRequestedEvent) => handler(payload);
+    s.on('invoice:payment-requested', cb);
+    return () => {
+      s.off('invoice:payment-requested', cb);
+    };
+  }, [handler]);
+}
+
 /**
  * Suscribe un handler a los eventos de pedido en vivo. El handler debe venir
  * memoizado (useCallback). Es tolerante: si no hay sesión/socket, no hace

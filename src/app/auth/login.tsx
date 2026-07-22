@@ -18,7 +18,7 @@ import {
 } from '@/lib/credentials';
 import { signInWithGoogle } from '@/lib/google-auth';
 import { HttpError } from '@/lib/http';
-import { getSession, homePathFor, setSession } from '@/lib/session';
+import { entryPathFor, getSession, setSession } from '@/lib/session';
 import { EMAIL_RE } from '@/lib/text-format';
 import { authService } from '@/services/auth';
 
@@ -86,7 +86,8 @@ export default function LoginScreen() {
         await clearCredentials();
       }
 
-      router.replace(homePathFor(user));
+      // Si no ha aceptado términos, entryPathFor lo manda al gate primero.
+      router.replace(entryPathFor(user));
     } catch (e) {
       // El interceptor HTTP ya mostró el toast con el mensaje del backend.
       if (isEmailNotVerified(e)) setShowResend(true);
@@ -117,7 +118,7 @@ export default function LoginScreen() {
         router.replace(
           result.isNewUser
             ? '/auth/complete-registration'
-            : homePathFor(getSession()?.user),
+            : entryPathFor(getSession()?.user),
         );
       }
     } finally {

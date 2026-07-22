@@ -1,23 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BusinessFormModal } from '@/components/admin/business-form-modal';
 import { Avatar } from '@/components/ui/avatar';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
+import { useMyBusiness } from '@/hooks/use-my-business';
 import { usePendingOrdersCount } from '@/hooks/use-pending-orders-count';
 import { useSession } from '@/hooks/use-session';
+import { refreshMyBusiness } from '@/lib/my-business';
 import { signOutEverywhere } from '@/lib/sign-out';
-import { AdminBusiness } from '@/services/admin-businesses';
-import { businessService } from '@/services/business';
 
 type BusinessRoute =
   | '/business/dashboard'
   | '/business/products'
   | '/business/orders'
-  | '/business/earnings';
+  | '/business/earnings'
+  | '/business/profile';
 
 type Item = {
   label: string;
@@ -31,6 +31,7 @@ const ITEMS: Item[] = [
   { label: 'Productos', icon: 'cube-outline', href: '/business/products' },
   { label: 'Pedidos', icon: 'receipt-outline', href: '/business/orders' },
   { label: 'Mis cobros', icon: 'cash-outline', href: '/business/earnings' },
+  { label: 'Mi negocio', icon: 'storefront-outline', href: '/business/profile' },
 ];
 
 // Lo único que se usa de las props del drawer (evita el choque de tipos entre
@@ -48,10 +49,10 @@ export function BusinessDrawerContent({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [signingOut, setSigningOut] = useState(false);
 
-  // Negocio del usuario autenticado (nombre comercial + logo de la cabecera).
-  const [business, setBusiness] = useState<AdminBusiness | null>(null);
-  // Edición del propio negocio: se abre desde la tarjeta de la cabecera.
-  const [formVisible, setFormVisible] = useState(false);
+  // Negocio del usuario autenticado (nombre comercial + logo de la cabecera),
+  // desde el store REACTIVO compartido con la pantalla "Mi negocio": al guardar
+  // "Editar mi negocio" allí, esta cabecera se refresca sola.
+  const business = useMyBusiness();
 
   // Reactivo: leer getSession() suelto en el render deja JSX viejo con
   // React Compiler (regla de NOTAS §23).
@@ -60,24 +61,9 @@ export function BusinessDrawerContent({ navigation }: Props) {
   // Pedidos PENDIENTES en vivo (socket /orders) para el badge de "Pedidos".
   const pendingCount = usePendingOrdersCount();
 
-  const loadBusiness = useCallback(() => {
-    businessService
-      .getMine()
-      .then((res) => setBusiness(res.data))
-      .catch(() => {
-        // El interceptor HTTP ya mostró el error (p. ej. cuenta sin negocio).
-      });
-  }, []);
-
   useEffect(() => {
-    loadBusiness();
-  }, [loadBusiness]);
-
-  function handleSaved() {
-    setFormVisible(false);
-    // Refresca nombre/logo de la cabecera con lo recién guardado.
-    loadBusiness();
-  }
+    refreshMyBusiness();
+  }, []);
 
   const businessName =
     business?.tradeName || business?.legalName || 'Mi negocio';
@@ -106,10 +92,9 @@ export function BusinessDrawerContent({ navigation }: Props) {
           Panel del negocio
         </Text>
 
-        {/* Tarjeta del negocio: tocarla abre la edición del propio negocio */}
+        {/* Tarjeta del negocio: tocarla abre la pantalla "Mi negocio" */}
         <Pressable
-          onPress={() => business && setFormVisible(true)}
-          disabled={!business}
+          onPress={() => go('/business/profile')}
           className="mt-4 flex-row items-center gap-3 active:opacity-70"
         >
           <Avatar
@@ -123,13 +108,10 @@ export function BusinessDrawerContent({ navigation }: Props) {
               {businessName}
             </Text>
             <Text numberOfLines={1} className="text-xs text-white/60">
-              {user?.fullName ?? 'Dueño/representante'}
-              {business ? ' · Editar mi negocio' : ''}
+              {user?.fullName ?? 'Dueño/representante'} · Mi negocio
             </Text>
           </View>
-          {business && (
-            <Ionicons name="create-outline" size={18} color="#FFFFFF" />
-          )}
+          <Ionicons name="create-outline" size={18} color="#FFFFFF" />
         </Pressable>
       </View>
 
@@ -191,14 +173,6 @@ export function BusinessDrawerContent({ navigation }: Props) {
         </Pressable>
         <DeveloperCredit />
       </View>
-
-      <BusinessFormModal
-        visible={formVisible}
-        editing={business}
-        selfBusiness
-        onClose={() => setFormVisible(false)}
-        onSaved={handleSaved}
-      />
     </View>
   );
 }

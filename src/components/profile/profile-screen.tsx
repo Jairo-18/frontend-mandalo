@@ -498,9 +498,11 @@ export function ProfileScreen({
               </View>
             ) : null}
 
-            {/* Reenviar documentos (solo repartidor): corregir un rechazo o
-                renovar uno vencido (SOAT, tecnomecánica, licencia). */}
-            {resendDocumentsHref && (
+            {/* Reenviar documentos (solo repartidor): corregir un rechazo del
+                admin. Una vez la cuenta está VERIFICADA (activa), los
+                documentos quedan congelados y la fila desaparece — para
+                cambiar alguno hay que pedírselo al administrador. */}
+            {resendDocumentsHref && profile && !profile.isActive && (
               <Pressable
                 onPress={() => router.push(resendDocumentsHref)}
                 className="mb-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
@@ -511,6 +513,15 @@ export function ProfileScreen({
                 </Text>
                 <Ionicons name="chevron-forward" size={18} color="#7A7A8A" />
               </Pressable>
+            )}
+            {resendDocumentsHref && profile?.isActive && (
+              <View className="mb-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3">
+                <Ionicons name="shield-checkmark-outline" size={20} color="#22C55E" />
+                <Text className="flex-1 text-[13px] text-muted">
+                  Tus documentos están verificados. Para actualizar alguno,
+                  contacta al administrador.
+                </Text>
+              </View>
             )}
 
             {/* Cambiar contraseña: pantalla propia */}
