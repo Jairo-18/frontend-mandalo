@@ -24,6 +24,7 @@ import { useExploreFilters, useUserAddresses } from '@/hooks/use-user-data';
 import { useSession } from '@/hooks/use-session';
 import { gridItemStyle } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
+import { getAppColors } from '@/lib/app-colors';
 import {
   ExploreBusiness,
   ExploreProduct,
@@ -215,7 +216,7 @@ export default function HomeScreen() {
   const listFooter = (
     <ActivityIndicator
       size="small"
-      color="#FF5A3C"
+      color={getAppColors().primaryColor}
       style={{ paddingVertical: 12 }}
     />
   );
@@ -233,7 +234,7 @@ export default function HomeScreen() {
           }
           className="flex-1 flex-row items-center gap-2 rounded-full bg-card px-3.5 py-2.5 active:opacity-70"
         >
-          <Ionicons name="location" size={18} color="#FF5A3C" />
+          <Ionicons name="location" size={18} color={getAppColors().primaryColor} />
           <View className="flex-1">
             <Text className="text-[10px] font-bold uppercase tracking-wide text-muted">
               {isGuest ? 'Modo invitado' : 'Enviar a'}
@@ -241,7 +242,7 @@ export default function HomeScreen() {
             {loadingAddress ? (
               <ActivityIndicator
                 size="small"
-                color="#FF5A3C"
+                color={getAppColors().primaryColor}
                 style={{ alignSelf: 'flex-start' }}
               />
             ) : (
@@ -257,7 +258,7 @@ export default function HomeScreen() {
           <Ionicons
             name={isGuest ? 'log-in-outline' : 'chevron-down'}
             size={16}
-            color="#7A7A8A"
+            color={getAppColors().mutedColor}
           />
         </Pressable>
 
@@ -302,7 +303,7 @@ export default function HomeScreen() {
             businessList.loading ? (
               <ActivityIndicator
                 size="large"
-                color="#FF5A3C"
+                color={getAppColors().primaryColor}
                 style={{ paddingTop: 48 }}
               />
             ) : (
@@ -347,7 +348,7 @@ export default function HomeScreen() {
             productList.loading ? (
               <ActivityIndicator
                 size="large"
-                color="#FF5A3C"
+                color={getAppColors().primaryColor}
                 style={{ paddingTop: 48 }}
               />
             ) : (

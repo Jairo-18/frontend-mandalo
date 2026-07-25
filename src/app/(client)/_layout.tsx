@@ -5,7 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ClientDrawerContent } from '@/components/client/drawer-content';
-import { useAppTheme } from '@/context/app-theme';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
 import { toast } from '@/lib/toast';
 import {
@@ -34,7 +34,9 @@ function PaymentRequestedListener() {
  * viven FUERA del grupo y se abren empujados encima.
  */
 export default function ClientLayout() {
-  const { isDark } = useAppTheme();
+  // Reactivo de verdad (no el singleton `getAppColors()`), ver
+  // hooks/use-resolved-app-colors.ts.
+  const colors = useResolvedAppColors();
   // undefined = cargando de SecureStore; null = sin sesión.
   const [session, setSession] = useState<Session | null | undefined>(
     () => getSession() ?? undefined,
@@ -47,7 +49,7 @@ export default function ClientLayout() {
   if (session === undefined) {
     return (
       <View className="flex-1 items-center justify-center bg-card">
-        <ActivityIndicator size="large" color="#FF5A3C" />
+        <ActivityIndicator size="large" color={colors.primaryColor} />
       </View>
     );
   }
@@ -68,7 +70,7 @@ export default function ClientLayout() {
           // Cada pantalla dibuja su propia navbar (con el botón hamburguesa).
           headerShown: false,
           drawerStyle: { width: 300 },
-          sceneStyle: { backgroundColor: isDark ? '#12121B' : '#F2F2F2' },
+          sceneStyle: { backgroundColor: colors.surfaceColor },
         }}
       >
         <Drawer.Screen name="home" options={{ title: 'Explorar' }} />

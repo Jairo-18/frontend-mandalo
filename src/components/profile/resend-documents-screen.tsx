@@ -16,6 +16,7 @@ import { VehicleDocumentField } from '@/components/ui/vehicle-document-field';
 import { useAppTheme } from '@/context/app-theme';
 import { DocumentValue } from '@/lib/upload';
 import { profileService } from '@/services/profile';
+import { getAppColors } from '@/lib/app-colors';
 
 /** Una URL guardada (http…) no es un archivo nuevo por subir; una uri local sí. */
 function isLocal(uri: string | null): uri is string {
@@ -123,7 +124,7 @@ export function ResendDocumentsScreen() {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
         </Pressable>
         <Text className="flex-1 text-lg font-extrabold text-ink">
           Reenviar documentos
@@ -132,7 +133,7 @@ export function ResendDocumentsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#FF5A3C" style={{ marginTop: 48 }} />
+        <ActivityIndicator size="large" color={getAppColors().primaryColor} style={{ marginTop: 48 }} />
       ) : locked ? (
         <View className="flex-1 items-center justify-center px-8">
           <Ionicons name="shield-checkmark-outline" size={52} color="#22C55E" />

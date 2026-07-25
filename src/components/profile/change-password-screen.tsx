@@ -12,6 +12,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAppTheme } from '@/context/app-theme';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { profileService } from '@/services/profile';
+import { getAppColors } from '@/lib/app-colors';
 
 /**
  * Pantalla "Cambiar contraseña" COMPARTIDA (cliente y repartidor); cada rol
@@ -70,7 +71,7 @@ export function ChangePasswordScreen() {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-card active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
         </Pressable>
         <Text className="flex-1 text-lg font-extrabold text-ink">
           Cambiar contraseña

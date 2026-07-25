@@ -4,6 +4,7 @@ import { Image, Linking, Pressable, Text, View } from 'react-native';
 
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { toast } from '@/lib/toast';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   label: string;
@@ -41,7 +42,7 @@ export function VehicleDocumentPreview({ label, url }: Props) {
           onPress={openPdf}
           className="h-[110px] items-center justify-center gap-1.5 rounded-xl bg-surface active:opacity-80"
         >
-          <Ionicons name="document-text-outline" size={26} color="#FF5A3C" />
+          <Ionicons name="document-text-outline" size={26} color={getAppColors().primaryColor} />
           <Text className="text-xs font-bold text-primary">Abrir PDF</Text>
         </Pressable>
       ) : (

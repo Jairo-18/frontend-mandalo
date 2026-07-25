@@ -3,6 +3,7 @@ import { useNavigation } from 'expo-router';
 import { Pressable } from 'react-native';
 
 import { useAppTheme } from '@/context/app-theme';
+import { getAppColors } from '@/lib/app-colors';
 
 /**
  * Botón hamburguesa de las navbars de los paneles con drawer: abre el drawer
@@ -21,7 +22,7 @@ export function MenuButton({ parent = '/(client)' }: { parent?: string }) {
       hitSlop={8}
       className="h-10 w-10 items-center justify-center rounded-full bg-card active:opacity-70"
     >
-      <Ionicons name="menu" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+      <Ionicons name="menu" size={20} color={getAppColors().inkColor} />
     </Pressable>
   );
 }

@@ -15,6 +15,7 @@ import { DeviceCoords, getDeviceLocation } from '@/lib/location';
 import { setSession } from '@/lib/session';
 import { EMAIL_RE, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
 import { authService } from '@/services/auth';
+import { getAppColors } from '@/lib/app-colors';
 
 /**
  * Registro RÁPIDO del invitado (§44): tras armar el carrito, crea la cuenta de
@@ -203,12 +204,12 @@ export default function QuickRegisterScreen() {
             className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
           >
             {locating ? (
-              <ActivityIndicator size="small" color="#FF5A3C" />
+              <ActivityIndicator size="small" color={getAppColors().primaryColor} />
             ) : (
               <Ionicons
                 name={coords ? 'checkmark-circle' : 'locate-outline'}
                 size={16}
-                color="#FF5A3C"
+                color={getAppColors().primaryColor}
               />
             )}
             <Text className="text-[13px] font-bold text-primary">

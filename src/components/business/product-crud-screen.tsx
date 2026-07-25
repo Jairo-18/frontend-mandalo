@@ -22,6 +22,8 @@ import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { gridItemStyle } from '@/lib/grid-style';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { BusinessProduct, businessService } from '@/services/business';
+import { getAppColors } from '@/lib/app-colors';
+
 
 /**
  * CRUD de productos del negocio autenticado (el backend limita todo al
@@ -93,7 +95,7 @@ export function ProductCrudScreen() {
               />
             ) : (
               <View className="flex-1 items-center justify-center">
-                <Ionicons name="cube-outline" size={40} color="#C9C9D4" />
+                <Ionicons name="cube-outline" size={40} color={getAppColors().mutedColor} />
               </View>
             )}
 
@@ -119,7 +121,7 @@ export function ProductCrudScreen() {
                 hitSlop={6}
                 className="h-8 w-8 items-center justify-center rounded-full bg-card shadow active:opacity-70"
               >
-                <Ionicons name="pencil-outline" size={15} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+                <Ionicons name="pencil-outline" size={15} color={getAppColors().inkColor} />
               </Pressable>
               <Pressable
                 onPress={() => setToDelete(item)}
@@ -161,7 +163,7 @@ export function ProductCrudScreen() {
   return (
     <View className="flex-1">
       {/* Búsqueda + contador */}
-      <View className="px-4 pb-1" style={{ paddingTop: insets.top + 12 }}>
+      <View className="px-4 pb-1 pt-3">
         <View className="flex-row items-center gap-2.5">
           <View className="flex-1">
             <SearchBar
@@ -181,7 +183,7 @@ export function ProductCrudScreen() {
 
       {list.loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FF5A3C" />
+          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
         </View>
       ) : (
         <FlatList

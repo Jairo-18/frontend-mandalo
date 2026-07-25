@@ -4,15 +4,24 @@ import { Animated, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { setToastListener, ToastPayload, ToastType } from '@/lib/toast';
+import { getAppColors } from '@/lib/app-colors';
 
-const CONFIG: Record<
+/**
+ * Función (no objeto fijo): `info` usa el navy de marca, que el admin puede
+ * cambiar — si esto fuera un `const` a nivel de módulo, `getAppColors()` se
+ * evaluaría UNA sola vez al cargar el módulo (con el color default) y nunca
+ * se enteraría del valor real que carga `AppDataProvider`.
+ */
+function getConfig(): Record<
   ToastType,
   { bg: string; icon: keyof typeof Ionicons.glyphMap }
-> = {
-  success: { bg: '#16A34A', icon: 'checkmark-circle' },
-  error: { bg: '#DC2626', icon: 'alert-circle' },
-  info: { bg: '#1E1E2D', icon: 'information-circle' },
-};
+> {
+  return {
+    success: { bg: '#16A34A', icon: 'checkmark-circle' },
+    error: { bg: '#DC2626', icon: 'alert-circle' },
+    info: { bg: getAppColors().darkColor, icon: 'information-circle' },
+  };
+}
 
 const DURATION = 3500;
 
@@ -64,7 +73,7 @@ export function ToastHost() {
   }
 
   if (!payload) return null;
-  const cfg = CONFIG[payload.type];
+  const cfg = getConfig()[payload.type];
 
   return (
     <View

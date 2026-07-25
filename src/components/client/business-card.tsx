@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
 import { businessDisplayName, ExploreBusiness } from '@/services/explore';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   business: ExploreBusiness;
@@ -65,7 +66,7 @@ export function BusinessCard({ business, onPress }: Props) {
 
         {!!location && (
           <View className="mt-1 flex-row items-center gap-1">
-            <Ionicons name="location-outline" size={12} color="#7A7A8A" />
+            <Ionicons name="location-outline" size={12} color={getAppColors().mutedColor} />
             <Text numberOfLines={1} className="flex-1 text-[11px] text-muted">
               {location}
             </Text>
@@ -73,7 +74,7 @@ export function BusinessCard({ business, onPress }: Props) {
         )}
       </View>
 
-      <Ionicons name="chevron-forward" size={18} color="#C9C9D4" />
+      <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
     </Pressable>
   );
 }

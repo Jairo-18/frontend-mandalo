@@ -8,6 +8,7 @@ import {
   useDeliveryPosition,
 } from '@/lib/orders-socket';
 import { Order } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 type LatLng = { latitude: number; longitude: number };
 
@@ -109,7 +110,7 @@ export function OrderMap({ order, perspective }: Props) {
             title="Negocio"
             description="Punto de recogida"
           >
-            <PinBubble icon="storefront" color="#1E1E2D" />
+            <PinBubble icon="storefront" color={getAppColors().darkColor} />
           </Marker>
         )}
         {destination && (
@@ -118,7 +119,7 @@ export function OrderMap({ order, perspective }: Props) {
             title="Entrega"
             description={order.deliveryAddress}
           >
-            <PinBubble icon="home" color="#FF5A3C" />
+            <PinBubble icon="home" color={getAppColors().primaryColor} />
           </Marker>
         )}
         {courier && (

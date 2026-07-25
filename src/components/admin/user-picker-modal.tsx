@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdminUser, adminUsersService } from '@/services/admin-users';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   visible: boolean;
@@ -83,18 +84,18 @@ export function UserPickerModal({ visible, title, onClose, onSelect }: Props) {
           </Text>
 
           <View className="mb-3 h-[46px] flex-row items-center gap-2.5 rounded-xl bg-surface px-3.5">
-            <Ionicons name="search-outline" size={19} color="#9CA3AF" />
+            <Ionicons name="search-outline" size={19} color={getAppColors().mutedColor} />
             <TextInput
               className="h-full flex-1 text-[15px] text-ink"
               placeholder="Nombre, identificación, correo…"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={getAppColors().mutedColor}
               autoCapitalize="none"
               autoCorrect={false}
               autoFocus
               value={search}
               onChangeText={setSearch}
             />
-            {loading && <ActivityIndicator size="small" color="#FF5A3C" />}
+            {loading && <ActivityIndicator size="small" color={getAppColors().primaryColor} />}
           </View>
 
           <FlatList

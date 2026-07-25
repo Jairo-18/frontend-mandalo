@@ -6,6 +6,7 @@ import { Alert, Image, Pressable, Text, View } from 'react-native';
 import { PhotoEditor } from '@/components/ui/photo-editor';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { toast } from '@/lib/toast';
+import { getAppColors } from '@/lib/app-colors';
 
 const TILE = 76;
 
@@ -130,7 +131,7 @@ export function ProductPhotosField({
           className="items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-surface active:opacity-70"
           style={{ width: TILE, height: TILE }}
         >
-          <Ionicons name="camera-outline" size={22} color="#7A7A8A" />
+          <Ionicons name="camera-outline" size={22} color={getAppColors().mutedColor} />
           <Text className="mt-0.5 text-[10px] font-medium text-muted">
             Agregar
           </Text>

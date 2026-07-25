@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { FilterChips } from '@/components/ui/filter-chips';
 import { OrderStateCode } from '@/lib/order-status';
+import { getAppColors } from '@/lib/app-colors';
 
 /** Filtro rápido por estado de los listados de pedidos (cliente y repartidor). */
 export type OrderFilter = 'all' | 'active' | 'delivered' | 'cancelled';
@@ -53,7 +54,7 @@ export function OrderFilters({ filter, onFilter, order, onOrder }: Props) {
         <Ionicons
           name={newestFirst ? 'arrow-down' : 'arrow-up'}
           size={12}
-          color="#7A7A8A"
+          color={getAppColors().mutedColor}
         />
         <Text className="text-xs font-semibold text-ink">
           {newestFirst ? 'Nuevos' : 'Antiguos'}

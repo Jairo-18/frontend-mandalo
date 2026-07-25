@@ -15,6 +15,7 @@ import { setSession } from '@/lib/session';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { toast } from '@/lib/toast';
 import { authService } from '@/services/auth';
+import { getAppColors } from '@/lib/app-colors';
 
 // La revisión la hace un admin a mano — no tiene sentido dejar consultar cada
 // pocos segundos (y evita pegarle al throttle de refresh-token del backend).
@@ -136,7 +137,7 @@ export default function DeliveryScreen() {
       />
       <View className="flex-1 items-center justify-center px-8">
         <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-tint">
-          <Ionicons name="hourglass-outline" size={40} color="#FF5A3C" />
+          <Ionicons name="hourglass-outline" size={40} color={getAppColors().primaryColor} />
         </View>
         <Text className="text-center text-2xl font-extrabold text-ink">
           Cuenta en proceso de habilitación
@@ -153,7 +154,7 @@ export default function DeliveryScreen() {
             <Ionicons
               name="information-circle-outline"
               size={20}
-              color="#FF5A3C"
+              color={getAppColors().primaryColor}
             />
             <Text className="flex-1 text-[13px] leading-5 text-ink">
               {user.observations}

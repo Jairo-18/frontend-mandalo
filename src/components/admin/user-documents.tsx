@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   /** Título de la sección (identidad, licencia, etc.). */
@@ -48,7 +49,7 @@ export function UserDocuments({
               </Pressable>
             ) : (
               <View className="h-[110px] items-center justify-center rounded-xl bg-surface">
-                <Ionicons name="card-outline" size={24} color="#7A7A8A" />
+                <Ionicons name="card-outline" size={24} color={getAppColors().mutedColor} />
               </View>
             )}
             <Text className="mt-1 text-center text-xs text-muted">{label}</Text>

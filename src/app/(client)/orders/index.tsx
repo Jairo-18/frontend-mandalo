@@ -20,6 +20,7 @@ import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { businessDisplayName } from '@/services/explore';
 import { Order, ordersService } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 /**
  * "Mis pedidos" del cliente: historial con scroll infinito, pull-to-refresh,
@@ -108,12 +109,12 @@ export default function ClientOrdersScreen() {
         onEndReachedThreshold={0.4}
         ListFooterComponent={
           list.loadingMore ? (
-            <ActivityIndicator size="small" color="#FF5A3C" style={{ paddingVertical: 12 }} />
+            <ActivityIndicator size="small" color={getAppColors().primaryColor} style={{ paddingVertical: 12 }} />
           ) : null
         }
         ListEmptyComponent={
           list.loading ? (
-            <ActivityIndicator size="large" color="#FF5A3C" style={{ paddingTop: 48 }} />
+            <ActivityIndicator size="large" color={getAppColors().primaryColor} style={{ paddingTop: 48 }} />
           ) : (
             <ListEmpty
               icon="receipt-outline"

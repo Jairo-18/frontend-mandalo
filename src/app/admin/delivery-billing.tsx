@@ -12,6 +12,7 @@ import { useAppTheme } from '@/context/app-theme';
 import { useSettlementDrillDown } from '@/hooks/use-settlement-drilldown';
 import { formatPrice } from '@/lib/price';
 import { settlementPeriodLabel } from '@/lib/settlement-period-label';
+import { getAppColors } from '@/lib/app-colors';
 import {
   adminDeliverySettlementsService,
   DeliverySettlementPeriod,
@@ -57,7 +58,7 @@ export default function AdminDeliveryBillingScreen() {
   if (!deliveryUserId) {
     return (
       <View className="flex-1 items-center justify-center bg-surface px-8">
-        <Ionicons name="cash-outline" size={40} color="#7A7A8A" />
+        <Ionicons name="cash-outline" size={40} color={getAppColors().mutedColor} />
         <Text className="mt-3 text-center text-sm text-muted">
           Entra desde la sección Domiciliarios: toca el botón de pagos de un
           domiciliario para ver sus liquidaciones.
@@ -79,7 +80,7 @@ export default function AdminDeliveryBillingScreen() {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
         </Pressable>
         <View className="flex-1">
           <Text numberOfLines={1} className="text-base font-extrabold text-ink">
@@ -98,7 +99,7 @@ export default function AdminDeliveryBillingScreen() {
 
       {dd.loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FF5A3C" />
+          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
         </View>
       ) : (
         <FlatList

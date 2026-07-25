@@ -7,6 +7,7 @@ import {
   useDeliveryPosition,
 } from '@/lib/orders-socket';
 import { Order } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 type LatLng = { latitude: number; longitude: number };
 
@@ -65,7 +66,7 @@ export function OrderMap({ order }: Props) {
       {business && (
         <MapLink
           icon="storefront"
-          color="#1E1E2D"
+          color={getAppColors().darkColor}
           label="Negocio (punto de recogida)"
           coords={business}
         />
@@ -73,7 +74,7 @@ export function OrderMap({ order }: Props) {
       {destination && (
         <MapLink
           icon="home"
-          color="#FF5A3C"
+          color={getAppColors().primaryColor}
           label="Dirección de entrega"
           coords={destination}
         />
@@ -121,7 +122,7 @@ function MapLink({
         <Text className="text-sm font-bold text-ink">{label}</Text>
         <Text className="text-xs text-primary">Ver en Google Maps</Text>
       </View>
-      <Ionicons name="open-outline" size={16} color="#7A7A8A" />
+      <Ionicons name="open-outline" size={16} color={getAppColors().mutedColor} />
     </Pressable>
   );
 }

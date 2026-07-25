@@ -10,6 +10,7 @@ import {
   setSession,
 } from '@/lib/session';
 import { authService } from '@/services/auth';
+import { getAppColors } from '@/lib/app-colors';
 
 type Target =
   | '/auth/login'
@@ -82,7 +83,7 @@ export default function Index() {
   if (!target) {
     return (
       <View className="flex-1 items-center justify-center bg-card">
-        <ActivityIndicator size="large" color="#FF5A3C" />
+        <ActivityIndicator size="large" color={getAppColors().primaryColor} />
       </View>
     );
   }

@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { useMyBusiness } from '@/hooks/use-my-business';
 import { usePendingOrdersCount } from '@/hooks/use-pending-orders-count';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { useSession } from '@/hooks/use-session';
 import { refreshMyBusiness } from '@/lib/my-business';
 import { signOutEverywhere } from '@/lib/sign-out';
@@ -48,6 +49,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const [signingOut, setSigningOut] = useState(false);
+  const colors = useResolvedAppColors();
 
   // Negocio del usuario autenticado (nombre comercial + logo de la cabecera),
   // desde el store REACTIVO compartido con la pantalla "Mi negocio": al guardar
@@ -131,7 +133,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
               <Ionicons
                 name={item.icon}
                 size={21}
-                color={active ? '#FF5A3C' : '#7A7A8A'}
+                color={active ? colors.primaryColor : colors.mutedColor}
               />
               <Text
                 className={`flex-1 text-[15px] ${
@@ -163,9 +165,9 @@ export function BusinessDrawerContent({ navigation }: Props) {
           className="flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
         >
           {signingOut ? (
-            <ActivityIndicator size="small" color="#FF5A3C" />
+            <ActivityIndicator size="small" color={colors.primaryColor} />
           ) : (
-            <Ionicons name="log-out-outline" size={21} color="#FF5A3C" />
+            <Ionicons name="log-out-outline" size={21} color={colors.primaryColor} />
           )}
           <Text className="text-[15px] font-bold text-primary">
             Cerrar sesión

@@ -15,6 +15,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useSession } from '@/hooks/use-session';
 import { businessService } from '@/services/business';
 import { ordersService } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 type Stats = {
   pendingOrders: number | null;
@@ -84,7 +85,7 @@ export default function BusinessDashboardScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => load('refresh')}
-          tintColor="#FF5A3C"
+          tintColor={getAppColors().primaryColor}
         />
       }
     >
@@ -111,7 +112,7 @@ export default function BusinessDashboardScreen() {
       {loading && (
         <ActivityIndicator
           size="large"
-          color="#FF5A3C"
+          color={getAppColors().primaryColor}
           style={{ paddingTop: 48 }}
         />
       )}

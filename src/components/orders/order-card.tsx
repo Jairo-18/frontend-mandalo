@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/lib/price';
 import { stateMeta } from '@/lib/order-status';
 import { Order } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   order: Order;
@@ -79,7 +80,7 @@ export function OrderCard({
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-1 flex-row items-center gap-2">
-          <Ionicons name={titleIcon} size={16} color="#7A7A8A" />
+          <Ionicons name={titleIcon} size={16} color={getAppColors().mutedColor} />
           <Text numberOfLines={1} className="flex-1 text-[15px] font-bold text-ink">
             {title}
           </Text>
@@ -89,7 +90,7 @@ export function OrderCard({
 
       {showAddress && (
         <View className="mt-2 flex-row items-center gap-1.5">
-          <Ionicons name="location-outline" size={13} color="#7A7A8A" />
+          <Ionicons name="location-outline" size={13} color={getAppColors().mutedColor} />
           <Text numberOfLines={1} className="flex-1 text-xs text-muted">
             {order.deliveryAddress}
           </Text>
@@ -113,7 +114,7 @@ export function OrderCard({
       {/* Nota de estado (ej. esperando que el negocio despache). */}
       {!!hint && (
         <View className="mt-2.5 flex-row items-center gap-1.5 rounded-xl bg-surface px-3 py-2">
-          <Ionicons name="time-outline" size={14} color="#7A7A8A" />
+          <Ionicons name="time-outline" size={14} color={getAppColors().mutedColor} />
           <Text className="flex-1 text-xs text-muted">{hint}</Text>
         </View>
       )}

@@ -32,6 +32,7 @@ import { getSession, setSession } from '@/lib/session';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { formatText, normalizePhone } from '@/lib/text-format';
 import { MyProfile, profileService } from '@/services/profile';
+import { getAppColors } from '@/lib/app-colors';
 
 /** Campos editables cuyo valor inicial se recuerda para detectar cambios. */
 type FormSnapshot = {
@@ -324,7 +325,7 @@ export function ProfileScreen({
           <PanelHeader title="Mi perfil" menu={menu} />
           <ActivityIndicator
             size="large"
-            color="#FF5A3C"
+            color={getAppColors().primaryColor}
             style={{ paddingTop: 48 }}
           />
         </View>
@@ -444,12 +445,12 @@ export function ProfileScreen({
               className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
             >
               {locating ? (
-                <ActivityIndicator size="small" color="#FF5A3C" />
+                <ActivityIndicator size="small" color={getAppColors().primaryColor} />
               ) : (
                 <Ionicons
                   name={coords ? 'checkmark-circle' : 'locate-outline'}
                   size={16}
-                  color="#FF5A3C"
+                  color={getAppColors().primaryColor}
                 />
               )}
               <Text className="text-[13px] font-bold text-primary">
@@ -478,7 +479,7 @@ export function ProfileScreen({
           <View className="rounded-2xl bg-card p-4">
             {/* Correo (solo lectura: cambiarlo requeriría re-verificación) */}
             <View className="mb-4 flex-row items-center gap-3">
-              <Ionicons name="mail-outline" size={20} color="#7A7A8A" />
+              <Ionicons name="mail-outline" size={20} color={getAppColors().mutedColor} />
               <View className="flex-1">
                 <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
                   Correo
@@ -527,11 +528,11 @@ export function ProfileScreen({
                 onPress={() => router.push(resendDocumentsHref)}
                 className="mb-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
               >
-                <Ionicons name="document-attach-outline" size={20} color="#FF5A3C" />
+                <Ionicons name="document-attach-outline" size={20} color={getAppColors().primaryColor} />
                 <Text className="flex-1 text-[14px] font-bold text-ink">
                   Reenviar documentos
                 </Text>
-                <Ionicons name="chevron-forward" size={18} color="#7A7A8A" />
+                <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
               </Pressable>
             )}
             {resendDocumentsHref && profile?.isActive && (
@@ -549,11 +550,11 @@ export function ProfileScreen({
               onPress={() => router.push(changePasswordHref)}
               className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
-              <Ionicons name="key-outline" size={20} color="#FF5A3C" />
+              <Ionicons name="key-outline" size={20} color={getAppColors().primaryColor} />
               <Text className="flex-1 text-[14px] font-bold text-ink">
                 Cambiar contraseña
               </Text>
-              <Ionicons name="chevron-forward" size={18} color="#7A7A8A" />
+              <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
             </Pressable>
 
             {/* Política de privacidad: antes solo se veía en el registro; se
@@ -563,11 +564,11 @@ export function ProfileScreen({
               onPress={() => router.push('/auth/privacy')}
               className="mt-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
-              <Ionicons name="shield-outline" size={20} color="#7A7A8A" />
+              <Ionicons name="shield-outline" size={20} color={getAppColors().mutedColor} />
               <Text className="flex-1 text-[14px] font-bold text-ink">
                 Política de privacidad
               </Text>
-              <Ionicons name="chevron-forward" size={18} color="#7A7A8A" />
+              <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
             </Pressable>
 
             {/* Eliminar cuenta: self-service exigido por Google Play. */}

@@ -6,6 +6,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { businessDisplayName, ExploreProduct } from '@/services/explore';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   product: ExploreProduct;
@@ -97,7 +98,7 @@ export function ProductCard({
 
         {product.organizational ? (
           <View className="mt-1 flex-row items-center gap-1">
-            <Ionicons name="storefront-outline" size={12} color="#7A7A8A" />
+            <Ionicons name="storefront-outline" size={12} color={getAppColors().mutedColor} />
             <Text numberOfLines={1} className="shrink text-[11px] font-semibold text-muted">
               {businessDisplayName(product.organizational)}
             </Text>
@@ -124,7 +125,7 @@ export function ProductCard({
               hitSlop={6}
               className="h-8 w-8 items-center justify-center rounded-full bg-primary-tint active:opacity-70"
             >
-              <Ionicons name="remove" size={18} color="#FF5A3C" />
+              <Ionicons name="remove" size={18} color={getAppColors().primaryColor} />
             </Pressable>
             <Text className="min-w-[18px] text-center text-[15px] font-extrabold text-ink">
               {quantity}
@@ -147,7 +148,7 @@ export function ProductCard({
           </Pressable>
         )
       ) : (
-        onPress && <Ionicons name="chevron-forward" size={18} color="#C9C9D4" />
+        onPress && <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
       )}
 
       <PhotoPreviewModal

@@ -18,6 +18,7 @@ import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { Order, ordersService } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 /** Detalle de un pedido del cliente. Puede cancelarlo mientras está pendiente. */
 export default function ClientOrderDetailScreen() {
@@ -83,7 +84,7 @@ export default function ClientOrderDetailScreen() {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-card active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
         </Pressable>
         <Text className="flex-1 text-lg font-extrabold text-ink">
           Pedido #{orderId}
@@ -93,11 +94,11 @@ export default function ClientOrderDetailScreen() {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FF5A3C" />
+          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
         </View>
       ) : !order ? (
         <View className="flex-1 items-center justify-center px-8">
-          <Ionicons name="receipt-outline" size={48} color="#C9C9D4" />
+          <Ionicons name="receipt-outline" size={48} color={getAppColors().mutedColor} />
           <Text className="mt-3 text-center text-sm text-muted">
             No pudimos cargar este pedido.
           </Text>
@@ -109,7 +110,7 @@ export default function ClientOrderDetailScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={() => load('refresh')}
-                tintColor="#FF5A3C"
+                tintColor={getAppColors().primaryColor}
               />
             }
           >

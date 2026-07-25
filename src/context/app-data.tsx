@@ -4,15 +4,26 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+import { vars } from 'nativewind';
 
 import { Button } from '@/components/ui/button';
 import { API_URL } from '@/constants/api';
+import { useAppTheme } from '@/context/app-theme';
+import { getAppColors, setCurrentAppColors } from '@/lib/app-colors';
+import { hexToRgbTriplet, lightenHex } from '@/lib/color';
 import { loadCatalogCache, saveCatalogCache } from '@/lib/catalog-cache';
 import { HttpError } from '@/lib/http';
+import {
+  AppColors,
+  appSettingsService,
+  DEFAULT_APP_COLORS,
+  isValidAppColors,
+} from '@/services/app-settings';
 import {
   catalogService,
   Department,
@@ -23,6 +34,13 @@ import {
 type AppData = {
   departments: Department[];
   identificationTypes: IdentificationType[];
+  /**
+   * Paleta de marca editable por el admin (§50): valores resueltos (hex) para
+   * los pocos lugares que necesitan un string literal (iconos, spinners,
+   * StatusBar) en vez de una clase de Tailwind (`bg-primary` etc. ya siguen
+   * las variables CSS solas, ver `AppColorsRoot` más abajo).
+   */
+  appColors: AppColors;
   /** Municipios de un departamento (con caché en memoria y en disco). */
   getMunicipalities: (departmentId: number) => Promise<Municipality[]>;
 };
@@ -44,6 +62,7 @@ type State = {
   errorDetail: string | null;
   departments: Department[];
   identificationTypes: IdentificationType[];
+  appColors: AppColors;
 };
 
 /**
@@ -76,6 +95,14 @@ function extractErrorDetail(e: unknown): string | null {
 export function AppDataProvider({ children }: { children: ReactNode }) {
   // Lazy initializer: el archivo de caché se lee UNA sola vez, en el primer render.
   const [cached] = useState(loadCatalogCache);
+  const { isDark } = useAppTheme();
+
+  // Un caché VIEJO (de antes de los 12 campos, §51) puede traer un
+  // `appColors` incompleto — sin validar, un campo `undefined` truena la app
+  // entera al abrir (ver NOTAS.md §51). Si no calza, se usa el default hasta
+  // que el fetch fresco lo reemplace.
+  const cachedAppColors =
+    cached && isValidAppColors(cached.appColors) ? cached.appColors : DEFAULT_APP_COLORS;
 
   const [state, setState] = useState<State>(() =>
     cached
@@ -85,6 +112,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           errorDetail: null,
           departments: cached.departments,
           identificationTypes: cached.identificationTypes,
+          appColors: cachedAppColors,
         }
       : {
           loading: true,
@@ -92,6 +120,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           errorDetail: null,
           departments: [],
           identificationTypes: [],
+          appColors: DEFAULT_APP_COLORS,
         },
   );
 
@@ -103,6 +132,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const latestData = useRef({
     departments: cached?.departments ?? [],
     identificationTypes: cached?.identificationTypes ?? [],
+    appColors: cachedAppColors,
   });
 
   const persist = useCallback(() => {
@@ -117,17 +147,33 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     async ({ silent = false }: { silent?: boolean } = {}) => {
       if (!silent) setState((s) => ({ ...s, loading: true, error: null }));
       try {
-        const [departments, identificationTypes] = await Promise.all([
+        const [departments, identificationTypes, appColorsRes] = await Promise.all([
           catalogService.getDepartments(),
           catalogService.getIdentificationTypes(),
+          appSettingsService.get(),
         ]);
-        latestData.current = { departments, identificationTypes };
+        const appColors: AppColors = {
+          primaryColor: appColorsRes.data.primaryColor,
+          darkColor: appColorsRes.data.darkColor,
+          surfaceLightColor: appColorsRes.data.surfaceLightColor,
+          surfaceDarkColor: appColorsRes.data.surfaceDarkColor,
+          cardLightColor: appColorsRes.data.cardLightColor,
+          cardDarkColor: appColorsRes.data.cardDarkColor,
+          textPrimaryLightColor: appColorsRes.data.textPrimaryLightColor,
+          textPrimaryDarkColor: appColorsRes.data.textPrimaryDarkColor,
+          textSecondaryLightColor: appColorsRes.data.textSecondaryLightColor,
+          textSecondaryDarkColor: appColorsRes.data.textSecondaryDarkColor,
+          borderLightColor: appColorsRes.data.borderLightColor,
+          borderDarkColor: appColorsRes.data.borderDarkColor,
+        };
+        latestData.current = { departments, identificationTypes, appColors };
         setState({
           loading: false,
           error: null,
           errorDetail: null,
           departments,
           identificationTypes,
+          appColors,
         });
         persist();
       } catch (e) {
@@ -182,7 +228,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   if (state.loading) {
     return (
       <View className="flex-1 items-center justify-center bg-card">
-        <ActivityIndicator size="large" color="#FF5A3C" />
+        <ActivityIndicator size="large" color={getAppColors().primaryColor} />
         <Text className="mt-4 text-sm text-muted">Cargando Mandalo…</Text>
       </View>
     );
@@ -209,15 +255,42 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  // Inyecta la paleta del admin como variables CSS reales (NativeWind
+  // `vars()`) para que las clases `bg-primary`/`bg-surface`/`bg-card`/
+  // `text-ink`/`text-muted`/`border-border`/etc. la sigan solas. Desde §51
+  // el admin controla el par claro/oscuro de cada una EXPLÍCITAMENTE — acá
+  // solo se elige cuál de los dos usar según `isDark`, sin derivar/adivinar
+  // nada (antes `surface`/`muted` se calculaban con matemática de color).
+  // Mismo valor que el context, disponible fuera de React (ver lib/app-colors.ts).
+  setCurrentAppColors(state.appColors, isDark);
+
+  const cssVars = useMemo(() => {
+    const c = state.appColors;
+    return vars({
+      '--color-primary': hexToRgbTriplet(c.primaryColor),
+      '--color-primary-soft': hexToRgbTriplet(lightenHex(c.primaryColor, 68)),
+      '--color-primary-tint': hexToRgbTriplet(lightenHex(c.primaryColor, 93, 40)),
+      '--color-dark': hexToRgbTriplet(c.darkColor),
+      '--color-surface': hexToRgbTriplet(isDark ? c.surfaceDarkColor : c.surfaceLightColor),
+      '--color-card': hexToRgbTriplet(isDark ? c.cardDarkColor : c.cardLightColor),
+      '--color-ink': hexToRgbTriplet(isDark ? c.textPrimaryDarkColor : c.textPrimaryLightColor),
+      '--color-muted': hexToRgbTriplet(isDark ? c.textSecondaryDarkColor : c.textSecondaryLightColor),
+      '--color-border': hexToRgbTriplet(isDark ? c.borderDarkColor : c.borderLightColor),
+    });
+  }, [state.appColors, isDark]);
+
   return (
     <AppDataContext.Provider
       value={{
         departments: state.departments,
         identificationTypes: state.identificationTypes,
+        appColors: state.appColors,
         getMunicipalities,
       }}
     >
-      {children}
+      <View style={cssVars} className="flex-1">
+        {children}
+      </View>
     </AppDataContext.Provider>
   );
 }

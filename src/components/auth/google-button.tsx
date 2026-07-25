@@ -1,4 +1,5 @@
 import { ActivityIndicator, Image, Pressable, Text } from 'react-native';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   label?: string;
@@ -23,7 +24,7 @@ export function GoogleButton({
         disabled ? 'opacity-50' : ''
       }`}
       style={{
-        shadowColor: '#1E1E2D',
+        shadowColor: getAppColors().darkColor,
         shadowOpacity: 0.08,
         shadowRadius: 4,
         shadowOffset: { width: 0, height: 2 },

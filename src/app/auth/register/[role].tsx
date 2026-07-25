@@ -30,6 +30,7 @@ import { getSession, homePathFor } from '@/lib/session';
 import { EMAIL_RE, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
 import { DocumentValue } from '@/lib/upload';
 import { authService, RegisterPayload } from '@/services/auth';
+import { getAppColors } from '@/lib/app-colors';
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -378,12 +379,12 @@ export default function RegisterForm() {
             className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
           >
             {locating ? (
-              <ActivityIndicator size="small" color="#FF5A3C" />
+              <ActivityIndicator size="small" color={getAppColors().primaryColor} />
             ) : (
               <Ionicons
                 name={coords ? 'checkmark-circle' : 'locate-outline'}
                 size={16}
-                color="#FF5A3C"
+                color={getAppColors().primaryColor}
               />
             )}
             <Text className="text-[13px] font-bold text-primary">

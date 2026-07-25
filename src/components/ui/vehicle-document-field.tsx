@@ -5,6 +5,7 @@ import { Alert, Image, Platform, Pressable, Text, View } from 'react-native';
 
 import { toast } from '@/lib/toast';
 import { DocumentValue } from '@/lib/upload';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   label: string;
@@ -114,14 +115,14 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
           />
         ) : value?.kind === 'pdf' ? (
           <View className="items-center justify-center">
-            <Ionicons name="document-text-outline" size={32} color="#FF5A3C" />
+            <Ionicons name="document-text-outline" size={32} color={getAppColors().primaryColor} />
             <Text className="mt-1.5 text-xs font-bold text-ink">
               Documento PDF listo
             </Text>
           </View>
         ) : (
           <>
-            <Ionicons name="document-attach-outline" size={30} color="#7A7A8A" />
+            <Ionicons name="document-attach-outline" size={30} color={getAppColors().mutedColor} />
             <Text className="mt-1.5 px-4 text-center text-xs font-medium text-muted">
               Toca para subir una foto o un PDF
             </Text>

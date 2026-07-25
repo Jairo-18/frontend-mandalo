@@ -16,6 +16,7 @@ import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { OrderStateCode } from '@/lib/order-status';
 import { Order, ordersService } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 type StateFilter = 'all' | OrderStateCode;
 
@@ -81,7 +82,7 @@ export default function BusinessOrdersScreen() {
 
   return (
     <View className="flex-1 bg-surface">
-      <View className="px-4 pb-1" style={{ paddingTop: insets.top + 12 }}>
+      <View className="px-4 pb-1 pt-3">
         <View className="flex-row items-center gap-2.5">
           <View className="flex-1">
             <FilterChips options={STATE_FILTERS} value={filter} onChange={setFilter} />
@@ -112,12 +113,12 @@ export default function BusinessOrdersScreen() {
         onEndReachedThreshold={0.4}
         ListFooterComponent={
           list.loadingMore ? (
-            <ActivityIndicator size="small" color="#FF5A3C" style={{ paddingVertical: 12 }} />
+            <ActivityIndicator size="small" color={getAppColors().primaryColor} style={{ paddingVertical: 12 }} />
           ) : null
         }
         ListEmptyComponent={
           list.loading ? (
-            <ActivityIndicator size="large" color="#FF5A3C" style={{ paddingTop: 48 }} />
+            <ActivityIndicator size="large" color={getAppColors().primaryColor} style={{ paddingTop: 48 }} />
           ) : (
             <ListEmpty icon="receipt-outline" message="Aún no hay pedidos por aquí." />
           )

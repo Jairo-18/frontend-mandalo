@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { UserPickerModal } from '@/components/admin/user-picker-modal';
 import { Avatar } from '@/components/ui/avatar';
+import { getAppColors } from '@/lib/app-colors';
 import { BusinessOwner } from '@/services/admin-businesses';
 
 type Props = {
@@ -40,7 +41,7 @@ export function OwnerField({ owner, onChange }: Props) {
             </Text>
           </View>
           <Pressable onPress={() => onChange(null)} hitSlop={8}>
-            <Ionicons name="close-circle" size={22} color="#9CA3AF" />
+            <Ionicons name="close-circle" size={22} color={getAppColors().mutedColor} />
           </Pressable>
         </View>
       ) : (
@@ -48,11 +49,11 @@ export function OwnerField({ owner, onChange }: Props) {
           onPress={() => setPickerVisible(true)}
           className="mb-4 h-[52px] flex-row items-center gap-2.5 rounded-xl border border-border px-3.5 active:opacity-70"
         >
-          <Ionicons name="person-outline" size={20} color="#9CA3AF" />
+          <Ionicons name="person-outline" size={20} color={getAppColors().mutedColor} />
           <Text className="flex-1 text-[15px] text-muted">
             Buscar usuario para vincular…
           </Text>
-          <Ionicons name="search-outline" size={18} color="#9CA3AF" />
+          <Ionicons name="search-outline" size={18} color={getAppColors().mutedColor} />
         </Pressable>
       )}
 

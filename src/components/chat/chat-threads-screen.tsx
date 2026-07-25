@@ -13,6 +13,7 @@ import { useSession } from '@/hooks/use-session';
 import { formatTime } from '@/lib/order-eta';
 import { useChatMessages } from '@/lib/orders-socket';
 import { ChatThreadItem, chatService } from '@/services/chat';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   /** Hamburguesa del drawer del rol (cliente o repartidor). */
@@ -54,7 +55,7 @@ export function ChatThreadsScreen({ menu }: Props) {
 
         {list.loading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#FF5A3C" />
+            <ActivityIndicator size="large" color={getAppColors().primaryColor} />
           </View>
         ) : (
           <FlatList
@@ -72,7 +73,7 @@ export function ChatThreadsScreen({ menu }: Props) {
               list.loadingMore ? (
                 <ActivityIndicator
                   size="small"
-                  color="#FF5A3C"
+                  color={getAppColors().primaryColor}
                   style={{ paddingVertical: 12 }}
                 />
               ) : null
@@ -140,7 +141,7 @@ export function ChatThreadsScreen({ menu }: Props) {
                       <Ionicons
                         name="chevron-forward"
                         size={16}
-                        color="#C9C9D4"
+                        color={getAppColors().mutedColor}
                       />
                     )}
                   </View>

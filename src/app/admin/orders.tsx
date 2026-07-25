@@ -11,6 +11,7 @@ import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { OrderStateCode } from '@/lib/order-status';
 import { businessDisplayName } from '@/services/explore';
 import { Order, ordersService } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 type StateFilter = 'all' | OrderStateCode;
 
@@ -53,7 +54,7 @@ export default function AdminOrdersScreen() {
 
   return (
     <View className="flex-1 bg-surface">
-      <View className="px-4 pb-1" style={{ paddingTop: insets.top + 12 }}>
+      <View className="px-4 pb-1 pt-3">
         <View className="flex-row items-center gap-2.5">
           <View className="flex-1">
             <FilterChips options={STATE_FILTERS} value={filter} onChange={setFilter} />
@@ -84,7 +85,7 @@ export default function AdminOrdersScreen() {
           list.loadingMore ? (
             <ActivityIndicator
               size="small"
-              color="#FF5A3C"
+              color={getAppColors().primaryColor}
               style={{ paddingVertical: 12 }}
             />
           ) : null
@@ -93,7 +94,7 @@ export default function AdminOrdersScreen() {
           list.loading ? (
             <ActivityIndicator
               size="large"
-              color="#FF5A3C"
+              color={getAppColors().primaryColor}
               style={{ paddingTop: 48 }}
             />
           ) : (

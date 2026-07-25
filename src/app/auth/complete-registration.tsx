@@ -30,6 +30,7 @@ import { DocumentValue } from '@/lib/upload';
 import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import { userAddressesService } from '@/services/user-addresses';
+import { getAppColors } from '@/lib/app-colors';
 
 type Role = 'client' | 'delivery';
 
@@ -365,12 +366,12 @@ export default function CompleteRegistrationScreen() {
                 className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
               >
                 {locating ? (
-                  <ActivityIndicator size="small" color="#FF5A3C" />
+                  <ActivityIndicator size="small" color={getAppColors().primaryColor} />
                 ) : (
                   <Ionicons
                     name={coords ? 'checkmark-circle' : 'locate-outline'}
                     size={16}
-                    color="#FF5A3C"
+                    color={getAppColors().primaryColor}
                   />
                 )}
                 <Text className="text-[13px] font-bold text-primary">
@@ -493,9 +494,9 @@ export default function CompleteRegistrationScreen() {
             className="mt-6 flex-row items-center justify-center gap-1.5"
           >
             {leaving ? (
-              <ActivityIndicator size="small" color="#7A7A8A" />
+              <ActivityIndicator size="small" color={getAppColors().mutedColor} />
             ) : (
-              <Ionicons name="log-out-outline" size={16} color="#7A7A8A" />
+              <Ionicons name="log-out-outline" size={16} color={getAppColors().mutedColor} />
             )}
             <Text className="text-[13px] font-semibold text-muted">
               Salir y continuar después
@@ -531,7 +532,7 @@ function RoleCard({
         active ? 'border-primary bg-primary-tint' : 'border-border bg-card'
       }`}
     >
-      <Ionicons name={icon} size={28} color={active ? '#FF5A3C' : '#7A7A8A'} />
+      <Ionicons name={icon} size={28} color={active ? getAppColors().primaryColor : getAppColors().mutedColor} />
       <Text
         className={`mt-2 text-[15px] font-extrabold ${
           active ? 'text-primary' : 'text-ink'

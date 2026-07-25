@@ -18,6 +18,8 @@ import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppData } from '@/context/app-data';
 import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
+import { getAppColors } from '@/lib/app-colors';
+
 import {
   AdminBusiness,
   adminBusinessesService,
@@ -149,14 +151,14 @@ export function BusinessCrudScreen() {
             hitSlop={8}
             className="h-9 w-9 items-center justify-center rounded-full bg-primary-tint active:opacity-70"
           >
-            <Ionicons name="cash-outline" size={17} color="#FF5A3C" />
+            <Ionicons name="cash-outline" size={17} color={getAppColors().primaryColor} />
           </Pressable>
           <Pressable
             onPress={() => openEdit(item)}
             hitSlop={8}
             className="h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-70"
           >
-            <Ionicons name="pencil-outline" size={17} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+            <Ionicons name="pencil-outline" size={17} color={getAppColors().inkColor} />
           </Pressable>
           <Pressable
             onPress={() => setToDelete(item)}
@@ -183,7 +185,7 @@ export function BusinessCrudScreen() {
   return (
     <View className="flex-1">
       {/* Búsqueda por campo + filtro por tipo + contador */}
-      <View className="px-4 pb-1" style={{ paddingTop: insets.top + 12 }}>
+      <View className="px-4 pb-1 pt-3">
         <View className="flex-row items-center gap-2.5">
           <View className="flex-1">
             <SearchBar
@@ -222,7 +224,7 @@ export function BusinessCrudScreen() {
 
       {list.loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FF5A3C" />
+          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
         </View>
       ) : (
         <FlatList

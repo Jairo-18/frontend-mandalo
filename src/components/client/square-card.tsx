@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
+import { getAppColors } from '@/lib/app-colors';
+
 type Props = {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -29,7 +31,7 @@ export function SquareCard({ label, icon, selected, onPress }: Props) {
         <Ionicons
           name={icon}
           size={26}
-          color={selected ? '#FFFFFF' : '#FF5A3C'}
+          color={selected ? '#FFFFFF' : getAppColors().primaryColor}
         />
       </View>
       <Text

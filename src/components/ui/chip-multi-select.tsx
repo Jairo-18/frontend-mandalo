@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
+import { getAppColors } from '@/lib/app-colors';
 
 type Item = { id: number; name: string };
 
@@ -56,7 +57,7 @@ export function ChipMultiSelect({
                 }`}
               >
                 {selected && (
-                  <Ionicons name="checkmark" size={14} color="#FF5A3C" />
+                  <Ionicons name="checkmark" size={14} color={getAppColors().primaryColor} />
                 )}
                 <Text
                   className={`text-[13px] font-semibold ${

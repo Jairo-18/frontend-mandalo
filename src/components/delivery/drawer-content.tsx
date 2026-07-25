@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { useSession } from '@/hooks/use-session';
 import { useUnreadChats } from '@/hooks/use-unread-chats';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
@@ -44,6 +45,7 @@ export function DeliveryDrawerContent({ navigation }: Props) {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const [signingOut, setSigningOut] = useState(false);
+  const colors = useResolvedAppColors();
 
   // Reactivo: leer getSession() suelto en el render deja JSX viejo con
   // React Compiler (regla de NOTAS §23).
@@ -110,7 +112,7 @@ export function DeliveryDrawerContent({ navigation }: Props) {
               <Ionicons
                 name={item.icon}
                 size={21}
-                color={active ? '#FF5A3C' : '#7A7A8A'}
+                color={active ? colors.primaryColor : colors.mutedColor}
               />
               <Text
                 className={`text-[15px] ${
@@ -142,9 +144,9 @@ export function DeliveryDrawerContent({ navigation }: Props) {
           className="flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
         >
           {signingOut ? (
-            <ActivityIndicator size="small" color="#FF5A3C" />
+            <ActivityIndicator size="small" color={colors.primaryColor} />
           ) : (
-            <Ionicons name="log-out-outline" size={21} color="#FF5A3C" />
+            <Ionicons name="log-out-outline" size={21} color={colors.primaryColor} />
           )}
           <Text className="text-[15px] font-bold text-primary">
             Cerrar sesión

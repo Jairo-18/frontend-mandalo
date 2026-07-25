@@ -2,9 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, TextInputProps, View } from 'react-native';
 
+import { getAppColors } from '@/lib/app-colors';
 import { finishText, formatText, TextFormat } from '@/lib/text-format';
-
-const PLACEHOLDER = '#9CA3AF';
 
 type Props = TextInputProps & {
   label: string;
@@ -67,6 +66,7 @@ export function TextField({
   ...inputProps
 }: Props) {
   const [hidden, setHidden] = useState(true);
+  const placeholderColor = getAppColors().mutedColor;
 
   const handleChangeText = (value: string) => {
     onChangeText?.(format ? formatText(format, value) : value);
@@ -94,7 +94,7 @@ export function TextField({
         <Ionicons
           name={readOnly ? 'lock-closed' : icon}
           size={20}
-          color={PLACEHOLDER}
+          color={placeholderColor}
           style={multiline ? { marginTop: 2 } : undefined}
         />
         <TextInput
@@ -105,7 +105,7 @@ export function TextField({
               ? { minHeight: (numberOfLines ?? 3) * 22, textAlignVertical: 'top' }
               : undefined
           }
-          placeholderTextColor={PLACEHOLDER}
+          placeholderTextColor={placeholderColor}
           autoCapitalize="none"
           secureTextEntry={secure ? hidden : false}
           multiline={multiline}
@@ -132,7 +132,7 @@ export function TextField({
             <Ionicons
               name={hidden ? 'eye-outline' : 'eye-off-outline'}
               size={20}
-              color={PLACEHOLDER}
+              color={placeholderColor}
             />
           </Pressable>
         )}

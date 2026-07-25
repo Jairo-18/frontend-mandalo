@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useSettlementDrillDown } from '@/hooks/use-settlement-drilldown';
 import { formatPrice } from '@/lib/price';
 import { myBusinessSettlementsService, SettlementPeriod } from '@/services/admin-settlements';
+import { getAppColors } from '@/lib/app-colors';
 
 const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
 
@@ -58,7 +59,7 @@ export default function BusinessEarningsScreen() {
 
       {dd.loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FF5A3C" />
+          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
         </View>
       ) : (
         <FlatList

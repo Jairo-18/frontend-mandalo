@@ -4,9 +4,8 @@ import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { getAppColors } from '@/lib/app-colors';
 
-const ORANGE = '#FF5A3C';
-const ORANGE_SOFT = '#FF5A3C';
 const WHITE = '#FFFFFF';
 
 type Props = {
@@ -26,9 +25,11 @@ export function AuthHeader({
   compact = false,
   onBack,
 }: Props) {
+  const { primaryColor, darkColor } = getAppColors();
+
   return (
     <LinearGradient
-      colors={[WHITE, ORANGE_SOFT, ORANGE]}
+      colors={[WHITE, primaryColor, primaryColor]}
       // El colchón inferior debe cubrir el solape de la tarjeta blanca de las
       // pantallas (-mt-7 = 28px) + un margen visible bajo el subtítulo; con
       // menos, el blanco tapa el texto del header.
@@ -42,19 +43,19 @@ export function AuthHeader({
               hitSlop={10}
               className="h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-sm active:opacity-70"
             >
-              <Ionicons name="arrow-back" size={22} color="#1E1E2D" />
+              <Ionicons name="arrow-back" size={22} color={darkColor} />
             </Pressable>
           ) : (
             <View />
           )}
           <ThemeToggle
             className="h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-sm active:opacity-70"
-            iconColor="#1E1E2D"
+            iconColor={darkColor}
           />
         </View>
         <View className="pt-1">
           <View className="mb-3 mt-2 h-[60px] w-[60px] items-center justify-center self-center rounded-full bg-card shadow-md">
-            <Ionicons name="bag-handle" size={28} color={ORANGE} />
+            <Ionicons name="bag-handle" size={28} color={primaryColor} />
           </View>
           {/* Sobre el degradado de marca (blanco→naranja) SIEMPRE fijo, no
               sobre bg-surface/bg-card: el texto debe quedar navy fijo, no

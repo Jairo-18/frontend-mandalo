@@ -4,7 +4,17 @@
 
 @layer base {
   :root {
-    /* Tokens de tema (modo claro por defecto) */
+    /* Paleta de marca (§50/§51), TODA admin-editable desde "Aplicación":
+       esto es solo el fallback antes de que cargue el fetch de
+       /app-settings — una vez carga, `context/app-data.tsx` la pisa en
+       runtime con vars(), eligiendo claro/oscuro según el tema activo. */
+    --color-primary: 255 90 60; /* #FF5A3C naranja principal */
+    --color-primary-soft: 255 140 110; /* #FF8C6E tinte medio (degradados) — derivado de primary */
+    --color-primary-tint: 255 231 225; /* #FFE7E1 tinte claro (fondos de iconos) — derivado de primary */
+    --color-dark: 30 30 45; /* #1E1E2D azul-negro de marca (franjas/cabeceras) — fijo entre temas */
+
+    /* Tokens de tema (modo claro por defecto) — cada uno tiene su par oscuro
+       explícito abajo, elegido por el admin, no derivado. */
     --color-surface: 242 242 242; /* #F2F2F2 fondo de pantalla */
     --color-card: 255 255 255; /* #FFFFFF tarjetas/inputs/superficies elevadas */
     --color-ink: 30 30 45; /* #1E1E2D texto principal (títulos/cuerpo) */

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { ExploreProduct } from '@/services/explore';
+import { getAppColors } from '@/lib/app-colors';
 
 const CAROUSEL_HEIGHT = 280;
 
@@ -102,7 +103,7 @@ export function ProductDetailSheet({
               className="items-center justify-center bg-surface"
               style={{ width, height: CAROUSEL_HEIGHT }}
             >
-              <Ionicons name="cube-outline" size={48} color="#C9C9D4" />
+              <Ionicons name="cube-outline" size={48} color={getAppColors().mutedColor} />
             </View>
           )}
 
@@ -169,7 +170,7 @@ export function ProductDetailSheet({
                 hitSlop={6}
                 className="h-10 w-10 items-center justify-center rounded-full bg-card active:opacity-70"
               >
-                <Ionicons name="remove" size={20} color="#FF5A3C" />
+                <Ionicons name="remove" size={20} color={getAppColors().primaryColor} />
               </Pressable>
               <Text className="text-base font-extrabold text-ink">
                 {quantity} en el carrito

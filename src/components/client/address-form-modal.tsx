@@ -6,6 +6,7 @@ import { FormModal } from '@/components/ui/form-modal';
 import { TextField } from '@/components/ui/text-field';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { DeviceCoords, getDeviceLocation } from '@/lib/location';
+import { getAppColors } from '@/lib/app-colors';
 import {
   UserAddress,
   UserAddressPayload,
@@ -139,12 +140,12 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
         className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
       >
         {locating ? (
-          <ActivityIndicator size="small" color="#FF5A3C" />
+          <ActivityIndicator size="small" color={getAppColors().primaryColor} />
         ) : (
           <Ionicons
             name={coords ? 'checkmark-circle' : 'locate-outline'}
             size={16}
-            color="#FF5A3C"
+            color={getAppColors().primaryColor}
           />
         )}
         <Text className="text-[13px] font-bold text-primary">

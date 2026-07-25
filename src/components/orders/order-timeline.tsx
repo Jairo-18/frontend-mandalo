@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from 'react-native';
 
+import { getAppColors } from '@/lib/app-colors';
 import { formatTime } from '@/lib/order-eta';
 import { ORDER_FLOW, ORDER_STATE, OrderStateCode, stateMeta } from '@/lib/order-status';
 import { Order } from '@/services/orders';
@@ -67,7 +68,7 @@ export function OrderTimeline({ order }: Props) {
                 <Ionicons
                   name={meta.icon}
                   size={15}
-                  color={done ? '#FFFFFF' : '#9CA3AF'}
+                  color={done ? '#FFFFFF' : getAppColors().mutedColor}
                 />
               </View>
               {/* Línea derecha */}

@@ -10,6 +10,7 @@ import { ListEmpty } from '@/components/ui/list-empty';
 import { PanelHeader } from '@/components/ui/panel-header';
 import { useSettlementDrillDown } from '@/hooks/use-settlement-drilldown';
 import { formatPrice } from '@/lib/price';
+import { getAppColors } from '@/lib/app-colors';
 import {
   DeliverySettlementPeriod,
   myDeliverySettlementsService,
@@ -60,7 +61,7 @@ export default function DeliveryEarningsScreen() {
 
         {dd.loading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#FF5A3C" />
+            <ActivityIndicator size="large" color={getAppColors().primaryColor} />
           </View>
         ) : (
           <FlatList

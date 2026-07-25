@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 
 import { deviceStoreGet, deviceStoreSet } from '@/lib/device-store';
 import { emitDeliveryPosition } from '@/lib/orders-socket';
+import { getAppColors } from '@/lib/app-colors';
 
 /**
  * En web no hay tareas en background (expo-task-manager es nativo): el
@@ -92,7 +93,7 @@ async function startBackgroundTracking(): Promise<boolean> {
         notificationTitle: 'Mándalo — entrega en curso',
         notificationBody:
           'Compartiendo tu ubicación con el cliente mientras llevas el pedido.',
-        notificationColor: '#FF5A3C',
+        notificationColor: getAppColors().primaryColor,
       },
       // iOS
       activityType: Location.ActivityType.AutomotiveNavigation,

@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
+import { getAppColors } from '@/lib/app-colors';
+
 type Props = {
   visible: boolean;
   /** Recibe el motivo escrito; si devuelve promesa, muestra spinner. */
@@ -74,7 +76,7 @@ export function CancelOrderDialog({ visible, onConfirm, onCancel }: Props) {
               <TextInput
                 className="min-h-[44px] text-[15px] text-ink"
                 placeholder="Ej: sin stock del producto."
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={getAppColors().mutedColor}
                 value={reason}
                 onChangeText={setReason}
                 multiline

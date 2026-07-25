@@ -16,6 +16,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useMyBusiness } from '@/hooks/use-my-business';
 import { refreshMyBusiness } from '@/lib/my-business';
 import { formatHour12, formatText } from '@/lib/text-format';
+import { getAppColors } from '@/lib/app-colors';
 
 /** Nombres cortos de los días (0 = domingo), para mostrar el horario. */
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -63,7 +64,7 @@ export function BusinessProfileScreen() {
   if (loading && !business) {
     return (
       <View className="flex-1 items-center justify-center bg-surface">
-        <ActivityIndicator size="large" color="#FF5A3C" />
+        <ActivityIndicator size="large" color={getAppColors().primaryColor} />
       </View>
     );
   }
@@ -71,7 +72,7 @@ export function BusinessProfileScreen() {
   if (!business) {
     return (
       <View className="flex-1 items-center justify-center bg-surface px-8">
-        <Ionicons name="storefront-outline" size={48} color="#7A7A8A" />
+        <Ionicons name="storefront-outline" size={48} color={getAppColors().mutedColor} />
         <Text className="mt-3 text-center text-[15px] text-muted">
           Tu cuenta aún no tiene un negocio asociado. Contacta al administrador.
         </Text>
@@ -96,7 +97,7 @@ export function BusinessProfileScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor="#FF5A3C"
+          tintColor={getAppColors().primaryColor}
         />
       }
     >
@@ -285,7 +286,7 @@ function InfoRow({
         last ? '' : 'mb-3 border-b border-border pb-3'
       }`}
     >
-      <Ionicons name={icon} size={20} color="#7A7A8A" style={{ marginTop: 2 }} />
+      <Ionicons name={icon} size={20} color={getAppColors().mutedColor} style={{ marginTop: 2 }} />
       <View className="flex-1">
         <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
           {label}

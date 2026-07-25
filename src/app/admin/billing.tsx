@@ -17,6 +17,7 @@ import { formatPrice } from '@/lib/price';
 import { settlementPeriodLabel } from '@/lib/settlement-period-label';
 import { adminSettlementsService, SettlementPeriod } from '@/services/admin-settlements';
 import { Order, ordersService } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
 
@@ -58,7 +59,7 @@ export default function AdminBillingScreen() {
   if (!organizationalId) {
     return (
       <View className="flex-1 items-center justify-center bg-surface px-8">
-        <Ionicons name="cash-outline" size={40} color="#7A7A8A" />
+        <Ionicons name="cash-outline" size={40} color={getAppColors().mutedColor} />
         <Text className="mt-3 text-center text-sm text-muted">
           Entra desde la sección Negocios: toca el botón de facturación de un
           negocio para ver sus cobros.
@@ -80,7 +81,7 @@ export default function AdminBillingScreen() {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
         </Pressable>
         <View className="flex-1">
           <Text numberOfLines={1} className="text-base font-extrabold text-ink">
@@ -99,7 +100,7 @@ export default function AdminBillingScreen() {
 
       {dd.loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FF5A3C" />
+          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
         </View>
       ) : (
         <FlatList
@@ -236,7 +237,7 @@ function PeriodOrdersModal({
       <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
         <View className="flex-row items-center gap-3 border-b border-border bg-card px-5 py-4">
           <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={26} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+            <Ionicons name="close" size={26} color={getAppColors().inkColor} />
           </Pressable>
           <View className="flex-1">
             <Text className="text-lg font-extrabold text-ink">Pedidos entregados</Text>
@@ -263,12 +264,12 @@ function PeriodOrdersModal({
           onEndReachedThreshold={0.4}
           ListFooterComponent={
             list.loadingMore ? (
-              <ActivityIndicator size="small" color="#FF5A3C" style={{ paddingVertical: 12 }} />
+              <ActivityIndicator size="small" color={getAppColors().primaryColor} style={{ paddingVertical: 12 }} />
             ) : null
           }
           ListEmptyComponent={
             list.loading ? (
-              <ActivityIndicator size="large" color="#FF5A3C" style={{ paddingTop: 48 }} />
+              <ActivityIndicator size="large" color={getAppColors().primaryColor} style={{ paddingTop: 48 }} />
             ) : (
               <ListEmpty icon="receipt-outline" message="No hay pedidos entregados en esta quincena." />
             )

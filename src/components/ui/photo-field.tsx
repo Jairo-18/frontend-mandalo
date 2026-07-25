@@ -5,6 +5,7 @@ import { Alert, Image, Pressable, Text, View } from 'react-native';
 
 import { PhotoEditor } from '@/components/ui/photo-editor';
 import { toast } from '@/lib/toast';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   label: string;
@@ -107,7 +108,7 @@ export function PhotoField({
               resizeMode="cover"
             />
           ) : (
-            <Ionicons name={placeholderIcon} size={40} color="#FF5A3C" />
+            <Ionicons name={placeholderIcon} size={40} color={getAppColors().primaryColor} />
           )}
         </View>
 

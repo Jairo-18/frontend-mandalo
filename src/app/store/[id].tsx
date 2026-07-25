@@ -15,6 +15,8 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
 import { useCart } from '@/context/cart';
+import { getAppColors } from '@/lib/app-colors';
+import { lightenHex } from '@/lib/color';
 import { gridItemStyle } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
 import { formatHour12 } from '@/lib/text-format';
@@ -85,7 +87,7 @@ export default function StoreScreen() {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-card">
         <StatusBar style={isDark ? 'light' : 'dark'} />
-        <ActivityIndicator size="large" color="#FF5A3C" />
+        <ActivityIndicator size="large" color={getAppColors().primaryColor} />
       </SafeAreaView>
     );
   }
@@ -170,7 +172,7 @@ export default function StoreScreen() {
       {/* Negocio cerrado: aviso arriba de todo (y el carrito queda bloqueado) */}
       {closed && (
         <View className="mx-5 mb-3 flex-row items-center gap-2.5 rounded-2xl bg-dark px-4 py-3">
-          <Ionicons name="moon-outline" size={18} color="#FF8C6E" />
+          <Ionicons name="moon-outline" size={18} color={lightenHex(getAppColors().primaryColor, 68)} />
           <View className="flex-1">
             <Text className="text-sm font-extrabold text-white">
               Cerrado por ahora
@@ -196,7 +198,7 @@ export default function StoreScreen() {
           )}
           {!!location && (
             <View className="flex-row items-center gap-1.5">
-              <Ionicons name="location-outline" size={13} color="#7A7A8A" />
+              <Ionicons name="location-outline" size={13} color={getAppColors().mutedColor} />
               <Text numberOfLines={1} className="flex-1 text-xs text-muted">
                 {location}
               </Text>
@@ -204,7 +206,7 @@ export default function StoreScreen() {
           )}
           {!!business.phone && (
             <View className="mt-1 flex-row items-center gap-1.5">
-              <Ionicons name="call-outline" size={13} color="#7A7A8A" />
+              <Ionicons name="call-outline" size={13} color={getAppColors().mutedColor} />
               <Text className="text-xs text-muted">{business.phone}</Text>
             </View>
           )}
@@ -241,7 +243,7 @@ export default function StoreScreen() {
       <View className="flex-1 bg-surface">
         {list.loading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#FF5A3C" />
+            <ActivityIndicator size="large" color={getAppColors().primaryColor} />
           </View>
         ) : (
           <FlatList
@@ -273,7 +275,7 @@ export default function StoreScreen() {
               list.loadingMore ? (
                 <ActivityIndicator
                   size="small"
-                  color="#FF5A3C"
+                  color={getAppColors().primaryColor}
                   style={{ paddingVertical: 12 }}
                 />
               ) : null
@@ -348,7 +350,7 @@ function BackButton({ onPress }: { onPress: () => void }) {
       hitSlop={8}
       className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
     >
-      <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+      <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
     </Pressable>
   );
 }

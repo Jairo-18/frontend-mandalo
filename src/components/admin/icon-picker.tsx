@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { SearchBar } from '@/components/ui/search-bar';
+import { getAppColors } from '@/lib/app-colors';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -314,7 +315,7 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
                 <Ionicons
                   name={entry.name}
                   size={22}
-                  color={selected ? '#FF5A3C' : '#7A7A8A'}
+                  color={selected ? getAppColors().primaryColor : getAppColors().mutedColor}
                 />
               </Pressable>
             );

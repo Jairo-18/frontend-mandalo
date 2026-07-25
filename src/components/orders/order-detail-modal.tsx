@@ -14,6 +14,7 @@ import { OrderDetailView } from '@/components/orders/order-detail-view';
 import { useAppTheme } from '@/context/app-theme';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { Order, ordersService } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 /** Contexto que reciben los botones de acción (según el rol). */
 export type OrderActionCtx = {
@@ -101,7 +102,7 @@ export function OrderDetailModal({
       <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
         <View className="flex-row items-center gap-3 border-b border-border bg-card px-5 py-4">
           <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={26} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+            <Ionicons name="close" size={26} color={getAppColors().inkColor} />
           </Pressable>
           <Text className="text-lg font-extrabold text-ink">
             Pedido #{orderId}
@@ -110,7 +111,7 @@ export function OrderDetailModal({
 
         {loading || !order ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#FF5A3C" />
+            <ActivityIndicator size="large" color={getAppColors().primaryColor} />
           </View>
         ) : (
           (() => {

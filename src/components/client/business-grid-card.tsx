@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image, Pressable, Text, View } from 'react-native';
 
+import { getAppColors } from '@/lib/app-colors';
 import { businessDisplayName, ExploreBusiness } from '@/services/explore';
 
 type Props = {
@@ -29,7 +30,7 @@ export function BusinessGridCard({ business, onPress }: Props) {
           />
         ) : (
           <View className="flex-1 items-center justify-center">
-            <Ionicons name="storefront-outline" size={40} color="#C9C9D4" />
+            <Ionicons name="storefront-outline" size={40} color={getAppColors().mutedColor} />
           </View>
         )}
         {business.isOpen === false && (

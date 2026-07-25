@@ -1,5 +1,6 @@
 import { File, Paths } from 'expo-file-system';
 
+import type { AppColors } from '@/services/app-settings';
 import type {
   Department,
   IdentificationType,
@@ -17,6 +18,11 @@ export type CatalogCache = {
   identificationTypes: IdentificationType[];
   /** Municipios ya consultados alguna vez, por departamento. */
   municipalitiesByDepartment: Record<number, Municipality[]>;
+  /**
+   * Paleta de marca (§50). Opcional: los cachés guardados ANTES de este
+   * campo no lo traen — `appColors ?? DEFAULT_APP_COLORS` en quien lo lea.
+   */
+  appColors?: AppColors;
   savedAt: string;
 };
 

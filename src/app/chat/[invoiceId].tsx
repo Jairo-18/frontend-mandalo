@@ -24,6 +24,7 @@ import { useSession } from '@/hooks/use-session';
 import { refreshUnreadChats } from '@/hooks/use-unread-chats';
 import { formatTime } from '@/lib/order-eta';
 import { ChatSocketEvent, useChatMessages } from '@/lib/orders-socket';
+import { getAppColors } from '@/lib/app-colors';
 import {
   ChatMessage,
   ChatParticipant,
@@ -212,7 +213,7 @@ export default function ChatScreen() {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
           {loading ? (
             <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" color="#FF5A3C" />
+              <ActivityIndicator size="large" color={getAppColors().primaryColor} />
             </View>
           ) : !thread ? (
             <ListEmpty
@@ -246,7 +247,7 @@ export default function ChatScreen() {
                   {loadingMore && (
                     <ActivityIndicator
                       size="small"
-                      color="#FF5A3C"
+                      color={getAppColors().primaryColor}
                       style={{ paddingVertical: 10 }}
                     />
                   )}
@@ -255,7 +256,7 @@ export default function ChatScreen() {
                       <Ionicons
                         name="lock-closed-outline"
                         size={15}
-                        color="#FF5A3C"
+                        color={getAppColors().primaryColor}
                       />
                       <Text className="flex-1 text-xs text-ink">
                         Nunca compartas tu{' '}
@@ -312,7 +313,7 @@ export default function ChatScreen() {
                       value={text}
                       onChangeText={setText}
                       placeholder="Escribe un mensaje…"
-                      placeholderTextColor="#7A7A8A"
+                      placeholderTextColor={getAppColors().mutedColor}
                       multiline
                       maxLength={500}
                       className="text-[15px] text-ink"

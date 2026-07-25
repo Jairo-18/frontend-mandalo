@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
+import { getAppColors } from '@/lib/app-colors';
+
 /**
  * Tarjeta-contador de los dashboards (admin y negocio): icono, número grande
  * y etiqueta; `highlight` la pinta en primario (pendientes > 0). Tocarla
@@ -31,7 +33,7 @@ export function StatCard({
           highlight ? 'bg-white/20' : 'bg-primary-tint'
         }`}
       >
-        <Ionicons name={icon} size={18} color={highlight ? '#FFFFFF' : '#FF5A3C'} />
+        <Ionicons name={icon} size={18} color={highlight ? '#FFFFFF' : getAppColors().primaryColor} />
       </View>
       <Text
         className={`mt-2 text-2xl font-extrabold ${

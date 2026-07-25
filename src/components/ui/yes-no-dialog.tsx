@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 
+import { getAppColors } from '@/lib/app-colors';
+
 type Props = {
   visible: boolean;
   /** Pregunta principal ("¿Eliminar usuario?"). */
@@ -78,7 +80,7 @@ export function YesNoDialog({
             <Ionicons
               name={headerIcon}
               size={26}
-              color={destructive ? '#DC2626' : '#FF5A3C'}
+              color={destructive ? '#DC2626' : getAppColors().primaryColor}
             />
           </View>
 

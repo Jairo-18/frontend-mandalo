@@ -22,6 +22,7 @@ import { HttpError } from '@/lib/http';
 import { entryPathFor, getSession, setSession } from '@/lib/session';
 import { EMAIL_RE } from '@/lib/text-format';
 import { authService } from '@/services/auth';
+import { getAppColors } from '@/lib/app-colors';
 
 /** ¿El sign-in falló porque el correo no está verificado? (code del backend). */
 function isEmailNotVerified(e: unknown): boolean {
@@ -194,7 +195,7 @@ export default function LoginScreen() {
               <Ionicons
                 name={resending ? 'hourglass-outline' : 'mail-unread-outline'}
                 size={18}
-                color="#FF5A3C"
+                color={getAppColors().primaryColor}
               />
               <Text className="flex-1 text-[13px] font-bold text-primary">
                 {resending

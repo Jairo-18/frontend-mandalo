@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AddressManager } from '@/components/client/address-manager';
 import { useAppTheme } from '@/context/app-theme';
 import { refreshAddresses } from '@/lib/user-data';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   visible: boolean;
@@ -46,7 +47,7 @@ export function AddressSheet({ visible, onClose }: Props) {
             Mis direcciones
           </Text>
           <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={24} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+            <Ionicons name="close" size={24} color={getAppColors().inkColor} />
           </Pressable>
         </View>
 

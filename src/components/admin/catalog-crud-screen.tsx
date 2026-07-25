@@ -13,6 +13,8 @@ import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { CatalogCrudService, CatalogItem } from '@/services/admin-catalogs';
+import { getAppColors } from '@/lib/app-colors';
+
 
 type Props = {
   /** Servicio del catálogo que lista/edita esta pantalla. */
@@ -85,7 +87,7 @@ export function CatalogCrudScreen({
     return (
       <View className="mb-3 flex-row items-center gap-3 rounded-2xl bg-card p-4">
         <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-tint">
-          <Ionicons name={iconName} size={20} color="#FF5A3C" />
+          <Ionicons name={iconName} size={20} color={getAppColors().primaryColor} />
         </View>
 
         <View className="flex-1">
@@ -102,7 +104,7 @@ export function CatalogCrudScreen({
           hitSlop={8}
           className="h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="pencil-outline" size={17} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+          <Ionicons name="pencil-outline" size={17} color={getAppColors().inkColor} />
         </Pressable>
         <Pressable
           onPress={() => setToDelete(item)}
@@ -118,7 +120,7 @@ export function CatalogCrudScreen({
   return (
     <View className="flex-1">
       {/* Búsqueda + contador */}
-      <View className="px-4 pb-1" style={{ paddingTop: insets.top + 12 }}>
+      <View className="px-4 pb-1 pt-3">
         <View className="flex-row items-center gap-2.5">
           <View className="flex-1">
             <SearchBar
@@ -139,7 +141,7 @@ export function CatalogCrudScreen({
 
       {list.loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FF5A3C" />
+          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
         </View>
       ) : (
         <FlatList

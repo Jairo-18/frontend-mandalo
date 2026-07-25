@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
+import { getAppColors } from '@/lib/app-colors';
+
 type Props = {
   visible: boolean;
   /** Recibe el motivo del rechazo; si devuelve promesa, muestra spinner. */
@@ -72,7 +74,7 @@ export function RejectProofDialog({ visible, onConfirm, onCancel }: Props) {
               <TextInput
                 className="min-h-[44px] text-[15px] text-ink"
                 placeholder="Ej: esa foto no corresponde al comprobante del pago."
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={getAppColors().mutedColor}
                 value={reason}
                 onChangeText={setReason}
                 multiline

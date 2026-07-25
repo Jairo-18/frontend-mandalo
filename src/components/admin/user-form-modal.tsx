@@ -31,6 +31,7 @@ import {
   RoleCode,
 } from '@/services/admin-users';
 import { authService } from '@/services/auth';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   visible: boolean;
@@ -423,12 +424,12 @@ export function UserFormModal({
           className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
         >
           {locating ? (
-            <ActivityIndicator size="small" color="#FF5A3C" />
+            <ActivityIndicator size="small" color={getAppColors().primaryColor} />
           ) : (
             <Ionicons
               name={coords ? 'checkmark-circle' : 'locate-outline'}
               size={16}
-              color="#FF5A3C"
+              color={getAppColors().primaryColor}
             />
           )}
           <Text className="text-[13px] font-bold text-primary">
@@ -538,9 +539,9 @@ export function UserFormModal({
           className="mb-6 flex-row items-center gap-2.5 rounded-2xl border border-border px-4 py-3 active:opacity-70"
         >
           {sendingRecovery ? (
-            <ActivityIndicator size="small" color="#FF5A3C" />
+            <ActivityIndicator size="small" color={getAppColors().primaryColor} />
           ) : (
-            <Ionicons name="key-outline" size={18} color="#FF5A3C" />
+            <Ionicons name="key-outline" size={18} color={getAppColors().primaryColor} />
           )}
           <Text className="flex-1 text-[13px] font-bold text-ink">
             Enviar correo de recuperación de contraseña

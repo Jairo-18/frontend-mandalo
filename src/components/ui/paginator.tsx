@@ -4,6 +4,7 @@ import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/context/app-theme';
+import { getAppColors } from '@/lib/app-colors';
 
 /** La misma metadata que devuelve el backend en `pagination`. */
 export type PaginationMeta = {
@@ -57,7 +58,7 @@ export function Paginator({
           className="flex-row items-center gap-1 rounded-lg bg-surface px-2.5 py-1.5 active:opacity-70"
         >
           <Text className="text-xs font-bold text-ink">{perPage}</Text>
-          <Ionicons name="chevron-down" size={12} color="#7A7A8A" />
+          <Ionicons name="chevron-down" size={12} color={getAppColors().mutedColor} />
           <Text className="text-xs text-muted">por pág.</Text>
         </Pressable>
       ) : (
@@ -77,7 +78,7 @@ export function Paginator({
             hasPreviousPage && !disabled ? 'bg-surface' : 'opacity-30'
           }`}
         >
-          <Ionicons name="chevron-back" size={18} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+          <Ionicons name="chevron-back" size={18} color={getAppColors().inkColor} />
         </Pressable>
         <Pressable
           onPress={() => onPageChange(page + 1)}
@@ -87,7 +88,7 @@ export function Paginator({
             hasNextPage && !disabled ? 'bg-surface' : 'opacity-30'
           }`}
         >
-          <Ionicons name="chevron-forward" size={18} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+          <Ionicons name="chevron-forward" size={18} color={getAppColors().inkColor} />
         </Pressable>
       </View>
 
@@ -130,7 +131,7 @@ export function Paginator({
                   {option}
                 </Text>
                 {option === perPage && (
-                  <Ionicons name="checkmark" size={18} color="#FF5A3C" />
+                  <Ionicons name="checkmark" size={18} color={getAppColors().primaryColor} />
                 )}
               </Pressable>
             ))}

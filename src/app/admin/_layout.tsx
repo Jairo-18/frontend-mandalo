@@ -6,8 +6,9 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AdminDrawerContent } from '@/components/admin/drawer-content';
-import { useAppTheme } from '@/context/app-theme';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
+
 
 /**
  * Panel de administración (solo rol ADMIN): drawer con sidebar a la izquierda.
@@ -15,7 +16,10 @@ import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
  * home del cliente: montarlo dispararía sus peticiones de explorar/direcciones).
  */
 export default function AdminLayout() {
-  const { isDark } = useAppTheme();
+  // Reactivo de verdad (no el singleton `getAppColors()`): el Drawer necesita
+  // recalcular sceneStyle/headerStyle cuando cambia el modo oscuro, ver
+  // hooks/use-resolved-app-colors.ts.
+  const colors = useResolvedAppColors();
   // undefined = cargando de SecureStore; null = sin sesión.
   const [session, setSession] = useState<Session | null | undefined>(
     () => getSession() ?? undefined,
@@ -28,7 +32,7 @@ export default function AdminLayout() {
   if (session === undefined) {
     return (
       <View className="flex-1 items-center justify-center bg-card">
-        <ActivityIndicator size="large" color="#FF5A3C" />
+        <ActivityIndicator size="large" color={colors.primaryColor} />
       </View>
     );
   }
@@ -46,10 +50,10 @@ export default function AdminLayout() {
         screenOptions={{
           headerTintColor: '#FFFFFF',
           headerTitleStyle: { fontWeight: '800', color: '#FFFFFF' },
-          headerStyle: { backgroundColor: '#1E1E2D' },
+          headerStyle: { backgroundColor: colors.darkColor },
           headerShadowVisible: false,
           drawerStyle: { width: 300 },
-          sceneStyle: { backgroundColor: isDark ? '#12121B' : '#F2F2F2' },
+          sceneStyle: { backgroundColor: colors.surfaceColor },
         }}
       >
         <Drawer.Screen name="dashboard" options={{ title: 'Inicio' }} />
@@ -68,6 +72,7 @@ export default function AdminLayout() {
         />
         <Drawer.Screen name="tags" options={{ title: 'Etiquetas' }} />
         <Drawer.Screen name="categories" options={{ title: 'Categorías' }} />
+        <Drawer.Screen name="app-settings" options={{ title: 'Aplicación' }} />
       </Drawer>
     </GestureHandlerRootView>
   );

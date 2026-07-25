@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 import { http } from '@/lib/http';
 import { getSession } from '@/lib/session';
 import { useSession } from '@/hooks/use-session';
+import { getAppColors } from '@/lib/app-colors';
 
 /**
  * Notificaciones push (Expo Notifications + FCM). El backend manda los push
@@ -55,7 +56,7 @@ async function ensurePermissionsAndChannel(): Promise<boolean> {
       name: 'Pedidos',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF5A3C',
+      lightColor: getAppColors().primaryColor,
     });
   }
 

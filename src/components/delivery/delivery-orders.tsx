@@ -21,6 +21,7 @@ import { DeviceCoords, getDeviceCoordsSilently } from '@/lib/location';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { useSession } from '@/hooks/use-session';
 import { Order, ordersService } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 type Tab = 'available' | 'mine';
 
@@ -197,12 +198,12 @@ export function DeliveryOrders() {
         onEndReachedThreshold={0.4}
         ListFooterComponent={
           list.loadingMore ? (
-            <ActivityIndicator size="small" color="#FF5A3C" style={{ paddingVertical: 12 }} />
+            <ActivityIndicator size="small" color={getAppColors().primaryColor} style={{ paddingVertical: 12 }} />
           ) : null
         }
         ListEmptyComponent={
           list.loading ? (
-            <ActivityIndicator size="large" color="#FF5A3C" style={{ paddingTop: 48 }} />
+            <ActivityIndicator size="large" color={getAppColors().primaryColor} style={{ paddingTop: 48 }} />
           ) : (
             <ListEmpty
               icon={tab === 'available' ? 'bicycle-outline' : 'cube-outline'}
@@ -311,7 +312,7 @@ function TabButton({
       <Ionicons
         name={label === 'Disponibles' ? 'bicycle-outline' : 'checkbox-outline'}
         size={16}
-        color={active ? '#FF5A3C' : '#7A7A8A'}
+        color={active ? getAppColors().primaryColor : getAppColors().mutedColor}
       />
       <Text
         className={`text-[13px] font-bold ${active ? 'text-primary' : 'text-muted'}`}

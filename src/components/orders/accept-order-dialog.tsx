@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   visible: boolean;
@@ -50,7 +51,7 @@ export function AcceptOrderDialog({ visible, onConfirm, onCancel }: Props) {
       >
         <Pressable className="w-full rounded-3xl bg-card p-6" onPress={() => {}}>
           <View className="mb-4 h-14 w-14 self-center items-center justify-center rounded-full bg-primary-tint">
-            <Ionicons name="time-outline" size={26} color="#FF5A3C" />
+            <Ionicons name="time-outline" size={26} color={getAppColors().primaryColor} />
           </View>
 
           <Text className="text-center text-lg font-extrabold text-ink">

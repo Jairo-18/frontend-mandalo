@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from 'react-native';
 
 import { useAppTheme } from '@/context/app-theme';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   size?: number;
@@ -34,7 +35,7 @@ export function ThemeToggle({ size = 18, className, iconColor }: Props) {
       <Ionicons
         name={isDark ? 'sunny' : 'moon'}
         size={size}
-        color={iconColor ?? (isDark ? '#EDEDF2' : '#1E1E2D')}
+        color={iconColor ?? (getAppColors().inkColor)}
       />
     </Pressable>
   );

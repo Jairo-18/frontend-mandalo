@@ -16,6 +16,7 @@ import { useSession } from '@/hooks/use-session';
 import { adminBusinessesService } from '@/services/admin-businesses';
 import { adminUsersService } from '@/services/admin-users';
 import { ordersService } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 type Stats = {
   users: number | null;
@@ -96,7 +97,7 @@ export default function AdminDashboardScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => load('refresh')}
-          tintColor="#FF5A3C"
+          tintColor={getAppColors().primaryColor}
         />
       }
     >
@@ -122,7 +123,7 @@ export default function AdminDashboardScreen() {
       {loading && (
         <ActivityIndicator
           size="large"
-          color="#FF5A3C"
+          color={getAppColors().primaryColor}
           style={{ paddingTop: 48 }}
         />
       )}

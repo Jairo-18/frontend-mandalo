@@ -1,5 +1,7 @@
 import { ActivityIndicator, Pressable, Text } from 'react-native';
 
+import { getAppColors } from '@/lib/app-colors';
+
 type Props = {
   label: string;
   onPress?: () => void;
@@ -28,7 +30,7 @@ export function Button({
       } ${disabled ? 'opacity-50' : ''}`}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? '#FFFFFF' : '#FF5A3C'} />
+        <ActivityIndicator color={isPrimary ? '#FFFFFF' : getAppColors().primaryColor} />
       ) : (
         <Text
           className={`text-base font-bold ${

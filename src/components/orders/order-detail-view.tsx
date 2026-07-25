@@ -18,6 +18,7 @@ import { pickPhoto } from '@/lib/pick-photo';
 import { formatPrice } from '@/lib/price';
 import { businessDisplayName } from '@/services/explore';
 import { Order, ordersService } from '@/services/orders';
+import { getAppColors } from '@/lib/app-colors';
 
 type Perspective = 'client' | 'business' | 'delivery';
 
@@ -178,7 +179,7 @@ export function OrderDetailView({
         Dirección de entrega
       </Text>
       <View className="mb-5 flex-row gap-2.5 rounded-2xl bg-surface p-3.5">
-        <Ionicons name="location" size={18} color="#FF5A3C" />
+        <Ionicons name="location" size={18} color={getAppColors().primaryColor} />
         <View className="flex-1">
           <Text className="text-[14px] font-semibold text-ink">
             {order.deliveryAddress}
@@ -221,14 +222,14 @@ export function OrderDetailView({
       {/* Pago + nota */}
       <View className="mb-5 rounded-2xl bg-surface p-3.5">
         <View className="flex-row items-center gap-2">
-          <Ionicons name="cash-outline" size={16} color="#7A7A8A" />
+          <Ionicons name="cash-outline" size={16} color={getAppColors().mutedColor} />
           <Text className="text-[13px] text-ink">
             Pago: {order.paidType?.name ?? '—'} (contra-entrega)
           </Text>
         </View>
         {!!order.notes && (
           <View className="mt-2 flex-row items-start gap-2">
-            <Ionicons name="chatbubble-ellipses-outline" size={16} color="#7A7A8A" />
+            <Ionicons name="chatbubble-ellipses-outline" size={16} color={getAppColors().mutedColor} />
             <Text className="flex-1 text-[13px] text-ink">{order.notes}</Text>
           </View>
         )}
@@ -263,7 +264,7 @@ export function OrderDetailView({
                     <Ionicons
                       name="swap-horizontal-outline"
                       size={15}
-                      color="#FF5A3C"
+                      color={getAppColors().primaryColor}
                     />
                     <Text className="flex-1 text-[13px] font-extrabold text-ink">
                       Paga {formatPrice(order.total)}
@@ -332,10 +333,10 @@ export function OrderDetailView({
                 }`}
               >
                 {uploadingProof ? (
-                  <ActivityIndicator size="small" color="#FF5A3C" />
+                  <ActivityIndicator size="small" color={getAppColors().primaryColor} />
                 ) : (
                   <>
-                    <Ionicons name="receipt-outline" size={16} color="#FF5A3C" />
+                    <Ionicons name="receipt-outline" size={16} color={getAppColors().primaryColor} />
                     <Text className="text-[14px] font-bold text-primary">
                       {order.paymentProofUrl
                         ? 'Cambiar soporte de pago'
@@ -415,7 +416,7 @@ function ContactRow({
   return (
     <View className="mb-3 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5">
       <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-tint">
-        <Ionicons name={icon} size={18} color="#FF5A3C" />
+        <Ionicons name={icon} size={18} color={getAppColors().primaryColor} />
       </View>
       <View className="flex-1">
         {!!caption && (

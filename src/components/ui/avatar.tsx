@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image, Text, View } from 'react-native';
 
+import { getAppColors } from '@/lib/app-colors';
+
 type Props = {
   /** Foto; si falta se muestra la inicial de `label` o el `icon`. */
   uri?: string | null;
@@ -25,7 +27,7 @@ export function Avatar({
 }: Props) {
   const radiusClass = shape === 'circle' ? 'rounded-full' : 'rounded-xl';
   const bgClass = tone === 'solid' ? 'bg-primary' : 'bg-primary-tint';
-  const color = tone === 'solid' ? '#FFFFFF' : '#FF5A3C';
+  const color = tone === 'solid' ? '#FFFFFF' : getAppColors().primaryColor;
   const initial = label?.trim().charAt(0).toUpperCase() || '?';
 
   return (

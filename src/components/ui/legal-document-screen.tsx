@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAppTheme } from '@/context/app-theme';
+import { getAppColors } from '@/lib/app-colors';
 
 type Section = { heading: string; body: string };
 
@@ -35,7 +36,7 @@ export function LegalDocumentScreen({ title, updatedAt, sections }: Props) {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
         </Pressable>
         <Text className="flex-1 text-lg font-extrabold text-ink">{title}</Text>
         <ThemeToggle />

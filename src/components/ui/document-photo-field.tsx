@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Alert, Image, Pressable, Text, View } from 'react-native';
 
 import { toast } from '@/lib/toast';
+import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   label: string;
@@ -93,7 +94,7 @@ export function DocumentPhotoField({
           </>
         ) : (
           <>
-            <Ionicons name={placeholderIcon} size={30} color="#7A7A8A" />
+            <Ionicons name={placeholderIcon} size={30} color={getAppColors().mutedColor} />
             <Text className="mt-1.5 text-xs font-medium text-muted">
               Toca para subir la foto
             </Text>

@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getAppColors } from '@/lib/app-colors';
 
 export type SelectOption<T extends string | number = number> = {
   label: string;
@@ -42,6 +43,7 @@ export function Select<T extends string | number = number>({
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const selected = options.find((o) => o.value === value);
+  const mutedColor = getAppColors().mutedColor;
 
   return (
     <View className="mb-4">
@@ -54,7 +56,7 @@ export function Select<T extends string | number = number>({
           error ? 'border-red-500' : 'border-border'
         } ${disabled ? 'bg-surface opacity-60' : ''}`}
       >
-        {icon && <Ionicons name={icon} size={20} color="#9CA3AF" />}
+        {icon && <Ionicons name={icon} size={20} color={mutedColor} />}
         <Text
           numberOfLines={1}
           className={`flex-1 text-[15px] ${
@@ -64,9 +66,9 @@ export function Select<T extends string | number = number>({
           {selected ? selected.label : placeholder}
         </Text>
         {loading ? (
-          <ActivityIndicator size="small" color="#9CA3AF" />
+          <ActivityIndicator size="small" color={mutedColor} />
         ) : (
-          <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
+          <Ionicons name="chevron-down" size={18} color={mutedColor} />
         )}
       </Pressable>
 
@@ -116,7 +118,7 @@ export function Select<T extends string | number = number>({
                     {item.label}
                   </Text>
                   {item.value === value && (
-                    <Ionicons name="checkmark" size={18} color="#FF5A3C" />
+                    <Ionicons name="checkmark" size={18} color={getAppColors().primaryColor} />
                   )}
                 </Pressable>
               )}

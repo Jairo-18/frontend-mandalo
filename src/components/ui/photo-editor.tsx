@@ -21,6 +21,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { toast } from '@/lib/toast';
+import { getAppColors } from '@/lib/app-colors';
 
 const MAX_ZOOM = 5;
 /** Lado máximo de la imagen final (el backend igual re-optimiza con sharp). */
@@ -255,7 +256,7 @@ export function PhotoEditor({
 
                 {rotating && (
                   <View className="absolute inset-0 items-center justify-center bg-black/40">
-                    <ActivityIndicator size="large" color="#FF5A3C" />
+                    <ActivityIndicator size="large" color={getAppColors().primaryColor} />
                   </View>
                 )}
               </View>

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UserFormModal } from '@/components/admin/user-form-modal';
 import { Avatar } from '@/components/ui/avatar';
 import { useSession } from '@/hooks/use-session';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { getSession, setSession } from '@/lib/session';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { signOutEverywhere } from '@/lib/sign-out';
@@ -19,7 +20,8 @@ type AdminRoute =
   | '/admin/users'
   | '/admin/deliveries'
   | '/admin/tags'
-  | '/admin/categories';
+  | '/admin/categories'
+  | '/admin/app-settings';
 
 type Item = {
   label: string;
@@ -36,6 +38,7 @@ const ITEMS: Item[] = [
   { label: 'Domiciliarios', icon: 'bicycle-outline', href: '/admin/deliveries' },
   { label: 'Etiquetas', icon: 'pricetags-outline', href: '/admin/tags' },
   { label: 'Categorías', icon: 'grid-outline', href: '/admin/categories' },
+  { label: 'Aplicación', icon: 'color-palette-outline', href: '/admin/app-settings' },
 ];
 
 // Lo único que se usa de las props del drawer (evita el choque de tipos entre
@@ -51,6 +54,7 @@ export function AdminDrawerContent({ navigation }: Props) {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const [signingOut, setSigningOut] = useState(false);
+  const colors = useResolvedAppColors();
 
   // Edición del propio perfil: se abre desde la tarjeta del usuario.
   const [profileVisible, setProfileVisible] = useState(false);
@@ -167,7 +171,7 @@ export function AdminDrawerContent({ navigation }: Props) {
               <Ionicons
                 name={item.icon}
                 size={21}
-                color={active ? '#FF5A3C' : '#7A7A8A'}
+                color={active ? colors.primaryColor : colors.mutedColor}
               />
               <Text
                 className={`text-[15px] ${
@@ -192,9 +196,9 @@ export function AdminDrawerContent({ navigation }: Props) {
           className="flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
         >
           {signingOut ? (
-            <ActivityIndicator size="small" color="#FF5A3C" />
+            <ActivityIndicator size="small" color={colors.primaryColor} />
           ) : (
-            <Ionicons name="log-out-outline" size={21} color="#FF5A3C" />
+            <Ionicons name="log-out-outline" size={21} color={colors.primaryColor} />
           )}
           <Text className="text-[15px] font-bold text-primary">
             Cerrar sesión
