@@ -225,6 +225,38 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [persist],
   );
 
+  // Inyecta la paleta del admin como variables CSS reales (NativeWind
+  // `vars()`) para que las clases `bg-primary`/`bg-surface`/`bg-card`/
+  // `text-ink`/`text-muted`/`border-border`/etc. la sigan solas. Desde §51
+  // el admin controla el par claro/oscuro de cada una EXPLÍCITAMENTE — acá
+  // solo se elige cuál de los dos usar según `isDark`, sin derivar/adivinar
+  // nada (antes `surface`/`muted` se calculaban con matemática de color).
+  // Mismo valor que el context, disponible fuera de React (ver lib/app-colors.ts).
+  // OJO: esto y el `useMemo` de abajo tienen que ir ANTES de los `return`
+  // condicionales de loading/error — si no, en la transición cargando→cargado
+  // React ve una cantidad distinta de hooks entre un render y el siguiente y
+  // truena la app entera (Regla de los Hooks). En Android casi nunca se nota
+  // porque casi siempre hay caché en disco y `loading` arranca en `false`
+  // desde el primer render; en la WEB (`expo-file-system` no existe ahí, el
+  // caché siempre es `null`) esa transición pasa SIEMPRE — ahí el crash era
+  // 100% reproducible al abrir la app.
+  setCurrentAppColors(state.appColors, isDark);
+
+  const cssVars = useMemo(() => {
+    const c = state.appColors;
+    return vars({
+      '--color-primary': hexToRgbTriplet(c.primaryColor),
+      '--color-primary-soft': hexToRgbTriplet(lightenHex(c.primaryColor, 68)),
+      '--color-primary-tint': hexToRgbTriplet(lightenHex(c.primaryColor, 93, 40)),
+      '--color-dark': hexToRgbTriplet(c.darkColor),
+      '--color-surface': hexToRgbTriplet(isDark ? c.surfaceDarkColor : c.surfaceLightColor),
+      '--color-card': hexToRgbTriplet(isDark ? c.cardDarkColor : c.cardLightColor),
+      '--color-ink': hexToRgbTriplet(isDark ? c.textPrimaryDarkColor : c.textPrimaryLightColor),
+      '--color-muted': hexToRgbTriplet(isDark ? c.textSecondaryDarkColor : c.textSecondaryLightColor),
+      '--color-border': hexToRgbTriplet(isDark ? c.borderDarkColor : c.borderLightColor),
+    });
+  }, [state.appColors, isDark]);
+
   if (state.loading) {
     return (
       <View className="flex-1 items-center justify-center bg-card">
@@ -254,30 +286,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       </View>
     );
   }
-
-  // Inyecta la paleta del admin como variables CSS reales (NativeWind
-  // `vars()`) para que las clases `bg-primary`/`bg-surface`/`bg-card`/
-  // `text-ink`/`text-muted`/`border-border`/etc. la sigan solas. Desde §51
-  // el admin controla el par claro/oscuro de cada una EXPLÍCITAMENTE — acá
-  // solo se elige cuál de los dos usar según `isDark`, sin derivar/adivinar
-  // nada (antes `surface`/`muted` se calculaban con matemática de color).
-  // Mismo valor que el context, disponible fuera de React (ver lib/app-colors.ts).
-  setCurrentAppColors(state.appColors, isDark);
-
-  const cssVars = useMemo(() => {
-    const c = state.appColors;
-    return vars({
-      '--color-primary': hexToRgbTriplet(c.primaryColor),
-      '--color-primary-soft': hexToRgbTriplet(lightenHex(c.primaryColor, 68)),
-      '--color-primary-tint': hexToRgbTriplet(lightenHex(c.primaryColor, 93, 40)),
-      '--color-dark': hexToRgbTriplet(c.darkColor),
-      '--color-surface': hexToRgbTriplet(isDark ? c.surfaceDarkColor : c.surfaceLightColor),
-      '--color-card': hexToRgbTriplet(isDark ? c.cardDarkColor : c.cardLightColor),
-      '--color-ink': hexToRgbTriplet(isDark ? c.textPrimaryDarkColor : c.textPrimaryLightColor),
-      '--color-muted': hexToRgbTriplet(isDark ? c.textSecondaryDarkColor : c.textSecondaryLightColor),
-      '--color-border': hexToRgbTriplet(isDark ? c.borderDarkColor : c.borderLightColor),
-    });
-  }, [state.appColors, isDark]);
 
   return (
     <AppDataContext.Provider
