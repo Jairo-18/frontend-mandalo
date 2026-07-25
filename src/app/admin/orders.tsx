@@ -6,6 +6,7 @@ import { OrderCard } from '@/components/orders/order-card';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
 import { FilterChips } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { OrderStateCode } from '@/lib/order-status';
 import { businessDisplayName } from '@/services/explore';
@@ -52,8 +53,13 @@ export default function AdminOrdersScreen() {
 
   return (
     <View className="flex-1 bg-surface">
-      <View className="px-4 pb-1 pt-3">
-        <FilterChips options={STATE_FILTERS} value={filter} onChange={setFilter} />
+      <View className="px-4 pb-1" style={{ paddingTop: insets.top + 12 }}>
+        <View className="flex-row items-center gap-2.5">
+          <View className="flex-1">
+            <FilterChips options={STATE_FILTERS} value={filter} onChange={setFilter} />
+          </View>
+          <ThemeToggle />
+        </View>
       </View>
 
       <FlatList

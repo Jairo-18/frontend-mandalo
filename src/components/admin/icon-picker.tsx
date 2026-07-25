@@ -277,7 +277,7 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
 
   return (
     <View className="mb-6">
-      <View className="mb-3 rounded-xl border border-gray-200">
+      <View className="mb-3 rounded-xl border border-border">
         <SearchBar
           value={search}
           onChangeText={setSearch}
@@ -296,7 +296,7 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
           style={{ maxHeight: 272 }}
           nestedScrollEnabled
           contentContainerStyle={{ paddingVertical: 4 }}
-          className="rounded-xl border border-gray-100 bg-white"
+          className="rounded-xl border border-border bg-card"
         >
           <View className="flex-row flex-wrap justify-center gap-2 px-2">
             {filtered.map((entry) => {
@@ -308,7 +308,7 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
                 className={`h-12 w-12 items-center justify-center rounded-xl border ${
                   selected
                     ? 'border-primary bg-primary-tint'
-                    : 'border-gray-200 bg-white'
+                    : 'border-border bg-card'
                 }`}
               >
                 <Ionicons

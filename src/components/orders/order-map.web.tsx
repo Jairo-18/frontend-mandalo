@@ -58,8 +58,8 @@ export function OrderMap({ order }: Props) {
   if (!business && !destination) return null;
 
   return (
-    <View className="mb-5 rounded-2xl bg-white p-4">
-      <Text className="mb-3 text-sm font-extrabold text-dark">
+    <View className="mb-5 rounded-2xl bg-card p-4">
+      <Text className="mb-3 text-sm font-extrabold text-ink">
         Ubicaciones del pedido
       </Text>
       {business && (
@@ -118,7 +118,7 @@ function MapLink({
         <Ionicons name={icon} size={15} color="#FFFFFF" />
       </View>
       <View className="flex-1">
-        <Text className="text-sm font-bold text-dark">{label}</Text>
+        <Text className="text-sm font-bold text-ink">{label}</Text>
         <Text className="text-xs text-primary">Ver en Google Maps</Text>
       </View>
       <Ionicons name="open-outline" size={16} color="#7A7A8A" />

@@ -37,6 +37,8 @@ export type Order = {
   cancellationReason: string | null;
   /** Soporte del pago (foto/pantallazo) cuando el método no es efectivo. */
   paymentProofUrl: string | null;
+  /** Si el negocio rechazó el comprobante: el motivo (el cliente re-sube). */
+  paymentProofRejectedReason: string | null;
   createdAt: string | null;
   // Cuándo ocurrió cada transición (null si aún no pasa por ahí).
   acceptedAt: string | null;
@@ -64,6 +66,12 @@ export type Order = {
     /** Punto de recogida (pin del negocio en el mapa del pedido). */
     latitude?: number | null;
     longitude?: number | null;
+    /** Datos para pagar (los ve el cliente al subir el comprobante). */
+    paymentHolderName?: string | null;
+    nequiNumber?: string | null;
+    nequiKey?: string | null;
+    bancolombiaAccount?: string | null;
+    bancolombiaQrUrl?: string | null;
   } | null;
   // El cliente (visible para negocio/repartidor/admin).
   user?: { id: string; fullName: string; phone: string | null } | null;
@@ -203,6 +211,15 @@ export const ordersService = {
   requestPayment: (id: number) =>
     http<{ message?: string }>(`/invoice/${id}/request-payment`, {
       method: 'POST',
+      auth: true,
+      toastSuccess: true,
+    }),
+
+  /** El negocio rechaza el comprobante (con motivo); el cliente vuelve a subir. */
+  rejectPayment: (id: number, reason: string) =>
+    http<{ message?: string }>(`/invoice/${id}/reject-payment`, {
+      method: 'POST',
+      body: { reason },
       auth: true,
       toastSuccess: true,
     }),

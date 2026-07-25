@@ -7,6 +7,7 @@ import { AuthHeader } from '@/components/auth/auth-header';
 import { Button } from '@/components/ui/button';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
+import { useAppTheme } from '@/context/app-theme';
 import { EMAIL_RE } from '@/lib/text-format';
 
 import { authService } from '@/services/auth';
@@ -21,6 +22,7 @@ type Errors = Record<string, string | undefined>;
  */
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const [step, setStep] = useState<'email' | 'reset'>('email');
 
   const [email, setEmail] = useState('');
@@ -91,8 +93,8 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <View className="flex-1 bg-card">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <KeyboardAwareScroll>
         <AuthHeader
           onBack={() =>
@@ -100,8 +102,8 @@ export default function ForgotPasswordScreen() {
           }
         />
 
-        <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">
-          <Text className="text-center text-[22px] font-extrabold text-dark">
+        <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
+          <Text className="text-center text-[22px] font-extrabold text-ink">
             Recuperar contraseña
           </Text>
 
@@ -131,7 +133,7 @@ export default function ForgotPasswordScreen() {
             <>
               <Text className="mb-6 mt-1.5 text-center text-sm text-muted">
                 Enviamos un código de 6 dígitos a{' '}
-                <Text className="font-bold text-dark">{email}</Text>. Vence en
+                <Text className="font-bold text-ink">{email}</Text>. Vence en
                 15 minutos.
               </Text>
 

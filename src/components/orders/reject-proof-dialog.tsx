@@ -12,16 +12,17 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 type Props = {
   visible: boolean;
-  /** Recibe el motivo escrito; si devuelve promesa, muestra spinner. */
+  /** Recibe el motivo del rechazo; si devuelve promesa, muestra spinner. */
   onConfirm: (reason: string) => void | Promise<void>;
   onCancel: () => void;
 };
 
 /**
- * Diálogo para cancelar un pedido pidiendo el MOTIVO (el backend lo exige).
- * Lo usa el negocio; el cliente cancela con un motivo fijo sin este diálogo.
+ * Diálogo del NEGOCIO para RECHAZAR el comprobante de pago del cliente pidiendo
+ * el motivo (p. ej. "la foto no corresponde al comprobante"). El cliente lo ve
+ * y vuelve a subir. No cancela el pedido, solo invalida el soporte.
  */
-export function CancelOrderDialog({ visible, onConfirm, onCancel }: Props) {
+export function RejectProofDialog({ visible, onConfirm, onCancel }: Props) {
   const [reason, setReason] = useState('');
   const [working, setWorking] = useState(false);
 
@@ -49,31 +50,28 @@ export function CancelOrderDialog({ visible, onConfirm, onCancel }: Props) {
       onRequestClose={working ? undefined : onCancel}
       statusBarTranslucent
     >
-      {/* Sube la tarjeta cuando el teclado la taparía. */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <Pressable
           className="flex-1 items-center justify-center bg-black/50 px-8"
           onPress={working ? undefined : onCancel}
         >
-          <Pressable
-            className="w-full rounded-3xl bg-card p-6"
-            onPress={() => {}}
-          >
+          <Pressable className="w-full rounded-3xl bg-card p-6" onPress={() => {}}>
             <View className="mb-4 h-14 w-14 self-center items-center justify-center rounded-full bg-red-50">
-              <Ionicons name="close-circle-outline" size={26} color="#DC2626" />
+              <Ionicons name="receipt-outline" size={26} color="#DC2626" />
             </View>
 
             <Text className="text-center text-lg font-extrabold text-ink">
-              Cancelar pedido
+              Rechazar comprobante
             </Text>
             <Text className="mt-2 text-center text-sm leading-5 text-muted">
-              Cuéntale al cliente por qué. Esta acción no se puede deshacer.
+              Dile al cliente qué pasa para que suba el correcto. El pedido no se
+              cancela.
             </Text>
 
             <View className="mt-4 rounded-xl border border-border px-3.5 py-2.5">
               <TextInput
                 className="min-h-[44px] text-[15px] text-ink"
-                placeholder="Ej: sin stock del producto."
+                placeholder="Ej: esa foto no corresponde al comprobante del pago."
                 placeholderTextColor="#9CA3AF"
                 value={reason}
                 onChangeText={setReason}
@@ -104,7 +102,7 @@ export function CancelOrderDialog({ visible, onConfirm, onCancel }: Props) {
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text className="text-[15px] font-bold text-white">
-                    Cancelar pedido
+                    Rechazar
                   </Text>
                 )}
               </Pressable>

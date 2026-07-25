@@ -7,9 +7,11 @@ import { ActionButton } from '@/components/orders/action-button';
 import { CancelOrderDialog } from '@/components/orders/cancel-order-dialog';
 import { OrderCard } from '@/components/orders/order-card';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
+import { RejectProofDialog } from '@/components/orders/reject-proof-dialog';
 import { VerificationCodeDialog } from '@/components/orders/verification-code-dialog';
 import { FilterChips } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { OrderStateCode } from '@/lib/order-status';
@@ -38,6 +40,8 @@ export default function BusinessOrdersScreen() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [cancelId, setCancelId] = useState<number | null>(null);
   const [acceptId, setAcceptId] = useState<number | null>(null);
+  // Rechazo del comprobante de pago (pide el motivo para el cliente).
+  const [rejectId, setRejectId] = useState<number | null>(null);
   // Despacho (RUTA): exige el código de recogida que dicta el repartidor.
   const [dispatchId, setDispatchId] = useState<number | null>(null);
   // reload del detalle abierto, para refrescarlo tras aceptar desde el diálogo.
@@ -77,8 +81,13 @@ export default function BusinessOrdersScreen() {
 
   return (
     <View className="flex-1 bg-surface">
-      <View className="px-4 pb-1 pt-3">
-        <FilterChips options={STATE_FILTERS} value={filter} onChange={setFilter} />
+      <View className="px-4 pb-1" style={{ paddingTop: insets.top + 12 }}>
+        <View className="flex-row items-center gap-2.5">
+          <View className="flex-1">
+            <FilterChips options={STATE_FILTERS} value={filter} onChange={setFilter} />
+          </View>
+          <ThemeToggle />
+        </View>
       </View>
 
       <FlatList
@@ -143,15 +152,27 @@ export default function BusinessOrdersScreen() {
           }
           if (code === 'ACEP') {
             // Métodos distintos a efectivo: no se puede preparar hasta que el
-            // cliente suba el comprobante. Mientras falte, se ofrece pedírselo.
-            const needsProof =
-              order.paidType?.code !== 'EFEC' && !order.paymentProofUrl;
+            // cliente suba el comprobante. Mientras falte, se ofrece pedírselo;
+            // si el que subió no sirve, se puede rechazar (pide otro).
+            const nonCash = order.paidType?.code !== 'EFEC';
+            const needsProof = nonCash && !order.paymentProofUrl;
+            const hasProof = nonCash && !!order.paymentProofUrl;
             return (
               <View className="gap-2">
                 {needsProof && (
                   <Text className="text-center text-xs text-muted">
                     Falta el comprobante del pago del cliente para preparar.
                   </Text>
+                )}
+                {hasProof && (
+                  <ActionButton
+                    label="Rechazar comprobante"
+                    variant="danger-outline"
+                    onPress={() => {
+                      detailReload.current = reload;
+                      setRejectId(order.id);
+                    }}
+                  />
                 )}
                 <View className="flex-row gap-3">
                   <ActionButton
@@ -258,6 +279,20 @@ export default function BusinessOrdersScreen() {
           list.fetchPage(1, 'refresh');
         }}
         onCancel={() => setCancelId(null)}
+      />
+
+      {/* Rechazo del comprobante: pide el motivo y el cliente vuelve a subir. */}
+      <RejectProofDialog
+        visible={rejectId != null}
+        onConfirm={async (reason) => {
+          if (rejectId == null) return;
+          await ordersService.rejectPayment(rejectId, reason);
+          setRejectId(null);
+          detailReload.current?.();
+          detailReload.current = null;
+          list.fetchPage(1, 'refresh');
+        }}
+        onCancel={() => setRejectId(null)}
       />
     </View>
   );

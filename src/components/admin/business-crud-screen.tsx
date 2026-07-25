@@ -13,8 +13,10 @@ import { ListEmpty } from '@/components/ui/list-empty';
 import { Paginator } from '@/components/ui/paginator';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Select } from '@/components/ui/select';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppData } from '@/context/app-data';
+import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import {
   AdminBusiness,
@@ -40,6 +42,7 @@ const ALL_TYPES = 0;
 export function BusinessCrudScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const { identificationTypes } = useAppData();
 
   const [searchField, setSearchField] = useState<BusinessSearchField>('search');
@@ -103,12 +106,12 @@ export function BusinessCrudScreen() {
       .join(', ');
 
     return (
-      <View className="mb-3 rounded-2xl bg-white p-4">
+      <View className="mb-3 rounded-2xl bg-card p-4">
         <View className="flex-row items-center gap-3">
           <Avatar uri={item.logoUrl} label={displayName} />
 
           <View className="flex-1">
-            <Text numberOfLines={1} className="text-[15px] font-bold text-dark">
+            <Text numberOfLines={1} className="text-[15px] font-bold text-ink">
               {displayName}
             </Text>
             {item.tradeName && (
@@ -153,7 +156,7 @@ export function BusinessCrudScreen() {
             hitSlop={8}
             className="h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-70"
           >
-            <Ionicons name="pencil-outline" size={17} color="#1E1E2D" />
+            <Ionicons name="pencil-outline" size={17} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
           </Pressable>
           <Pressable
             onPress={() => setToDelete(item)}
@@ -180,12 +183,17 @@ export function BusinessCrudScreen() {
   return (
     <View className="flex-1">
       {/* Búsqueda por campo + filtro por tipo + contador */}
-      <View className="px-4 pb-1 pt-3">
-        <SearchBar
-          value={list.search}
-          onChangeText={list.setSearch}
-          placeholder="Buscar negocios…"
-        />
+      <View className="px-4 pb-1" style={{ paddingTop: insets.top + 12 }}>
+        <View className="flex-row items-center gap-2.5">
+          <View className="flex-1">
+            <SearchBar
+              value={list.search}
+              onChangeText={list.setSearch}
+              placeholder="Buscar negocios…"
+            />
+          </View>
+          <ThemeToggle />
+        </View>
 
         <View className="mt-2">
           <FilterChips
@@ -242,7 +250,7 @@ export function BusinessCrudScreen() {
       )}
 
       {/* Paginador */}
-      <View style={{ paddingBottom: insets.bottom }} className="bg-white">
+      <View style={{ paddingBottom: insets.bottom }} className="bg-card">
         <Paginator
           pagination={list.meta}
           disabled={list.loading || list.refreshing}

@@ -20,14 +20,14 @@ export function OwnerField({ owner, onChange }: Props) {
 
   return (
     <>
-      <Text className="mb-2 text-sm font-bold text-gray-700">
+      <Text className="mb-2 text-sm font-bold text-ink">
         Dueño / representante legal
       </Text>
       {owner ? (
-        <View className="mb-4 flex-row items-center gap-3 rounded-xl border border-gray-200 px-3.5 py-3">
+        <View className="mb-4 flex-row items-center gap-3 rounded-xl border border-border px-3.5 py-3">
           <Avatar label={owner.fullName} size={40} />
           <View className="flex-1">
-            <Text numberOfLines={1} className="text-[15px] font-bold text-dark">
+            <Text numberOfLines={1} className="text-[15px] font-bold text-ink">
               {owner.fullName}
             </Text>
             <Text numberOfLines={1} className="text-xs text-muted">
@@ -46,10 +46,10 @@ export function OwnerField({ owner, onChange }: Props) {
       ) : (
         <Pressable
           onPress={() => setPickerVisible(true)}
-          className="mb-4 h-[52px] flex-row items-center gap-2.5 rounded-xl border border-gray-200 px-3.5 active:opacity-70"
+          className="mb-4 h-[52px] flex-row items-center gap-2.5 rounded-xl border border-border px-3.5 active:opacity-70"
         >
           <Ionicons name="person-outline" size={20} color="#9CA3AF" />
-          <Text className="flex-1 text-[15px] text-gray-400">
+          <Text className="flex-1 text-[15px] text-muted">
             Buscar usuario para vincular…
           </Text>
           <Ionicons name="search-outline" size={18} color="#9CA3AF" />

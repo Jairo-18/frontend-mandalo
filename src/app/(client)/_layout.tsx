@@ -5,6 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ClientDrawerContent } from '@/components/client/drawer-content';
+import { useAppTheme } from '@/context/app-theme';
 import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
 import { toast } from '@/lib/toast';
 import {
@@ -33,6 +34,7 @@ function PaymentRequestedListener() {
  * viven FUERA del grupo y se abren empujados encima.
  */
 export default function ClientLayout() {
+  const { isDark } = useAppTheme();
   // undefined = cargando de SecureStore; null = sin sesión.
   const [session, setSession] = useState<Session | null | undefined>(
     () => getSession() ?? undefined,
@@ -44,20 +46,17 @@ export default function ClientLayout() {
 
   if (session === undefined) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-card">
         <ActivityIndicator size="large" color="#FF5A3C" />
       </View>
     );
   }
 
-  if (!session) {
-    return <Redirect href="/auth/login" />;
-  }
-
-  // Otros roles rebotan a SU panel (mismo patrón que admin/business).
-  const roleCode = session.user.role?.code;
+  // Sesión null = INVITADO: se le deja explorar el home (§44). Solo un usuario
+  // logueado de OTRO rol rebota a su panel (mismo patrón que admin/business).
+  const roleCode = session?.user.role?.code;
   if (roleCode && roleCode !== 'USER') {
-    return <Redirect href={homePathFor(session.user)} />;
+    return <Redirect href={homePathFor(session!.user)} />;
   }
 
   return (
@@ -69,7 +68,7 @@ export default function ClientLayout() {
           // Cada pantalla dibuja su propia navbar (con el botón hamburguesa).
           headerShown: false,
           drawerStyle: { width: 300 },
-          sceneStyle: { backgroundColor: '#F2F2F2' },
+          sceneStyle: { backgroundColor: isDark ? '#12121B' : '#F2F2F2' },
         }}
       >
         <Drawer.Screen name="home" options={{ title: 'Explorar' }} />

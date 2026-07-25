@@ -45,20 +45,20 @@ export function Select<T extends string | number = number>({
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-bold text-gray-700">{label}</Text>
+      <Text className="mb-2 text-sm font-bold text-ink">{label}</Text>
 
       <Pressable
         disabled={disabled}
         onPress={() => setOpen(true)}
         className={`h-[52px] flex-row items-center gap-2.5 rounded-xl border px-3.5 ${
-          error ? 'border-red-500' : 'border-gray-200'
-        } ${disabled ? 'bg-gray-50 opacity-60' : ''}`}
+          error ? 'border-red-500' : 'border-border'
+        } ${disabled ? 'bg-surface opacity-60' : ''}`}
       >
         {icon && <Ionicons name={icon} size={20} color="#9CA3AF" />}
         <Text
           numberOfLines={1}
           className={`flex-1 text-[15px] ${
-            selected ? 'text-dark' : 'text-gray-400'
+            selected ? 'text-ink' : 'text-muted'
           }`}
         >
           {selected ? selected.label : placeholder}
@@ -85,14 +85,14 @@ export function Select<T extends string | number = number>({
           onPress={() => setOpen(false)}
         >
           <Pressable
-            className="max-h-[70%] rounded-t-3xl bg-white px-4 pt-4"
+            className="max-h-[70%] rounded-t-3xl bg-card px-4 pt-4"
             // Safe-area inferior: sin esto la hoja queda detrás de la barra de
             // navegación del sistema (edge-to-edge de Android).
             style={{ paddingBottom: insets.bottom + 16 }}
             onPress={() => {}}
           >
-            <View className="mb-3 h-1 w-10 self-center rounded-full bg-gray-200" />
-            <Text className="mb-3 text-center text-base font-bold text-dark">
+            <View className="mb-3 h-1 w-10 self-center rounded-full bg-border" />
+            <Text className="mb-3 text-center text-base font-bold text-ink">
               {label}
             </Text>
             <FlatList
@@ -104,13 +104,13 @@ export function Select<T extends string | number = number>({
                     onSelect(item.value);
                     setOpen(false);
                   }}
-                  className="flex-row items-center justify-between border-b border-gray-100 py-3.5 active:opacity-60"
+                  className="flex-row items-center justify-between border-b border-border py-3.5 active:opacity-60"
                 >
                   <Text
                     className={`text-[15px] ${
                       item.value === value
                         ? 'font-bold text-primary'
-                        : 'text-gray-800'
+                        : 'text-ink'
                     }`}
                   >
                     {item.label}
@@ -121,7 +121,7 @@ export function Select<T extends string | number = number>({
                 </Pressable>
               )}
               ListEmptyComponent={
-                <Text className="py-6 text-center text-sm text-gray-400">
+                <Text className="py-6 text-center text-sm text-muted">
                   Sin opciones disponibles
                 </Text>
               }

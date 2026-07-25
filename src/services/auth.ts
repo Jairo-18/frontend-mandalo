@@ -83,6 +83,20 @@ export const authService = {
     }),
 
   /**
+   * Registro RÁPIDO del invitado (§44): crea la cuenta de cliente YA verificada
+   * y devuelve el auto-login (tokens + user) para que pueda pedir de una, sin
+   * el paso de verificación de correo.
+   */
+  registerQuick: (payload: RegisterPayload) =>
+    http<{
+      data: { tokens: Tokens; user: AuthUser; accessSessionId?: string };
+    }>('/auth/register-quick', {
+      method: 'POST',
+      body: payload,
+      toastSuccess: true,
+    }),
+
+  /**
    * Registro de repartidor: multipart con los datos + los documentos de
    * verificación (rostro, cédula, licencia, SOAT y tecnomecánica). La cuenta
    * nace inactiva hasta que un admin revise los documentos.

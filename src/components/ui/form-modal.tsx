@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
+import { useAppTheme } from '@/context/app-theme';
 
 type Props = {
   visible: boolean;
@@ -36,6 +37,7 @@ export function FormModal({
   children,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
 
   return (
     <Modal
@@ -44,12 +46,12 @@ export function FormModal({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+      <View className="flex-1 bg-card" style={{ paddingTop: insets.top }}>
         {/* Cabecera del modal */}
-        <View className="flex-row items-center justify-between border-b border-gray-100 px-5 py-4">
-          <Text className="text-lg font-extrabold text-dark">{title}</Text>
+        <View className="flex-row items-center justify-between border-b border-border px-5 py-4">
+          <Text className="text-lg font-extrabold text-ink">{title}</Text>
           <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={26} color="#1E1E2D" />
+            <Ionicons name="close" size={26} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
           </Pressable>
         </View>
 

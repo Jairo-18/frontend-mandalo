@@ -32,7 +32,9 @@ export default function Index() {
     (async () => {
       const session = await loadSession();
       if (!session?.refreshToken) {
-        if (!cancelled) setTarget('/auth/login');
+        // Sin sesión → modo INVITADO: entra directo al home a explorar y armar
+        // el carrito; el registro se le pide al pedir (§44).
+        if (!cancelled) setTarget('/home');
         return;
       }
 
@@ -79,7 +81,7 @@ export default function Index() {
 
   if (!target) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-card">
         <ActivityIndicator size="large" color="#FF5A3C" />
       </View>
     );

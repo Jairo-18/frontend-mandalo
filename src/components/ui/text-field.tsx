@@ -25,6 +25,13 @@ type Props = TextInputProps & {
    * negocio (la asigna el admin/vendedor).
    */
   readOnly?: boolean;
+  /**
+   * Desactiva el autofill del sistema (además de los campos `secure`, que ya
+   * lo desactivan). Úsalo en el CORREO de los formularios de login/registro:
+   * si el correo conserva la pista de autofill, Android muestra el diálogo
+   * "¿Guardar/actualizar contraseña?" al ver el par correo+contraseña.
+   */
+  noAutofill?: boolean;
 };
 
 /** Props de teclado que cada formato trae por defecto (sobrescribibles). */
@@ -52,6 +59,7 @@ export function TextField({
   error,
   format,
   readOnly,
+  noAutofill,
   onChangeText,
   onBlur,
   multiline,
@@ -75,12 +83,12 @@ export function TextField({
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-bold text-gray-700">{label}</Text>
+      <Text className="mb-2 text-sm font-bold text-ink">{label}</Text>
       <View
         className={`flex-row gap-2.5 rounded-xl border px-3.5 ${
           multiline ? 'items-start py-3' : 'h-[52px] items-center'
-        } ${error ? 'border-red-500' : 'border-gray-200'} ${
-          readOnly ? 'bg-gray-50' : ''
+        } ${error ? 'border-red-500' : 'border-border'} ${
+          readOnly ? 'bg-surface' : ''
         }`}
       >
         <Ionicons
@@ -91,7 +99,7 @@ export function TextField({
         />
         <TextInput
           editable={!readOnly}
-          className={`flex-1 text-[15px] ${readOnly ? 'text-muted' : 'text-dark'} ${multiline ? '' : 'h-full'}`}
+          className={`flex-1 text-[15px] ${readOnly ? 'text-muted' : 'text-ink'} ${multiline ? '' : 'h-full'}`}
           style={
             multiline
               ? { minHeight: (numberOfLines ?? 3) * 22, textAlignVertical: 'top' }
@@ -103,6 +111,18 @@ export function TextField({
           multiline={multiline}
           numberOfLines={numberOfLines}
           {...(format ? FORMAT_DEFAULTS[format] : undefined)}
+          // Contraseña (secure) o correo con `noAutofill`: se desactiva el
+          // autofill para que el Gestor de Google/Android NO muestre el diálogo
+          // "¿Guardar/actualizar contraseña?". Debe ir en AMBOS campos del par
+          // (correo + contraseña): con que uno conserve la pista, el diálogo
+          // sale igual. La app ya tiene su "Recordar mis datos" (SecureStore).
+          {...(secure || noAutofill
+            ? {
+                autoComplete: 'off' as const,
+                textContentType: 'none' as const,
+                importantForAutofill: 'no' as const,
+              }
+            : undefined)}
           {...inputProps}
           onChangeText={handleChangeText}
           onBlur={handleBlur}

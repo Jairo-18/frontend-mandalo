@@ -67,7 +67,7 @@ export function DocumentPhotoField({
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-bold text-gray-700">{label}</Text>
+      <Text className="mb-2 text-sm font-bold text-ink">{label}</Text>
 
       <Pressable
         onPress={choose}
@@ -75,7 +75,7 @@ export function DocumentPhotoField({
           error
             ? 'border-red-500'
             : uri
-              ? 'border-gray-200'
+              ? 'border-border'
               : 'border-dashed border-gray-300 bg-surface'
         }`}
       >

@@ -5,14 +5,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ProductCard } from '@/components/client/product-card';
+import { ProductGridCard } from '@/components/client/product-grid-card';
 import { ProductDetailSheet } from '@/components/client/product-detail-sheet';
 import { Avatar } from '@/components/ui/avatar';
 import { FilterChips } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { SearchBar } from '@/components/ui/search-bar';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
+import { useAppTheme } from '@/context/app-theme';
 import { useCart } from '@/context/cart';
+import { gridItemStyle } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
 import { formatHour12 } from '@/lib/text-format';
 import { toast } from '@/lib/toast';
@@ -32,6 +35,7 @@ import {
  */
 export default function StoreScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const storeId = Number(id);
@@ -79,8 +83,8 @@ export default function StoreScreen() {
 
   if (loadingDetail) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white">
-        <StatusBar style="dark" />
+      <SafeAreaView className="flex-1 items-center justify-center bg-card">
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <ActivityIndicator size="large" color="#FF5A3C" />
       </SafeAreaView>
     );
@@ -88,8 +92,8 @@ export default function StoreScreen() {
 
   if (!business) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
-        <StatusBar style="dark" />
+      <SafeAreaView className="flex-1 bg-card">
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <View className="px-5 pt-2">
           <BackButton onPress={() => router.back()} />
         </View>
@@ -138,8 +142,8 @@ export default function StoreScreen() {
   const showCartBar = cart.count > 0 && cart.businessId === storeId;
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <SafeAreaView className="flex-1 bg-card">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       {/* Cabecera: volver + negocio */}
       <View className="flex-row items-center gap-3 px-5 pb-3 pt-2">
@@ -151,7 +155,7 @@ export default function StoreScreen() {
           shape="rounded"
         />
         <View className="flex-1">
-          <Text numberOfLines={1} className="text-lg font-extrabold text-dark">
+          <Text numberOfLines={1} className="text-lg font-extrabold text-ink">
             {businessDisplayName(business)}
           </Text>
           {business.tags.length > 0 && (
@@ -160,6 +164,7 @@ export default function StoreScreen() {
             </Text>
           )}
         </View>
+        <ThemeToggle />
       </View>
 
       {/* Negocio cerrado: aviso arriba de todo (y el carrito queda bloqueado) */}
@@ -185,7 +190,7 @@ export default function StoreScreen() {
       {(!!location || !!business.phone || !!business.description) && (
         <View className="mx-5 mb-3 rounded-2xl bg-surface p-3.5">
           {!!business.description && (
-            <Text numberOfLines={2} className="mb-1.5 text-xs text-dark">
+            <Text numberOfLines={2} className="mb-1.5 text-xs text-ink">
               {business.description}
             </Text>
           )}
@@ -208,7 +213,7 @@ export default function StoreScreen() {
 
       {/* Búsqueda + categorías del negocio */}
       <View className="px-5 pb-2">
-        <View className="rounded-xl border border-gray-200">
+        <View className="rounded-xl border border-border">
           <SearchBar
             value={list.search}
             onChangeText={list.setSearch}
@@ -242,14 +247,18 @@ export default function StoreScreen() {
           <FlatList
             data={list.items}
             keyExtractor={(item) => String(item.id)}
-            renderItem={({ item }) => (
-              <ProductCard
-                product={item}
-                onPress={() => setDetail(item)}
-                quantity={cart.quantityOf(item.id)}
-                onAdd={() => handleAdd(item)}
-                onDecrement={() => cart.decrement(item.id)}
-              />
+            numColumns={2}
+            columnWrapperStyle={{ gap: 12 }}
+            renderItem={({ item, index }) => (
+              <View style={gridItemStyle(index, list.items.length)}>
+                <ProductGridCard
+                  product={item}
+                  onPress={() => setDetail(item)}
+                  quantity={cart.quantityOf(item.id)}
+                  onAdd={() => handleAdd(item)}
+                  onDecrement={() => cart.decrement(item.id)}
+                />
+              </View>
             )}
             contentContainerStyle={{
               paddingHorizontal: 16,
@@ -288,7 +297,7 @@ export default function StoreScreen() {
           no quedar debajo de la barra de navegación del sistema. */}
       {showCartBar && (
         <View
-          className="absolute inset-x-0 bottom-0 border-t border-gray-100 bg-white px-5 pt-3"
+          className="absolute inset-x-0 bottom-0 border-t border-border bg-card px-5 pt-3"
           style={{ paddingBottom: insets.bottom + 12 }}
         >
           <Pressable
@@ -332,13 +341,14 @@ export default function StoreScreen() {
 }
 
 function BackButton({ onPress }: { onPress: () => void }) {
+  const { isDark } = useAppTheme();
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
       className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
     >
-      <Ionicons name="arrow-back" size={20} color="#1E1E2D" />
+      <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
     </Pressable>
   );
 }

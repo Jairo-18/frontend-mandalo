@@ -16,26 +16,26 @@ export function SquareCard({ label, icon, selected, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
-      className={`h-[88px] w-[84px] items-center justify-center rounded-2xl border px-1.5 ${
-        selected ? 'border-primary bg-primary' : 'border-gray-100 bg-white'
+      className={`h-[104px] w-[96px] items-center justify-center rounded-2xl border px-1.5 ${
+        selected ? 'border-primary bg-primary' : 'border-border bg-card'
       } active:opacity-80`}
     >
       {/* Icono en círculo de acento (blanco translúcido al seleccionar) */}
       <View
-        className={`h-9 w-9 items-center justify-center rounded-full ${
+        className={`h-12 w-12 items-center justify-center rounded-full ${
           selected ? 'bg-white/25' : 'bg-primary-tint'
         }`}
       >
         <Ionicons
           name={icon}
-          size={20}
+          size={26}
           color={selected ? '#FFFFFF' : '#FF5A3C'}
         />
       </View>
       <Text
         numberOfLines={2}
-        className={`mt-1.5 text-center text-[11px] font-bold ${
-          selected ? 'text-white' : 'text-dark'
+        className={`mt-2 text-center text-[13px] font-bold ${
+          selected ? 'text-white' : 'text-ink'
         }`}
       >
         {label}

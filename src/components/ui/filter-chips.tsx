@@ -35,12 +35,12 @@ export function FilterChips<T extends string>({
             className={`rounded-full border px-3 py-1.5 ${
               selected
                 ? 'border-primary bg-primary-tint'
-                : 'border-gray-200 bg-white'
+                : 'border-border bg-card'
             }`}
           >
             <Text
               className={`text-xs font-semibold ${
-                selected ? 'text-primary' : 'text-gray-600'
+                selected ? 'text-primary' : 'text-ink'
               }`}
             >
               {option.label}

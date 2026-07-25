@@ -122,9 +122,13 @@ function revalidate<T>(
   force: boolean,
   fetcher: () => Promise<T>,
   assign: (value: T) => void,
+  /** El dato es público (no exige JWT): se trae también en modo invitado. */
+  allowGuest = false,
 ): Promise<void> {
   ensureHydrated();
-  if (!getSession()) return Promise.resolve();
+  // Los datos autenticados (direcciones) no se piden sin sesión (evita 401);
+  // los públicos (filtros del explorar) sí, para el home del invitado (§44).
+  if (!allowGuest && !getSession()) return Promise.resolve();
 
   const fresh = Date.now() - fetchedAt[key] < TTL_MS[key];
   if (!force && fresh && data[key] !== null) {
@@ -159,6 +163,9 @@ export function getAddresses(): UserAddress[] | null {
 
 export function isAddressesLoading(): boolean {
   ensureHydrated();
+  // Invitado (sin sesión): no hay direcciones que traer, así que nunca está
+  // "cargando" — si no, el chip "Enviar a" y el feed del home se congelan.
+  if (!getSession()) return false;
   return data.addresses === null && !settled.addresses;
 }
 
@@ -188,6 +195,7 @@ export function refreshExploreFilters(force = false): Promise<void> {
     (value) => {
       data.filters = value;
     },
+    true, // público: se trae también en modo invitado
   );
 }
 

@@ -67,14 +67,14 @@ export function VerificationCodeDialog({
           onPress={working ? undefined : onCancel}
         >
           <Pressable
-            className="w-full rounded-3xl bg-white p-6"
+            className="w-full rounded-3xl bg-card p-6"
             onPress={() => {}}
           >
             <View className="mb-4 h-14 w-14 items-center justify-center self-center rounded-full bg-primary-tint">
               <Ionicons name="keypad-outline" size={26} color="#FF5A3C" />
             </View>
 
-            <Text className="text-center text-lg font-extrabold text-dark">
+            <Text className="text-center text-lg font-extrabold text-ink">
               {title}
             </Text>
             <Text className="mt-2 text-center text-sm leading-5 text-muted">
@@ -89,16 +89,16 @@ export function VerificationCodeDialog({
               autoFocus
               placeholder="••••"
               placeholderTextColor="#9CA3AF"
-              className="mt-4 self-center rounded-2xl border border-gray-200 bg-surface px-6 py-3 text-center text-2xl font-extrabold tracking-[12px] text-dark"
+              className="mt-4 self-center rounded-2xl border border-border bg-surface px-6 py-3 text-center text-2xl font-extrabold tracking-[12px] text-ink"
             />
 
             <View className="mt-5 flex-row gap-3">
               <Pressable
                 onPress={onCancel}
                 disabled={working}
-                className="h-12 flex-1 items-center justify-center rounded-2xl border border-gray-200 active:opacity-70"
+                className="h-12 flex-1 items-center justify-center rounded-2xl border border-border active:opacity-70"
               >
-                <Text className="text-[15px] font-bold text-dark">
+                <Text className="text-[15px] font-bold text-ink">
                   Cancelar
                 </Text>
               </Pressable>
@@ -106,7 +106,7 @@ export function VerificationCodeDialog({
                 onPress={confirm}
                 disabled={working || !ready}
                 className={`h-12 flex-1 items-center justify-center rounded-2xl active:opacity-80 ${
-                  ready ? 'bg-primary' : 'bg-gray-200'
+                  ready ? 'bg-primary' : 'bg-border'
                 }`}
               >
                 {working ? (

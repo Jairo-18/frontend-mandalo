@@ -128,7 +128,7 @@ export default function DeliveryScreen() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-dark">
       <StatusBar style="light" />
-      <View className="flex-1 bg-white">
+      <View className="flex-1 bg-card">
       <PanelHeader
         title="Repartir"
         subtitle="Panel del domiciliario"
@@ -138,7 +138,7 @@ export default function DeliveryScreen() {
         <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-tint">
           <Ionicons name="hourglass-outline" size={40} color="#FF5A3C" />
         </View>
-        <Text className="text-center text-2xl font-extrabold text-dark">
+        <Text className="text-center text-2xl font-extrabold text-ink">
           Cuenta en proceso de habilitación
         </Text>
         <Text className="mt-3 text-center text-sm leading-5 text-muted">
@@ -155,7 +155,7 @@ export default function DeliveryScreen() {
               size={20}
               color="#FF5A3C"
             />
-            <Text className="flex-1 text-[13px] leading-5 text-dark">
+            <Text className="flex-1 text-[13px] leading-5 text-ink">
               {user.observations}
             </Text>
           </View>

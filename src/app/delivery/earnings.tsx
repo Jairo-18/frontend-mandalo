@@ -18,10 +18,10 @@ import {
 const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
 
 /**
- * "Mis pagos" del domiciliario (§42): año → mes → quincena, SOLO LECTURA —
- * lo que ya ganó y lo que le falta por cobrar (Mándalo se lo paga aparte,
- * acá solo se consulta el estado). Espejo de `admin/delivery-billing.tsx`
- * pero self-scoped y sin botón de marcar.
+ * "Mis cobros" del domiciliario (§42): año → mes → quincena, SOLO LECTURA —
+ * lo que ya ganó y lo que le falta por cobrar (Mándalo se lo paga cada
+ * quincena, acá solo se consulta el estado). Espejo de
+ * `admin/delivery-billing.tsx` pero self-scoped y sin botón de marcar.
  */
 export default function DeliveryEarningsScreen() {
   const fetcher = useCallback(async (periodType: 'quincena' | 'month' | 'year') => {
@@ -35,7 +35,7 @@ export default function DeliveryEarningsScreen() {
       <StatusBar style="light" />
       <View className="flex-1 bg-surface">
         <PanelHeader
-          title="Mis pagos"
+          title="Mis cobros"
           subtitle={
             dd.level === 'year'
               ? 'Total entregado por año'
@@ -77,7 +77,7 @@ export default function DeliveryEarningsScreen() {
                 secondaryLabel="Domicilios"
                 secondaryValue={formatPrice(item.deliveryTotal)}
                 isPaid={item.settlement?.isPaid}
-                paidLabel="Pagado"
+                paidLabel="Cobrado"
                 pendingLabel="Pendiente"
                 paidSubperiods={item.paidSubperiods}
                 totalSubperiods={item.totalSubperiods}

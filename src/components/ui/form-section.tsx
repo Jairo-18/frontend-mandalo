@@ -8,7 +8,7 @@ export function FormSection({ label }: { label: string }) {
   return (
     <View className="mb-3 mt-2 flex-row items-center gap-2">
       <View className="h-4 w-1.5 rounded-full bg-primary" />
-      <Text className="text-[15px] font-extrabold text-dark">{label}</Text>
+      <Text className="text-[15px] font-extrabold text-ink">{label}</Text>
     </View>
   );
 }

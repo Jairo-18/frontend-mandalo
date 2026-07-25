@@ -8,7 +8,9 @@ import { SettlementPeriodCard } from '@/components/admin/settlement-period-card'
 import { OrderCard } from '@/components/orders/order-card';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
+import { useAppTheme } from '@/context/app-theme';
 import { useSettlementDrillDown } from '@/hooks/use-settlement-drilldown';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { formatPrice } from '@/lib/price';
@@ -25,6 +27,7 @@ const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
  */
 export default function AdminBillingScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ orgId?: string; name?: string }>();
   const organizationalId = Number(params.orgId) || 0;
@@ -66,7 +69,7 @@ export default function AdminBillingScreen() {
 
   return (
     <View className="flex-1 bg-surface">
-      <View className="flex-row items-center gap-3 bg-white px-5 pb-3 pt-2">
+      <View className="flex-row items-center gap-3 bg-card px-5 pb-3 pt-2">
         <Pressable
           onPress={() =>
             // Es un Drawer.Screen hermano de "businesses" (no está en el
@@ -77,10 +80,10 @@ export default function AdminBillingScreen() {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color="#1E1E2D" />
+          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
         </Pressable>
         <View className="flex-1">
-          <Text numberOfLines={1} className="text-base font-extrabold text-dark">
+          <Text numberOfLines={1} className="text-base font-extrabold text-ink">
             {params.name || 'Cobros del negocio'}
           </Text>
           <Text className="text-xs text-muted">
@@ -91,6 +94,7 @@ export default function AdminBillingScreen() {
                 : `${dd.month} · quincenas`}
           </Text>
         </View>
+        <ThemeToggle />
       </View>
 
       {dd.loading ? (
@@ -132,7 +136,7 @@ export default function AdminBillingScreen() {
       {/* Solo en quincena: botón directo de marcar (además de tocar la tarjeta → ver pedidos). */}
       {dd.level === 'quincena' && dd.items.length > 0 && (
         <View
-          className="border-t border-gray-100 bg-white px-4 pb-2 pt-3"
+          className="border-t border-border bg-card px-4 pb-2 pt-3"
           style={{ paddingBottom: insets.bottom + 12 }}
         >
           {dd.items.map((item) => (
@@ -149,7 +153,7 @@ export default function AdminBillingScreen() {
                 color={item.settlement?.isPaid ? '#059669' : '#FFFFFF'}
               />
               <Text
-                className={`text-sm font-bold ${item.settlement?.isPaid ? 'text-dark' : 'text-white'}`}
+                className={`text-sm font-bold ${item.settlement?.isPaid ? 'text-ink' : 'text-white'}`}
               >
                 {settlementPeriodLabel(item)} —{' '}
                 {item.settlement?.isPaid ? 'cobrado, tocar para deshacer' : 'marcar como cobrado'}
@@ -198,6 +202,7 @@ function PeriodOrdersModal({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const list = usePaginatedList<Order>(
@@ -229,12 +234,12 @@ function PeriodOrdersModal({
   return (
     <Modal visible={period != null} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
-        <View className="flex-row items-center gap-3 border-b border-gray-100 bg-white px-5 py-4">
+        <View className="flex-row items-center gap-3 border-b border-border bg-card px-5 py-4">
           <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={26} color="#1E1E2D" />
+            <Ionicons name="close" size={26} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
           </Pressable>
           <View className="flex-1">
-            <Text className="text-lg font-extrabold text-dark">Pedidos entregados</Text>
+            <Text className="text-lg font-extrabold text-ink">Pedidos entregados</Text>
             {period && <Text className="text-xs text-muted">{settlementPeriodLabel(period)}</Text>}
           </View>
         </View>

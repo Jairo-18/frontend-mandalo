@@ -55,7 +55,7 @@ export function DeliveryVerification({
 }: Props) {
   return (
     <>
-      <Text className="mb-1 mt-2 text-base font-extrabold text-dark">
+      <Text className="mb-1 mt-2 text-base font-extrabold text-ink">
         Verificación de identidad
       </Text>
       <Text className="mb-4 text-xs leading-4 text-muted">

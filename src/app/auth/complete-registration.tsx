@@ -14,6 +14,7 @@ import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { Select } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
+import { useAppTheme } from '@/context/app-theme';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
 import { useSession } from '@/hooks/use-session';
@@ -41,6 +42,7 @@ type Role = 'client' | 'delivery';
  */
 export default function CompleteRegistrationScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const params = useLocalSearchParams<{ role?: Role }>();
   const session = useSession();
 
@@ -51,6 +53,9 @@ export default function CompleteRegistrationScreen() {
   // Rol: viene fijo desde la pantalla de registro; desde el login se elige acá.
   const [role, setRole] = useState<Role | null>(params.role ?? null);
 
+  // Nombre de usuario: obligatorio también en el onboarding post-Google
+  // (Google da el nombre/correo, pero no un username).
+  const [username, setUsername] = useState('');
   const [phone, setPhone] = useState(PHONE_PREFIX);
   const [address, setAddress] = useState('');
   const [details, setDetails] = useState('');
@@ -122,6 +127,7 @@ export default function CompleteRegistrationScreen() {
 
   function validateForm() {
     return validate({
+      username: username.trim() ? undefined : 'Ingresa un nombre de usuario.',
       phone:
         normalizePhone(phone).replace('+', '').length >= 10
           ? undefined
@@ -179,6 +185,7 @@ export default function CompleteRegistrationScreen() {
 
       // Datos comunes del perfil (el backend ya tiene nombre/correo de Google).
       await profileService.updateMe({
+        username: username.trim(),
         phone: normalizePhone(phone),
         address: address.trim(),
         latitude: coords?.latitude,
@@ -246,8 +253,8 @@ export default function CompleteRegistrationScreen() {
   }
 
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <View className="flex-1 bg-card">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <KeyboardAwareScroll>
         <AuthHeader
           compact
@@ -255,8 +262,8 @@ export default function CompleteRegistrationScreen() {
           onBack={handleExit}
         />
 
-        <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">
-          <Text className="text-[26px] font-extrabold text-dark">
+        <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
+          <Text className="text-[26px] font-extrabold text-ink">
             ¡Hola
             {session?.user.fullName
               ? `, ${session.user.fullName.split(' ')[0]}`
@@ -291,6 +298,15 @@ export default function CompleteRegistrationScreen() {
           {role && (
             <>
               <FormSection label="Tus datos" />
+              <TextField
+                label="Nombre de usuario"
+                icon="at-outline"
+                format="username"
+                value={username}
+                onChangeText={bind('username', setUsername)}
+                error={errors.username}
+                placeholder="juanp"
+              />
               <TextField
                 label="Celular"
                 icon="call-outline"
@@ -512,13 +528,13 @@ function RoleCard({
     <Pressable
       onPress={onPress}
       className={`flex-1 items-center rounded-2xl border-2 px-3 py-5 active:opacity-80 ${
-        active ? 'border-primary bg-primary-tint' : 'border-gray-200 bg-white'
+        active ? 'border-primary bg-primary-tint' : 'border-border bg-card'
       }`}
     >
       <Ionicons name={icon} size={28} color={active ? '#FF5A3C' : '#7A7A8A'} />
       <Text
         className={`mt-2 text-[15px] font-extrabold ${
-          active ? 'text-primary' : 'text-dark'
+          active ? 'text-primary' : 'text-ink'
         }`}
       >
         {label}

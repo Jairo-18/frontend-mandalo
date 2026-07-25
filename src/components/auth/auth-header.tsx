@@ -3,6 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+
 const ORANGE = '#FF5A3C';
 const ORANGE_SOFT = '#FF5A3C';
 const WHITE = '#FFFFFF';
@@ -33,19 +35,30 @@ export function AuthHeader({
       style={{ paddingHorizontal: 28, paddingBottom: compact ? 40 : 60 }}
     >
       <SafeAreaView edges={['top']}>
-        {!!onBack && (
-          <Pressable
-            onPress={onBack}
-            hitSlop={10}
-            className="mt-1 h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-sm active:opacity-70"
-          >
-            <Ionicons name="arrow-back" size={22} color="#1E1E2D" />
-          </Pressable>
-        )}
+        <View className="mt-1 flex-row items-center justify-between">
+          {!!onBack ? (
+            <Pressable
+              onPress={onBack}
+              hitSlop={10}
+              className="h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-sm active:opacity-70"
+            >
+              <Ionicons name="arrow-back" size={22} color="#1E1E2D" />
+            </Pressable>
+          ) : (
+            <View />
+          )}
+          <ThemeToggle
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-sm active:opacity-70"
+            iconColor="#1E1E2D"
+          />
+        </View>
         <View className="pt-1">
-          <View className="mb-3 mt-2 h-[60px] w-[60px] items-center justify-center self-center rounded-full bg-white shadow-md">
+          <View className="mb-3 mt-2 h-[60px] w-[60px] items-center justify-center self-center rounded-full bg-card shadow-md">
             <Ionicons name="bag-handle" size={28} color={ORANGE} />
           </View>
+          {/* Sobre el degradado de marca (blanco→naranja) SIEMPRE fijo, no
+              sobre bg-surface/bg-card: el texto debe quedar navy fijo, no
+              aclararse en modo oscuro (se volvería invisible). */}
           <Text className="text-[50px] font-extrabold tracking-tighter text-dark">
             Mándalo.
           </Text>

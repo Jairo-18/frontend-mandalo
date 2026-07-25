@@ -19,6 +19,7 @@ import {
 
 import { Avatar } from '@/components/ui/avatar';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useSession } from '@/hooks/use-session';
 import { refreshUnreadChats } from '@/hooks/use-unread-chats';
 import { formatTime } from '@/lib/order-eta';
@@ -200,6 +201,10 @@ export default function ChatScreen() {
               Pedido #{invoiceId}
             </Text>
           </View>
+          <ThemeToggle
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/10 active:opacity-70"
+            iconColor="#FFFFFF"
+          />
         </View>
 
         {/* El de keyboard-controller sí funciona con el edge-to-edge de
@@ -252,7 +257,7 @@ export default function ChatScreen() {
                         size={15}
                         color="#FF5A3C"
                       />
-                      <Text className="flex-1 text-xs text-dark">
+                      <Text className="flex-1 text-xs text-ink">
                         Nunca compartas tu{' '}
                         <Text className="font-bold">código de entrega</Text> por
                         chat: díctalo solo en la puerta al recibir tu pedido.
@@ -278,7 +283,7 @@ export default function ChatScreen() {
           {thread &&
             (canWrite ? (
               <View
-                className="border-t border-gray-100 bg-white px-3 pt-2"
+                className="border-t border-border bg-card px-3 pt-2"
                 style={{ paddingBottom: insets.bottom + 8 }}
               >
                 <ScrollView
@@ -310,7 +315,7 @@ export default function ChatScreen() {
                       placeholderTextColor="#7A7A8A"
                       multiline
                       maxLength={500}
-                      className="text-[15px] text-dark"
+                      className="text-[15px] text-ink"
                       style={{ paddingTop: 0, paddingBottom: 0 }}
                     />
                   </View>
@@ -318,7 +323,7 @@ export default function ChatScreen() {
                     onPress={() => send(text)}
                     disabled={sending || !text.trim()}
                     className={`h-11 w-11 items-center justify-center rounded-full ${
-                      text.trim() ? 'bg-primary' : 'bg-gray-300'
+                      text.trim() ? 'bg-primary' : 'bg-border'
                     } active:opacity-80`}
                   >
                     {sending ? (
@@ -331,7 +336,7 @@ export default function ChatScreen() {
               </View>
             ) : (
               <View
-                className="items-center border-t border-gray-100 bg-white px-5 pt-3"
+                className="items-center border-t border-border bg-card px-5 pt-3"
                 style={{ paddingBottom: insets.bottom + 12 }}
               >
                 <Text className="text-center text-xs text-muted">
@@ -384,8 +389,8 @@ function Bubble({
             {counterpart.fullName}
           </Text>
         )}
-        <View className="rounded-2xl rounded-bl-md bg-white px-3.5 py-2.5">
-          <Text className="text-[15px] leading-5 text-dark">
+        <View className="rounded-2xl rounded-bl-md bg-card px-3.5 py-2.5">
+          <Text className="text-[15px] leading-5 text-ink">
             {message.body}
           </Text>
         </View>

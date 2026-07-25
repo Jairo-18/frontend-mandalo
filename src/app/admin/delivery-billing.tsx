@@ -6,7 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SettlementPeriodCard } from '@/components/admin/settlement-period-card';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
+import { useAppTheme } from '@/context/app-theme';
 import { useSettlementDrillDown } from '@/hooks/use-settlement-drilldown';
 import { formatPrice } from '@/lib/price';
 import { settlementPeriodLabel } from '@/lib/settlement-period-label';
@@ -25,6 +27,7 @@ const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
  */
 export default function AdminDeliveryBillingScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ userId?: string; name?: string }>();
   const deliveryUserId = params.userId ?? '';
@@ -65,7 +68,7 @@ export default function AdminDeliveryBillingScreen() {
 
   return (
     <View className="flex-1 bg-surface">
-      <View className="flex-row items-center gap-3 bg-white px-5 pb-3 pt-2">
+      <View className="flex-row items-center gap-3 bg-card px-5 pb-3 pt-2">
         <Pressable
           onPress={() =>
             // Es un Drawer.Screen hermano de "deliveries" (no está en el
@@ -76,10 +79,10 @@ export default function AdminDeliveryBillingScreen() {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color="#1E1E2D" />
+          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
         </Pressable>
         <View className="flex-1">
-          <Text numberOfLines={1} className="text-base font-extrabold text-dark">
+          <Text numberOfLines={1} className="text-base font-extrabold text-ink">
             {params.name || 'Pagos del domiciliario'}
           </Text>
           <Text className="text-xs text-muted">
@@ -90,6 +93,7 @@ export default function AdminDeliveryBillingScreen() {
                 : `${dd.month} · quincenas`}
           </Text>
         </View>
+        <ThemeToggle />
       </View>
 
       {dd.loading ? (

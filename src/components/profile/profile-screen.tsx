@@ -29,6 +29,7 @@ import {
   samePlaceName,
 } from '@/lib/location';
 import { getSession, setSession } from '@/lib/session';
+import { signOutEverywhere } from '@/lib/sign-out';
 import { formatText, normalizePhone } from '@/lib/text-format';
 import { MyProfile, profileService } from '@/services/profile';
 
@@ -93,6 +94,9 @@ export function ProfileScreen({
   // Cuenta: vínculo con Google
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [confirmUnlink, setConfirmUnlink] = useState(false);
+
+  // Cuenta: eliminar cuenta (self-service, exigido por Google Play)
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const departmentOptions = useMemo(
     () => departments.map((d) => ({ label: d.name, value: d.id })),
@@ -296,6 +300,22 @@ export function ProfileScreen({
     }
   }
 
+  /**
+   * El backend ya deja la cuenta inutilizable (borrada o baneada) — acá solo
+   * queda limpiar todo del lado del dispositivo y volver al login, igual que
+   * un cierre de sesión normal. (`YesNoDialog` ya maneja su propio spinner
+   * mientras esta promesa está pendiente.)
+   */
+  async function handleDeleteAccount() {
+    try {
+      await profileService.deleteAccount();
+      await signOutEverywhere();
+    } catch {
+      // El interceptor HTTP ya mostró el toast.
+      setConfirmDelete(false);
+    }
+  }
+
   if (loading) {
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-dark">
@@ -322,7 +342,7 @@ export function ProfileScreen({
       <KeyboardAwareScroll>
         <View className="px-5 pb-10">
           {/* ---- Datos personales ---- */}
-          <View className="mt-2 rounded-2xl bg-white p-4">
+          <View className="mt-2 rounded-2xl bg-card p-4">
             <View className="items-center">
               <PhotoField
                 label="Foto de perfil"
@@ -452,10 +472,10 @@ export function ProfileScreen({
           </View>
 
           {/* ---- Cuenta ---- */}
-          <Text className="mb-2 mt-6 text-base font-extrabold text-dark">
+          <Text className="mb-2 mt-6 text-base font-extrabold text-ink">
             Cuenta
           </Text>
-          <View className="rounded-2xl bg-white p-4">
+          <View className="rounded-2xl bg-card p-4">
             {/* Correo (solo lectura: cambiarlo requeriría re-verificación) */}
             <View className="mb-4 flex-row items-center gap-3">
               <Ionicons name="mail-outline" size={20} color="#7A7A8A" />
@@ -463,7 +483,7 @@ export function ProfileScreen({
                 <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
                   Correo
                 </Text>
-                <Text className="text-[14px] font-medium text-dark">
+                <Text className="text-[14px] font-medium text-ink">
                   {profile?.email}
                 </Text>
               </View>
@@ -473,7 +493,7 @@ export function ProfileScreen({
             {profile?.googleId ? (
               <View className="mb-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3">
                 <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
-                <Text className="flex-1 text-[14px] font-medium text-dark">
+                <Text className="flex-1 text-[14px] font-medium text-ink">
                   Cuenta vinculada con Google
                 </Text>
                 <Pressable
@@ -508,7 +528,7 @@ export function ProfileScreen({
                 className="mb-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
               >
                 <Ionicons name="document-attach-outline" size={20} color="#FF5A3C" />
-                <Text className="flex-1 text-[14px] font-bold text-dark">
+                <Text className="flex-1 text-[14px] font-bold text-ink">
                   Reenviar documentos
                 </Text>
                 <Ionicons name="chevron-forward" size={18} color="#7A7A8A" />
@@ -530,10 +550,35 @@ export function ProfileScreen({
               className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
               <Ionicons name="key-outline" size={20} color="#FF5A3C" />
-              <Text className="flex-1 text-[14px] font-bold text-dark">
+              <Text className="flex-1 text-[14px] font-bold text-ink">
                 Cambiar contraseña
               </Text>
               <Ionicons name="chevron-forward" size={18} color="#7A7A8A" />
+            </Pressable>
+
+            {/* Política de privacidad: antes solo se veía en el registro; se
+                referencia desde el aviso de ubicación en segundo plano del
+                repartidor, así que debe poder leerse también ya logueado. */}
+            <Pressable
+              onPress={() => router.push('/auth/privacy')}
+              className="mt-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+            >
+              <Ionicons name="shield-outline" size={20} color="#7A7A8A" />
+              <Text className="flex-1 text-[14px] font-bold text-ink">
+                Política de privacidad
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color="#7A7A8A" />
+            </Pressable>
+
+            {/* Eliminar cuenta: self-service exigido por Google Play. */}
+            <Pressable
+              onPress={() => setConfirmDelete(true)}
+              className="mt-3 flex-row items-center gap-3 rounded-xl border border-red-200 px-3.5 py-3 active:opacity-70"
+            >
+              <Ionicons name="trash-outline" size={20} color="#DC2626" />
+              <Text className="flex-1 text-[14px] font-bold text-red-600">
+                Eliminar mi cuenta
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -550,6 +595,18 @@ export function ProfileScreen({
         cancelLabel="No"
         onConfirm={handleUnlinkGoogle}
         onCancel={() => setConfirmUnlink(false)}
+      />
+
+      <YesNoDialog
+        visible={confirmDelete}
+        destructive
+        icon="trash-outline"
+        title="¿Eliminar tu cuenta?"
+        message="Esta acción no se puede deshacer. Se borran de inmediato tu nombre, correo, teléfono, dirección, foto y documentos. Si tienes pedidos en tu historial, la cuenta queda anónima (el registro de esos pedidos se conserva por contabilidad); si no tienes historial, se borra por completo."
+        confirmLabel="Sí, eliminar"
+        cancelLabel="No"
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setConfirmDelete(false)}
       />
     </SafeAreaView>
   );

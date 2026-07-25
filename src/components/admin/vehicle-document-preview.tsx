@@ -34,7 +34,7 @@ export function VehicleDocumentPreview({ label, url }: Props) {
 
   return (
     <View className="mb-4 flex-1">
-      <Text className="mb-2 text-sm font-bold text-gray-700">{label}</Text>
+      <Text className="mb-2 text-sm font-bold text-ink">{label}</Text>
 
       {isPdf ? (
         <Pressable

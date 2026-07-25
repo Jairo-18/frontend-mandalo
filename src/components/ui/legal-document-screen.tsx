@@ -4,6 +4,9 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useAppTheme } from '@/context/app-theme';
+
 type Section = { heading: string; body: string };
 
 type Props = {
@@ -20,26 +23,28 @@ type Props = {
  */
 export function LegalDocumentScreen({ title, updatedAt, sections }: Props) {
   const router = useRouter();
+  const { isDark } = useAppTheme();
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <SafeAreaView className="flex-1 bg-card">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <View className="flex-row items-center gap-3 bg-white px-5 pb-2 pt-2">
+      <View className="flex-row items-center gap-3 bg-card px-5 pb-2 pt-2">
         <Pressable
           onPress={() => router.back()}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color="#1E1E2D" />
+          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
         </Pressable>
-        <Text className="flex-1 text-lg font-extrabold text-dark">{title}</Text>
+        <Text className="flex-1 text-lg font-extrabold text-ink">{title}</Text>
+        <ThemeToggle />
       </View>
 
       <ScrollView contentContainerClassName="px-5 pb-10">
         {sections.map((section) => (
           <View key={section.heading} className="mb-5">
-            <Text className="mb-1.5 text-[15px] font-extrabold text-dark">
+            <Text className="mb-1.5 text-[15px] font-extrabold text-ink">
               {section.heading}
             </Text>
             <Text className="text-[13px] leading-5 text-muted">

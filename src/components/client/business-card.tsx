@@ -18,7 +18,7 @@ export function BusinessCard({ business, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
-      className="mb-3 flex-row items-center gap-3 rounded-2xl bg-white p-3.5 active:opacity-80"
+      className="mb-3 flex-row items-center gap-3 rounded-2xl bg-card p-3.5 active:opacity-80"
     >
       <Avatar
         uri={business.logoUrl}
@@ -31,7 +31,7 @@ export function BusinessCard({ business, onPress }: Props) {
         <View className="flex-row items-center gap-2">
           <Text
             numberOfLines={1}
-            className="shrink text-[15px] font-bold text-dark"
+            className="shrink text-[15px] font-bold text-ink"
           >
             {businessDisplayName(business)}
           </Text>

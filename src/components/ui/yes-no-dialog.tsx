@@ -67,7 +67,7 @@ export function YesNoDialog({
         onPress={working ? undefined : onCancel}
       >
         <Pressable
-          className="w-full rounded-3xl bg-white p-6"
+          className="w-full rounded-3xl bg-card p-6"
           onPress={() => {}}
         >
           <View
@@ -82,7 +82,7 @@ export function YesNoDialog({
             />
           </View>
 
-          <Text className="text-center text-lg font-extrabold text-dark">
+          <Text className="text-center text-lg font-extrabold text-ink">
             {title}
           </Text>
           {message ? (
@@ -95,11 +95,11 @@ export function YesNoDialog({
             <Pressable
               onPress={onCancel}
               disabled={working}
-              className={`h-[48px] flex-1 items-center justify-center rounded-2xl border border-gray-200 active:opacity-70 ${
+              className={`h-[48px] flex-1 items-center justify-center rounded-2xl border border-border active:opacity-70 ${
                 working ? 'opacity-50' : ''
               }`}
             >
-              <Text className="text-[15px] font-bold text-dark">
+              <Text className="text-[15px] font-bold text-ink">
                 {cancelLabel}
               </Text>
             </Pressable>

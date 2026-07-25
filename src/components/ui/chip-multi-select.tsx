@@ -33,7 +33,7 @@ export function ChipMultiSelect({
 
   return (
     <>
-      <Text className="mb-2 text-sm font-bold text-gray-700">{label}</Text>
+      <Text className="mb-2 text-sm font-bold text-ink">{label}</Text>
       {visibleItems.length === 0 ? (
         <Text className="mb-4 text-sm text-muted">
           {readOnly
@@ -52,7 +52,7 @@ export function ChipMultiSelect({
                 className={`flex-row items-center gap-1.5 rounded-full border px-3.5 py-2 ${
                   selected
                     ? 'border-primary bg-primary-tint'
-                    : 'border-gray-200 bg-white'
+                    : 'border-border bg-card'
                 }`}
               >
                 {selected && (
@@ -60,7 +60,7 @@ export function ChipMultiSelect({
                 )}
                 <Text
                   className={`text-[13px] font-semibold ${
-                    selected ? 'text-primary' : 'text-gray-600'
+                    selected ? 'text-primary' : 'text-ink'
                   }`}
                 >
                   {item.name}

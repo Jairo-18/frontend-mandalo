@@ -6,6 +6,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { BusinessDrawerContent } from '@/components/business/drawer-content';
+import { useAppTheme } from '@/context/app-theme';
 import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
 
 /**
@@ -14,6 +15,7 @@ import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
  * a la vista que le corresponda.
  */
 export default function BusinessLayout() {
+  const { isDark } = useAppTheme();
   // undefined = cargando de SecureStore; null = sin sesión.
   const [session, setSession] = useState<Session | null | undefined>(
     () => getSession() ?? undefined,
@@ -25,7 +27,7 @@ export default function BusinessLayout() {
 
   if (session === undefined) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-card">
         <ActivityIndicator size="large" color="#FF5A3C" />
       </View>
     );
@@ -49,13 +51,13 @@ export default function BusinessLayout() {
           headerStyle: { backgroundColor: '#1E1E2D' },
           headerShadowVisible: false,
           drawerStyle: { width: 300 },
-          sceneStyle: { backgroundColor: '#F2F2F2' },
+          sceneStyle: { backgroundColor: isDark ? '#12121B' : '#F2F2F2' },
         }}
       >
         <Drawer.Screen name="dashboard" options={{ title: 'Inicio' }} />
         <Drawer.Screen name="products" options={{ title: 'Productos' }} />
         <Drawer.Screen name="orders" options={{ title: 'Pedidos' }} />
-        <Drawer.Screen name="earnings" options={{ title: 'Mis cobros' }} />
+        <Drawer.Screen name="earnings" options={{ title: 'Mis pagos' }} />
         <Drawer.Screen name="profile" options={{ title: 'Mi negocio' }} />
       </Drawer>
     </GestureHandlerRootView>

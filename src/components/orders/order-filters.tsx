@@ -48,14 +48,14 @@ export function OrderFilters({ filter, onFilter, order, onOrder }: Props) {
       <Pressable
         onPress={() => onOrder(newestFirst ? 'ASC' : 'DESC')}
         hitSlop={6}
-        className="flex-row items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 active:opacity-70"
+        className="flex-row items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 active:opacity-70"
       >
         <Ionicons
           name={newestFirst ? 'arrow-down' : 'arrow-up'}
           size={12}
           color="#7A7A8A"
         />
-        <Text className="text-xs font-semibold text-gray-600">
+        <Text className="text-xs font-semibold text-ink">
           {newestFirst ? 'Nuevos' : 'Antiguos'}
         </Text>
       </Pressable>

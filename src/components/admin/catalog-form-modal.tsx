@@ -128,7 +128,7 @@ export function CatalogFormModal({
       />
 
       {/* Selector de icono: buscador + grilla; tocar de nuevo deselecciona */}
-      <Text className="mb-2 text-sm font-bold text-gray-700">
+      <Text className="mb-2 text-sm font-bold text-ink">
         Icono (opcional)
       </Text>
       <IconPicker value={icon} onChange={setIcon} savedIcon={editing?.icon} />

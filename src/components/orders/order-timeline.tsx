@@ -56,12 +56,12 @@ export function OrderTimeline({ order }: Props) {
               {/* Línea izquierda */}
               <View
                 className={`h-0.5 flex-1 ${
-                  idx === 0 ? 'opacity-0' : done ? 'bg-primary' : 'bg-gray-200'
+                  idx === 0 ? 'opacity-0' : done ? 'bg-primary' : 'bg-border'
                 }`}
               />
               <View
                 className={`h-7 w-7 items-center justify-center rounded-full ${
-                  done ? 'bg-primary' : 'bg-gray-200'
+                  done ? 'bg-primary' : 'bg-border'
                 }`}
               >
                 <Ionicons
@@ -77,7 +77,7 @@ export function OrderTimeline({ order }: Props) {
                     ? 'opacity-0'
                     : idx < currentIndex
                       ? 'bg-primary'
-                      : 'bg-gray-200'
+                      : 'bg-border'
                 }`}
               />
             </View>

@@ -21,6 +21,7 @@ import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { Select } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
+import { useAppTheme } from '@/context/app-theme';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
 import { signInWithGoogle } from '@/lib/google-auth';
@@ -32,6 +33,7 @@ import { authService, RegisterPayload } from '@/services/auth';
 
 export default function RegisterForm() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const { role } = useLocalSearchParams<{ role: string }>();
   const isDelivery = role === 'delivery';
 
@@ -271,8 +273,8 @@ export default function RegisterForm() {
   }
 
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <View className="flex-1 bg-card">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <KeyboardAwareScroll>
         <AuthHeader
           compact
@@ -282,8 +284,8 @@ export default function RegisterForm() {
           }
         />
 
-        <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">
-          <Text className="mb-6 text-center text-[22px] font-extrabold text-dark">
+        <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
+          <Text className="mb-6 text-center text-[22px] font-extrabold text-ink">
             {isDelivery ? 'Crea tu cuenta de domiciliario' : 'Crea tu cuenta'}
           </Text>
 
@@ -320,6 +322,7 @@ export default function RegisterForm() {
             label="Correo electrónico"
             icon="mail-outline"
             format="email"
+            noAutofill
             value={email}
             onChangeText={bind('email', setEmail)}
             error={errors.email}
@@ -519,9 +522,9 @@ export default function RegisterForm() {
           {Platform.OS !== 'web' && (
             <>
               <View className="my-[18px] flex-row items-center gap-3">
-                <View className="h-px flex-1 bg-gray-200" />
+                <View className="h-px flex-1 bg-border" />
                 <Text className="text-[13px] text-muted">o</Text>
-                <View className="h-px flex-1 bg-gray-200" />
+                <View className="h-px flex-1 bg-border" />
               </View>
 
               <GoogleButton

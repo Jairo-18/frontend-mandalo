@@ -9,17 +9,21 @@ import {
 } from 'react-native-safe-area-context';
 
 import { AddressSheet } from '@/components/client/address-sheet';
-import { BusinessCard } from '@/components/client/business-card';
+import { BusinessGridCard } from '@/components/client/business-grid-card';
 import { CategoryCards } from '@/components/client/category-cards';
 import { MenuButton } from '@/components/client/menu-button';
-import { ProductCard } from '@/components/client/product-card';
+import { ProductGridCard } from '@/components/client/product-grid-card';
 import { TagCards } from '@/components/client/tag-cards';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SectionTitle } from '@/components/ui/section-title';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useCart } from '@/context/cart';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useExploreFilters, useUserAddresses } from '@/hooks/use-user-data';
 import { useSession } from '@/hooks/use-session';
+import { gridItemStyle } from '@/lib/grid-style';
+import { formatPrice } from '@/lib/price';
 import {
   ExploreBusiness,
   ExploreProduct,
@@ -41,6 +45,7 @@ import {
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const cart = useCart();
 
   // Caché compartida (lib/user-data): nada de refetch en cada montada.
   const { defaultAddress, loading: loadingAddress } = useUserAddresses();
@@ -55,6 +60,9 @@ export default function HomeScreen() {
 
   // Reactivo: el saludo refresca al guardar el perfil (regla React Compiler).
   const user = useSession()?.user;
+  // Invitado: navega el home sin cuenta (§44); las acciones con cuenta
+  // (elegir dirección, ver pedidos) lo mandan a iniciar sesión.
+  const isGuest = !user;
 
   // Cercanía: el explorar se limita al radio alrededor de la dirección
   // principal ("enviar a"). Primitivos en las deps (un objeto nuevo por
@@ -165,7 +173,7 @@ export default function HomeScreen() {
             LO PIDES, LO MÁNDAMOS.
           </Text>
         </Text>
-        <View className="rounded-2xl bg-white">
+        <View className="rounded-2xl bg-card">
           <SearchBar
             value={productList.search}
             onChangeText={handleSearchChange}
@@ -220,13 +228,15 @@ export default function HomeScreen() {
       <View className="flex-row items-center gap-3 bg-dark px-5 pb-3 pt-2">
         <MenuButton />
         <Pressable
-          onPress={() => setSheetVisible(true)}
-          className="flex-1 flex-row items-center gap-2 rounded-full bg-white px-3.5 py-2.5 active:opacity-70"
+          onPress={() =>
+            isGuest ? router.push('/auth/login') : setSheetVisible(true)
+          }
+          className="flex-1 flex-row items-center gap-2 rounded-full bg-card px-3.5 py-2.5 active:opacity-70"
         >
           <Ionicons name="location" size={18} color="#FF5A3C" />
           <View className="flex-1">
             <Text className="text-[10px] font-bold uppercase tracking-wide text-muted">
-              Enviar a
+              {isGuest ? 'Modo invitado' : 'Enviar a'}
             </Text>
             {loadingAddress ? (
               <ActivityIndicator
@@ -235,23 +245,34 @@ export default function HomeScreen() {
                 style={{ alignSelf: 'flex-start' }}
               />
             ) : (
-              <Text numberOfLines={1} className="text-[13px] font-bold text-dark">
-                {defaultAddress
-                  ? `${defaultAddress.label} — ${defaultAddress.address}`
-                  : 'Elegir dirección'}
+              <Text numberOfLines={1} className="text-[13px] font-bold text-ink">
+                {isGuest
+                  ? 'Inicia sesión o regístrate'
+                  : defaultAddress
+                    ? `${defaultAddress.label} — ${defaultAddress.address}`
+                    : 'Elegir dirección'}
               </Text>
             )}
           </View>
-          <Ionicons name="chevron-down" size={16} color="#7A7A8A" />
+          <Ionicons
+            name={isGuest ? 'log-in-outline' : 'chevron-down'}
+            size={16}
+            color="#7A7A8A"
+          />
         </Pressable>
 
         <Pressable
-          onPress={() => router.push('/orders')}
+          onPress={() => router.push(isGuest ? '/auth/login' : '/orders')}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-primary active:opacity-80"
         >
           <Ionicons name="receipt-outline" size={20} color="#FFFFFF" />
         </Pressable>
+
+        <ThemeToggle
+          className="h-10 w-10 items-center justify-center rounded-full bg-white/15 active:opacity-70"
+          iconColor="#FFFFFF"
+        />
       </View>
 
       <View className="flex-1 bg-surface">
@@ -259,9 +280,14 @@ export default function HomeScreen() {
         <FlatList
           data={businessList.items}
           keyExtractor={(item) => `b-${item.id}`}
-          renderItem={({ item }) => (
-            <View className="px-4">
-              <BusinessCard business={item} onPress={() => openStore(item.id)} />
+          numColumns={2}
+          columnWrapperStyle={{ paddingHorizontal: 16, gap: 12 }}
+          renderItem={({ item, index }) => (
+            <View style={gridItemStyle(index, businessList.items.length)}>
+              <BusinessGridCard
+                business={item}
+                onPress={() => openStore(item.id)}
+              />
             </View>
           )}
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
@@ -295,9 +321,11 @@ export default function HomeScreen() {
         <FlatList
           data={productList.items}
           keyExtractor={(item) => `p-${item.id}`}
-          renderItem={({ item }) => (
-            <View className="px-4">
-              <ProductCard
+          numColumns={2}
+          columnWrapperStyle={{ paddingHorizontal: 16, gap: 12 }}
+          renderItem={({ item, index }) => (
+            <View style={gridItemStyle(index, productList.items.length)}>
+              <ProductGridCard
                 product={item}
                 onPress={
                   item.organizational
@@ -334,6 +362,28 @@ export default function HomeScreen() {
             )
           }
         />
+      )}
+
+      {/* Botón flotante del carrito: sin entrar a un negocio se ve y lleva al
+          checkout. Solo cuando hay algo en el carrito. */}
+      {cart.count > 0 && (
+        <Pressable
+          onPress={() => router.push('/checkout')}
+          style={{ bottom: insets.bottom + 20 }}
+          className="absolute right-5 h-16 flex-row items-center gap-2.5 rounded-full bg-primary pl-4 pr-5 shadow-lg active:opacity-80"
+        >
+          <View className="relative">
+            <Ionicons name="cart" size={24} color="#FFFFFF" />
+            <View className="absolute -right-2 -top-2 h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-primary bg-dark px-1">
+              <Text className="text-[10px] font-extrabold text-white">
+                {cart.count > 99 ? '99+' : cart.count}
+              </Text>
+            </View>
+          </View>
+          <Text className="text-[15px] font-extrabold text-white">
+            {formatPrice(cart.subtotal)}
+          </Text>
+        </Pressable>
       )}
       </View>
 

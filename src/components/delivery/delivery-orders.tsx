@@ -14,6 +14,7 @@ import {
   OrderFilters,
 } from '@/components/orders/order-filters';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { businessDisplayName } from '@/services/explore';
 import { DeviceCoords, getDeviceCoordsSilently } from '@/lib/location';
@@ -70,8 +71,14 @@ export function DeliveryOrders() {
   }, [available.fetchPage, mine.fetchPage]);
 
   // Tracking en vivo: mientras tenga pedidos EN RUTA, su GPS viaja por el
-  // socket al mapa del cliente (se apaga solo al entregar).
-  useDeliveryPositionBroadcast(
+  // socket al mapa del cliente (se apaga solo al entregar). El permiso de
+  // ubicación en segundo plano queda detrás de un aviso propio (abajo, con
+  // el YesNoDialog) — Google Play lo exige antes del diálogo del sistema.
+  const {
+    needsBackgroundDisclosure,
+    grantBackgroundConsent,
+    declineBackgroundConsent,
+  } = useDeliveryPositionBroadcast(
     mine.items
       .filter(
         (o) => o.stateType?.code === 'RUTA' && o.deliveryUserId === myId,
@@ -263,6 +270,24 @@ export function DeliveryOrders() {
         }}
         onCancel={() => setDeliverTarget(null)}
       />
+
+      {/*
+        Aviso PROPIO antes de pedir "Permitir todo el tiempo" al sistema
+        (exigido por Google Play para el permiso de ubicación en segundo
+        plano, ver NOTAS.md §47/§49): explica qué se recoge y para qué ANTES
+        de que aparezca el diálogo nativo. Si declina, sigue funcionando con
+        ubicación de primer plano (mientras tenga la app abierta).
+      */}
+      <YesNoDialog
+        visible={needsBackgroundDisclosure}
+        icon="navigate-outline"
+        title="Ubicación en segundo plano"
+        message="Para que el cliente vea en vivo dónde va su pedido —incluso con la pantalla bloqueada o Mándalo en segundo plano— necesitamos tu ubicación exacta mientras tengas una entrega EN CAMINO. Se activa solo con pedidos asignados a ti y se apaga sola al entregar. Puedes revisar cómo tratamos tus datos en Política de Privacidad, dentro de Mi perfil."
+        confirmLabel="Activar ubicación"
+        cancelLabel="Ahora no"
+        onConfirm={grantBackgroundConsent}
+        onCancel={declineBackgroundConsent}
+      />
     </View>
   );
 }
@@ -280,7 +305,7 @@ function TabButton({
     <Pressable
       onPress={onPress}
       className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-full border py-2.5 active:opacity-70 ${
-        active ? 'border-primary bg-primary-tint' : 'border-gray-200 bg-white'
+        active ? 'border-primary bg-primary-tint' : 'border-border bg-card'
       }`}
     >
       <Ionicons

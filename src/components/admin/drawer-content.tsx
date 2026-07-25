@@ -118,7 +118,7 @@ export function AdminDrawerContent({ navigation }: Props) {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-card">
       {/* Cabecera de marca */}
       <View
         className="bg-dark px-5 pb-5"
@@ -171,7 +171,7 @@ export function AdminDrawerContent({ navigation }: Props) {
               />
               <Text
                 className={`text-[15px] ${
-                  active ? 'font-extrabold text-primary' : 'font-medium text-dark'
+                  active ? 'font-extrabold text-primary' : 'font-medium text-ink'
                 }`}
               >
                 {item.label}
@@ -183,7 +183,7 @@ export function AdminDrawerContent({ navigation }: Props) {
 
       {/* Cerrar sesión */}
       <View
-        className="border-t border-gray-100 px-3 pt-3"
+        className="border-t border-border px-3 pt-3"
         style={{ paddingBottom: insets.bottom + 12 }}
       >
         <Pressable

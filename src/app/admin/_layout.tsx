@@ -6,6 +6,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AdminDrawerContent } from '@/components/admin/drawer-content';
+import { useAppTheme } from '@/context/app-theme';
 import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
 
 /**
@@ -14,6 +15,7 @@ import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
  * home del cliente: montarlo dispararía sus peticiones de explorar/direcciones).
  */
 export default function AdminLayout() {
+  const { isDark } = useAppTheme();
   // undefined = cargando de SecureStore; null = sin sesión.
   const [session, setSession] = useState<Session | null | undefined>(
     () => getSession() ?? undefined,
@@ -25,7 +27,7 @@ export default function AdminLayout() {
 
   if (session === undefined) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-card">
         <ActivityIndicator size="large" color="#FF5A3C" />
       </View>
     );
@@ -47,7 +49,7 @@ export default function AdminLayout() {
           headerStyle: { backgroundColor: '#1E1E2D' },
           headerShadowVisible: false,
           drawerStyle: { width: 300 },
-          sceneStyle: { backgroundColor: '#F2F2F2' },
+          sceneStyle: { backgroundColor: isDark ? '#12121B' : '#F2F2F2' },
         }}
       >
         <Drawer.Screen name="dashboard" options={{ title: 'Inicio' }} />

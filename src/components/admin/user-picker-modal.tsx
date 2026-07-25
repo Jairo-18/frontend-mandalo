@@ -73,19 +73,19 @@ export function UserPickerModal({ visible, title, onClose, onSelect }: Props) {
     >
       <Pressable className="flex-1 justify-end bg-black/40" onPress={onClose}>
         <Pressable
-          className="h-[75%] rounded-t-3xl bg-white px-4 pt-4"
+          className="h-[75%] rounded-t-3xl bg-card px-4 pt-4"
           style={{ paddingBottom: insets.bottom + 16 }}
           onPress={() => {}}
         >
-          <View className="mb-3 h-1 w-10 self-center rounded-full bg-gray-200" />
-          <Text className="mb-3 text-center text-base font-bold text-dark">
+          <View className="mb-3 h-1 w-10 self-center rounded-full bg-border" />
+          <Text className="mb-3 text-center text-base font-bold text-ink">
             {title}
           </Text>
 
           <View className="mb-3 h-[46px] flex-row items-center gap-2.5 rounded-xl bg-surface px-3.5">
             <Ionicons name="search-outline" size={19} color="#9CA3AF" />
             <TextInput
-              className="h-full flex-1 text-[15px] text-dark"
+              className="h-full flex-1 text-[15px] text-ink"
               placeholder="Nombre, identificación, correo…"
               placeholderTextColor="#9CA3AF"
               autoCapitalize="none"
@@ -104,7 +104,7 @@ export function UserPickerModal({ visible, title, onClose, onSelect }: Props) {
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => onSelect(item)}
-                className="flex-row items-center gap-3 border-b border-gray-100 py-3 active:opacity-60"
+                className="flex-row items-center gap-3 border-b border-border py-3 active:opacity-60"
               >
                 <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-tint">
                   <Text className="text-sm font-extrabold text-primary">
@@ -114,7 +114,7 @@ export function UserPickerModal({ visible, title, onClose, onSelect }: Props) {
                 <View className="flex-1">
                   <Text
                     numberOfLines={1}
-                    className="text-[15px] font-bold text-dark"
+                    className="text-[15px] font-bold text-ink"
                   >
                     {item.fullName}
                   </Text>
@@ -137,7 +137,7 @@ export function UserPickerModal({ visible, title, onClose, onSelect }: Props) {
             )}
             ListEmptyComponent={
               loading ? null : (
-                <Text className="py-8 text-center text-sm text-gray-400">
+                <Text className="py-8 text-center text-sm text-muted">
                   {search
                     ? 'No se encontraron usuarios.'
                     : 'Escribe para buscar usuarios.'}

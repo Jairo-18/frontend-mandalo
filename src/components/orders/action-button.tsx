@@ -13,7 +13,7 @@ const STYLES: Record<Variant, { box: string; text: string; spinner: string }> = 
   primary: { box: 'bg-primary', text: 'text-white', spinner: '#FFFFFF' },
   success: { box: 'bg-emerald-600', text: 'text-white', spinner: '#FFFFFF' },
   'danger-outline': {
-    box: 'border border-red-200 bg-white',
+    box: 'border border-red-200 bg-card',
     text: 'text-red-600',
     spinner: '#DC2626',
   },

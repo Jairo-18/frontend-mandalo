@@ -5,6 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { DeliveryDrawerContent } from '@/components/delivery/drawer-content';
+import { useAppTheme } from '@/context/app-theme';
 import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
 
 /**
@@ -14,6 +15,7 @@ import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
  * a SU panel.
  */
 export default function DeliveryLayout() {
+  const { isDark } = useAppTheme();
   // undefined = cargando de SecureStore; null = sin sesión.
   const [session, setSession] = useState<Session | null | undefined>(
     () => getSession() ?? undefined,
@@ -25,7 +27,7 @@ export default function DeliveryLayout() {
 
   if (session === undefined) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-card">
         <ActivityIndicator size="large" color="#FF5A3C" />
       </View>
     );
@@ -43,11 +45,11 @@ export default function DeliveryLayout() {
           // Cada pantalla dibuja su propia navbar (con el botón hamburguesa).
           headerShown: false,
           drawerStyle: { width: 300 },
-          sceneStyle: { backgroundColor: '#F2F2F2' },
+          sceneStyle: { backgroundColor: isDark ? '#12121B' : '#F2F2F2' },
         }}
       >
         <Drawer.Screen name="index" options={{ title: 'Pedidos' }} />
-        <Drawer.Screen name="earnings" options={{ title: 'Mis pagos' }} />
+        <Drawer.Screen name="earnings" options={{ title: 'Mis cobros' }} />
         <Drawer.Screen name="chats" options={{ title: 'Mis chats' }} />
         <Drawer.Screen name="profile" options={{ title: 'Mi perfil' }} />
         {/* Rutas propias, sin item en el sidebar: se llega desde Mi perfil o

@@ -75,12 +75,12 @@ export function OrderCard({
   return (
     <Pressable
       onPress={onPress}
-      className="mb-3 rounded-2xl bg-white p-4 active:opacity-80"
+      className="mb-3 rounded-2xl bg-card p-4 active:opacity-80"
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-1 flex-row items-center gap-2">
           <Ionicons name={titleIcon} size={16} color="#7A7A8A" />
-          <Text numberOfLines={1} className="flex-1 text-[15px] font-bold text-dark">
+          <Text numberOfLines={1} className="flex-1 text-[15px] font-bold text-ink">
             {title}
           </Text>
         </View>

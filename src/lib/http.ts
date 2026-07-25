@@ -19,6 +19,12 @@ type Options = {
   token?: string;
   /** Adjunta el Bearer de la sesión actual automáticamente (default: false). */
   auth?: boolean;
+  /**
+   * Como `auth`, pero para endpoints PÚBLICOS que aceptan sesión opcional
+   * (p. ej. el explorar en modo invitado, §44): adjunta el Bearer si hay
+   * sesión, pero NO aborta si no la hay (sale solo con `X-Client-Key`).
+   */
+  authOptional?: boolean;
   /** Muestra un toast con el `message` del backend si falla (default: true). */
   toastError?: boolean;
   /** Muestra un toast con el `message` del backend si sale bien (default: false). */
@@ -53,16 +59,19 @@ export async function http<T = unknown>(
     body,
     token,
     auth = false,
+    authOptional = false,
     toastError = true,
     toastSuccess = false,
   } = options;
 
-  const bearer = token ?? (auth ? getSession()?.accessToken : undefined);
+  const bearer =
+    token ?? (auth || authOptional ? getSession()?.accessToken : undefined);
 
   // Petición autenticada sin sesión: pasa cuando una pantalla aún montada
   // refetchea justo después del logout (p. ej. el feed del explorar al
   // vaciarse el caché de direcciones). Saldría sin Bearer y el backend
-  // contestaría 401 "Unauthorized" — se aborta acá, sin toast.
+  // contestaría 401 "Unauthorized" — se aborta acá, sin toast. (`authOptional`
+  // NO aborta: el endpoint es público y sale con solo el X-Client-Key.)
   if (auth && !bearer) {
     throw new HttpError('Sesión cerrada', 401, null);
   }

@@ -83,7 +83,7 @@ export function ChatThreadsScreen({ menu }: Props) {
               return (
                 <Pressable
                   onPress={() => router.push(`/chat/${item.invoiceId}`)}
-                  className="mb-3 flex-row items-center gap-3 rounded-2xl bg-white p-3.5 active:opacity-80"
+                  className="mb-3 flex-row items-center gap-3 rounded-2xl bg-card p-3.5 active:opacity-80"
                 >
                   <Avatar
                     uri={counterpart?.avatarUrl}
@@ -96,7 +96,7 @@ export function ChatThreadsScreen({ menu }: Props) {
                     <View className="flex-row items-center gap-2">
                       <Text
                         numberOfLines={1}
-                        className="shrink text-[15px] font-bold text-dark"
+                        className="shrink text-[15px] font-bold text-ink"
                       >
                         {counterpart?.fullName ??
                           (roleCode === 'DELI' ? 'Cliente' : 'Domiciliario')}
@@ -116,7 +116,7 @@ export function ChatThreadsScreen({ menu }: Props) {
                       numberOfLines={1}
                       className={`mt-0.5 text-xs ${
                         item.unreadCount > 0
-                          ? 'font-bold text-dark'
+                          ? 'font-bold text-ink'
                           : 'text-muted'
                       }`}
                     >

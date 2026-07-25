@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BusinessFormModal } from '@/components/admin/business-form-modal';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useMyBusiness } from '@/hooks/use-my-business';
 import { refreshMyBusiness } from '@/lib/my-business';
 import { formatHour12, formatText } from '@/lib/text-format';
@@ -101,6 +102,12 @@ export function BusinessProfileScreen() {
     >
       {/* Cabecera con el logo y el nombre del negocio */}
       <View className="items-center rounded-b-[28px] bg-dark px-5 pb-7 pt-2">
+        <View className="absolute right-4 top-2">
+          <ThemeToggle
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/15 active:opacity-70"
+            iconColor="#FFFFFF"
+          />
+        </View>
         <Avatar
           uri={business.logoUrl}
           icon="storefront"
@@ -252,13 +259,13 @@ function SectionLabel({ label }: { label: string }) {
   return (
     <View className="mb-2 mt-6 flex-row items-center gap-2">
       <View className="h-4 w-1.5 rounded-full bg-primary" />
-      <Text className="text-base font-extrabold text-dark">{label}</Text>
+      <Text className="text-base font-extrabold text-ink">{label}</Text>
     </View>
   );
 }
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <View className="rounded-2xl bg-white p-4">{children}</View>;
+  return <View className="rounded-2xl bg-card p-4">{children}</View>;
 }
 
 function InfoRow({
@@ -275,7 +282,7 @@ function InfoRow({
   return (
     <View
       className={`flex-row items-start gap-3 ${
-        last ? '' : 'mb-3 border-b border-gray-100 pb-3'
+        last ? '' : 'mb-3 border-b border-border pb-3'
       }`}
     >
       <Ionicons name={icon} size={20} color="#7A7A8A" style={{ marginTop: 2 }} />
@@ -283,7 +290,7 @@ function InfoRow({
         <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
           {label}
         </Text>
-        <Text className="text-[14px] font-medium text-dark">{children}</Text>
+        <Text className="text-[14px] font-medium text-ink">{children}</Text>
       </View>
     </View>
   );

@@ -24,7 +24,7 @@ export function Button({
       className={`h-[54px] items-center justify-center rounded-[30px] active:opacity-80 ${
         isPrimary
           ? 'bg-primary shadow-md'
-          : 'border-[1.5px] border-primary bg-white'
+          : 'border-[1.5px] border-primary bg-card'
       } ${disabled ? 'opacity-50' : ''}`}
     >
       {loading ? (

@@ -28,7 +28,7 @@ export function UserDocuments({
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-bold text-gray-700">{title}</Text>
+      <Text className="mb-2 text-sm font-bold text-ink">{title}</Text>
       <View className="flex-row gap-3">
         {[
           { label: 'Frente', url: frontUrl },

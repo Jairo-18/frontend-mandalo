@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useAppTheme } from '@/context/app-theme';
+
 /** La misma metadata que devuelve el backend en `pagination`. */
 export type PaginationMeta = {
   page: number;
@@ -36,6 +38,7 @@ export function Paginator({
   disabled = false,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
   const [perPageOpen, setPerPageOpen] = useState(false);
 
   if (!pagination) return null;
@@ -45,7 +48,7 @@ export function Paginator({
   const to = Math.min(page * perPage, total);
 
   return (
-    <View className="flex-row items-center justify-between border-t border-gray-100 bg-white px-4 py-2.5">
+    <View className="flex-row items-center justify-between border-t border-border bg-card px-4 py-2.5">
       {/* Tamaño de página */}
       {onPerPageChange ? (
         <Pressable
@@ -53,7 +56,7 @@ export function Paginator({
           disabled={disabled}
           className="flex-row items-center gap-1 rounded-lg bg-surface px-2.5 py-1.5 active:opacity-70"
         >
-          <Text className="text-xs font-bold text-dark">{perPage}</Text>
+          <Text className="text-xs font-bold text-ink">{perPage}</Text>
           <Ionicons name="chevron-down" size={12} color="#7A7A8A" />
           <Text className="text-xs text-muted">por pág.</Text>
         </Pressable>
@@ -74,7 +77,7 @@ export function Paginator({
             hasPreviousPage && !disabled ? 'bg-surface' : 'opacity-30'
           }`}
         >
-          <Ionicons name="chevron-back" size={18} color="#1E1E2D" />
+          <Ionicons name="chevron-back" size={18} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
         </Pressable>
         <Pressable
           onPress={() => onPageChange(page + 1)}
@@ -84,7 +87,7 @@ export function Paginator({
             hasNextPage && !disabled ? 'bg-surface' : 'opacity-30'
           }`}
         >
-          <Ionicons name="chevron-forward" size={18} color="#1E1E2D" />
+          <Ionicons name="chevron-forward" size={18} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
         </Pressable>
       </View>
 
@@ -100,12 +103,12 @@ export function Paginator({
           onPress={() => setPerPageOpen(false)}
         >
           <Pressable
-            className="rounded-t-3xl bg-white px-4 pt-4"
+            className="rounded-t-3xl bg-card px-4 pt-4"
             style={{ paddingBottom: insets.bottom + 16 }}
             onPress={() => {}}
           >
-            <View className="mb-3 h-1 w-10 self-center rounded-full bg-gray-200" />
-            <Text className="mb-3 text-center text-base font-bold text-dark">
+            <View className="mb-3 h-1 w-10 self-center rounded-full bg-border" />
+            <Text className="mb-3 text-center text-base font-bold text-ink">
               Resultados por página
             </Text>
             {perPageOptions.map((option) => (
@@ -115,13 +118,13 @@ export function Paginator({
                   setPerPageOpen(false);
                   if (option !== perPage) onPerPageChange?.(option);
                 }}
-                className="flex-row items-center justify-between border-b border-gray-100 py-3.5 active:opacity-60"
+                className="flex-row items-center justify-between border-b border-border py-3.5 active:opacity-60"
               >
                 <Text
                   className={`text-[15px] ${
                     option === perPage
                       ? 'font-bold text-primary'
-                      : 'text-gray-800'
+                      : 'text-ink'
                   }`}
                 >
                   {option}

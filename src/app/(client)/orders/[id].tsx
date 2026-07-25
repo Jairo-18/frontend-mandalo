@@ -13,13 +13,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { OrderDetailView } from '@/components/orders/order-detail-view';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
+import { useAppTheme } from '@/context/app-theme';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { Order, ordersService } from '@/services/orders';
 
 /** Detalle de un pedido del cliente. Puede cancelarlo mientras está pendiente. */
 export default function ClientOrderDetailScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const orderId = Number(id);
 
@@ -72,19 +75,20 @@ export default function ClientOrderDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View className="flex-row items-center gap-3 bg-surface px-5 pb-2 pt-2">
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/orders'))}
           hitSlop={8}
-          className="h-10 w-10 items-center justify-center rounded-full bg-white active:opacity-70"
+          className="h-10 w-10 items-center justify-center rounded-full bg-card active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color="#1E1E2D" />
+          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
         </Pressable>
-        <Text className="text-lg font-extrabold text-dark">
+        <Text className="flex-1 text-lg font-extrabold text-ink">
           Pedido #{orderId}
         </Text>
+        <ThemeToggle />
       </View>
 
       {loading ? (
@@ -117,7 +121,7 @@ export default function ClientOrderDetailScreen() {
           </ScrollView>
 
           {canCancel && (
-            <View className="border-t border-gray-100 bg-white px-5 pb-6 pt-3">
+            <View className="border-t border-border bg-card px-5 pb-6 pt-3">
               <Pressable
                 onPress={() => setConfirmCancel(true)}
                 className="h-[52px] items-center justify-center rounded-2xl border border-red-200 active:opacity-70"

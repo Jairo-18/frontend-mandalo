@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
+import { useAppTheme } from '@/context/app-theme';
 import {
   clearCredentials,
   loadCredentials,
@@ -35,6 +36,7 @@ function isEmailNotVerified(e: unknown): boolean {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
@@ -127,13 +129,13 @@ export default function LoginScreen() {
   }
 
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <View className="flex-1 bg-card">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <KeyboardAwareScroll>
         <AuthHeader />
 
-        <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">
-          <Text className="text-center text-[26px] font-extrabold text-dark">
+        <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
+          <Text className="text-center text-[26px] font-extrabold text-ink">
             ¡Bienvenido!
           </Text>
           <Text className="mb-6 mt-1.5 text-center text-sm text-muted">
@@ -144,6 +146,7 @@ export default function LoginScreen() {
             label="Correo electrónico"
             icon="mail-outline"
             format="email"
+            noAutofill
             value={email}
             onChangeText={(t) => {
               setEmail(t);
@@ -211,9 +214,9 @@ export default function LoginScreen() {
           {Platform.OS !== 'web' && (
             <>
               <View className="my-[18px] flex-row items-center gap-3">
-                <View className="h-px flex-1 bg-gray-200" />
+                <View className="h-px flex-1 bg-border" />
                 <Text className="text-[13px] text-muted">o</Text>
-                <View className="h-px flex-1 bg-gray-200" />
+                <View className="h-px flex-1 bg-border" />
               </View>
 
               <GoogleButton onPress={handleGoogle} loading={googleLoading} />

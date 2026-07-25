@@ -41,6 +41,7 @@ export type MyProfile = {
 
 export type MyProfilePayload = {
   fullName?: string;
+  username?: string;
   phone?: string;
   address?: string;
   latitude?: number;
@@ -82,6 +83,18 @@ export const profileService = {
     http<{ message?: string }>('/user/me/password', {
       method: 'PATCH',
       body: { currentPassword, newPassword },
+      auth: true,
+      toastSuccess: true,
+    }),
+
+  /**
+   * "Eliminar mi cuenta" (exigido por Google Play, ver NOTAS.md §47): sin
+   * historial se borra al instante; con historial el backend la desactiva
+   * y la marca para limpieza manual. El mensaje de éxito lo pone el backend.
+   */
+  deleteAccount: () =>
+    http<{ message?: string }>('/user/me', {
+      method: 'DELETE',
       auth: true,
       toastSuccess: true,
     }),

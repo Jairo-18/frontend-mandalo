@@ -97,7 +97,7 @@ export const exploreService = {
   filters: () =>
     http<{
       data: { tags: ExploreFilterItem[]; categories: ExploreFilterItem[] };
-    }>('/explore/filters', { auth: true }),
+    }>('/explore/filters', { authOptional: true }),
 
   businesses: (params: {
     page: number;
@@ -117,7 +117,7 @@ export const exploreService = {
 
     return http<Paginated<ExploreBusiness>>(
       `/explore/organizationals?${query.toString()}`,
-      { auth: true },
+      { authOptional: true },
     );
   },
 
@@ -145,7 +145,7 @@ export const exploreService = {
 
     return http<Paginated<ExploreProduct>>(
       `/explore/products?${query.toString()}`,
-      { auth: true },
+      { authOptional: true },
     );
   },
 
@@ -156,7 +156,7 @@ export const exploreService = {
         organizational: ExploreBusiness;
         categories: ExploreFilterItem[];
       };
-    }>(`/explore/organizationals/${id}`, { auth: true }),
+    }>(`/explore/organizationals/${id}`, { authOptional: true }),
 
   products: (
     organizationalId: number,
@@ -178,7 +178,7 @@ export const exploreService = {
 
     return http<Paginated<ExploreProduct>>(
       `/explore/organizationals/${organizationalId}/products?${query.toString()}`,
-      { auth: true },
+      { authOptional: true },
     );
   },
 };

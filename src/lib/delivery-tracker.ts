@@ -1,8 +1,9 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
+import { deviceStoreGet, deviceStoreSet } from '@/lib/device-store';
 import { emitDeliveryPosition } from '@/lib/orders-socket';
 
 /**
@@ -16,14 +17,32 @@ const BACKGROUND_SUPPORTED = Platform.OS !== 'web';
  * Tracking del repartidor con pedidos EN RUTA: transmite su GPS por el socket
  * (cada ~8 s o ~25 m) para el mapa en vivo del cliente.
  *
- * Ahora sigue funcionando con la PANTALLA BLOQUEADA: usa
- * `startLocationUpdatesAsync` + un foreground service de Android
- * (notificación persistente "entrega en curso") que mantiene vivos el GPS,
- * el JS y el socket. Si el repartidor niega el permiso de background
- * ("Permitir todo el tiempo"), cae al watcher de primer plano de siempre.
+ * Sigue funcionando con la PANTALLA BLOQUEADA: usa `startLocationUpdatesAsync`
+ * + un foreground service de Android (notificación persistente "entrega en
+ * curso") que mantiene vivos el GPS, el JS y el socket. El permiso de
+ * background ("Permitir todo el tiempo") es "restringido" para Google Play:
+ * antes de pedírselo al sistema operativo, la app debe mostrar SU PROPIO
+ * aviso explicando qué recoge y para qué. Sin ese consentimiento previo
+ * (`BACKGROUND_CONSENT_KEY`), ni se llama a `requestBackgroundPermissionsAsync`
+ * — se cae al watcher de primer plano. El diálogo lo muestra
+ * `delivery-orders.tsx` con `YesNoDialog`, leyendo `needsBackgroundDisclosure`.
  */
 
 const TASK_NAME = 'mandalo-delivery-tracking';
+
+/** Decisión del repartidor sobre el aviso de ubicación en segundo plano. */
+type BackgroundConsent = 'granted' | 'declined' | null;
+
+const BACKGROUND_CONSENT_KEY = 'mandalo:bg-location-consent';
+
+async function readBackgroundConsent(): Promise<BackgroundConsent> {
+  const value = await deviceStoreGet(BACKGROUND_CONSENT_KEY);
+  return value === 'granted' || value === 'declined' ? value : null;
+}
+
+async function writeBackgroundConsent(value: 'granted' | 'declined'): Promise<void> {
+  await deviceStoreSet(BACKGROUND_CONSENT_KEY, value);
+}
 
 /**
  * Pedidos que la tarea reporta. Vive a nivel de módulo: la tarea corre en el
@@ -99,10 +118,25 @@ export async function stopDeliveryTracking(): Promise<void> {
   }
 }
 
-export function useDeliveryPositionBroadcast(invoiceIds: number[]): void {
+export function useDeliveryPositionBroadcast(invoiceIds: number[]): {
+  /** true = hay que mostrar el aviso propio ANTES de pedir el permiso del SO. */
+  needsBackgroundDisclosure: boolean;
+  grantBackgroundConsent: () => Promise<void>;
+  declineBackgroundConsent: () => Promise<void>;
+} {
   // Primitivo estable en las deps: un array nuevo por render reiniciaría el
   // watcher del GPS en cada refresco de la lista.
   const key = [...invoiceIds].sort((a, b) => a - b).join(',');
+
+  const [consent, setConsent] = useState<BackgroundConsent>(null);
+  const [consentLoaded, setConsentLoaded] = useState(false);
+
+  useEffect(() => {
+    readBackgroundConsent().then((c) => {
+      setConsent(c);
+      setConsentLoaded(true);
+    });
+  }, []);
 
   useEffect(() => {
     activeInvoiceIds = key ? key.split(',').map(Number) : [];
@@ -113,14 +147,23 @@ export function useDeliveryPositionBroadcast(invoiceIds: number[]): void {
       return;
     }
 
+    // Todavía no se leyó la decisión guardada, o el repartidor nunca vio el
+    // aviso propio: no se toca ningún permiso hasta que responda el diálogo
+    // (lo muestra `delivery-orders.tsx` mientras `needsBackgroundDisclosure`
+    // sea true). Sin esto se caería al watcher de primer plano de una vez,
+    // que igual funciona, pero mejor esperar la respuesta explícita.
+    if (!consentLoaded || consent === null) return;
+
     let subscription: Location.LocationSubscription | null = null;
     let alive = true;
 
     (async () => {
-      const backgroundStarted = await startBackgroundTracking();
+      const backgroundStarted =
+        consent === 'granted' && (await startBackgroundTracking());
       if (backgroundStarted || !alive) return;
 
-      // Fallback sin permiso de background: solo primer plano (como antes).
+      // Fallback sin background (declinado, o el SO igual lo negó): solo
+      // primer plano, como siempre.
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted' || !alive) return;
       subscription = await Location.watchPositionAsync(
@@ -144,5 +187,18 @@ export function useDeliveryPositionBroadcast(invoiceIds: number[]): void {
       alive = false;
       subscription?.remove();
     };
-  }, [key]);
+  }, [key, consent, consentLoaded]);
+
+  return {
+    needsBackgroundDisclosure:
+      BACKGROUND_SUPPORTED && consentLoaded && consent === null && key !== '',
+    grantBackgroundConsent: async () => {
+      await writeBackgroundConsent('granted');
+      setConsent('granted');
+    },
+    declineBackgroundConsent: async () => {
+      await writeBackgroundConsent('declined');
+      setConsent('declined');
+    },
+  };
 }

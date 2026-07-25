@@ -4,7 +4,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   Text,
   TextInput,
@@ -15,9 +14,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddressSheet } from '@/components/client/address-sheet';
 import { Avatar } from '@/components/ui/avatar';
-import { DocumentPhotoField } from '@/components/ui/document-photo-field';
 import { Select } from '@/components/ui/select';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useAppTheme } from '@/context/app-theme';
 import { useCart } from '@/context/cart';
+import { useSession } from '@/hooks/use-session';
 import { useUserAddresses } from '@/hooks/use-user-data';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { toast } from '@/lib/toast';
@@ -31,7 +32,11 @@ import { ordersService } from '@/services/orders';
  */
 export default function CheckoutScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const cart = useCart();
+  // Invitado (§44): armó el carrito sin cuenta; aquí se le pide crearla
+  // (rápida, sin verificación de correo) para poder pedir de una.
+  const isGuest = !useSession();
 
   // Caché compartida: la dirección llega al instante.
   const { defaultAddress, loading: loadingAddr } = useUserAddresses();
@@ -59,10 +64,6 @@ export default function CheckoutScreen() {
 
   const [payment, setPayment] = useState<string>('EFEC');
   const [notes, setNotes] = useState('');
-  // Soporte del pago (pantallazo de la transferencia): OBLIGATORIO cuando el
-  // método no es efectivo (así el negocio verifica que el pago sí llegó).
-  const [proofUri, setProofUri] = useState<string | null>(null);
-  const [proofError, setProofError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // Datos de pago del negocio (a dónde transferir). Definen qué métodos se
@@ -105,8 +106,8 @@ export default function CheckoutScreen() {
   // Carrito vacío (p. ej. tras confirmar): no hay nada que pagar.
   if (cart.count === 0) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white px-8">
-        <StatusBar style="dark" />
+      <SafeAreaView className="flex-1 items-center justify-center bg-card px-8">
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <Ionicons name="cart-outline" size={48} color="#C9C9D4" />
         <Text className="mt-3 text-center text-sm text-muted">
           Tu carrito está vacío.
@@ -120,15 +121,69 @@ export default function CheckoutScreen() {
     );
   }
 
+  // Invitado con carrito: crear cuenta rápida antes de pedir. El carrito vive
+  // en memoria y sobrevive a la navegación, así que vuelve intacto.
+  if (isGuest) {
+    return (
+      <SafeAreaView className="flex-1 bg-card">
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <View className="flex-row items-center gap-3 px-5 pb-2 pt-2">
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
+          >
+            <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+          </Pressable>
+          <Text className="flex-1 text-lg font-extrabold text-ink">Casi listo</Text>
+          <ThemeToggle />
+        </View>
+
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary-tint">
+            <Ionicons name="cart-outline" size={30} color="#FF5A3C" />
+          </View>
+          <Text className="text-center text-[20px] font-extrabold text-ink">
+            Crea tu cuenta para pedir
+          </Text>
+          <Text className="mt-2 text-center text-sm leading-5 text-muted">
+            Tienes {cart.count} {cart.count === 1 ? 'producto' : 'productos'} por{' '}
+            {formatPrice(cart.subtotal)}. Es rápido: creas tu cuenta y completas
+            tu pedido de una — tu carrito se mantiene.
+          </Text>
+
+          <View className="mt-7 w-full">
+            <Pressable
+              onPress={() => router.push('/auth/quick-register')}
+              className="h-[54px] items-center justify-center rounded-2xl bg-primary active:opacity-80"
+            >
+              <Text className="text-base font-extrabold text-white">
+                Crear cuenta y continuar
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/auth/login')}
+              className="mt-3 items-center py-2 active:opacity-70"
+            >
+              <Text className="text-[14px] font-bold text-primary">
+                Ya tengo cuenta · Iniciar sesión
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   async function confirm() {
     if (!defaultAddress) {
       toast.error('Agrega una dirección de entrega para continuar.');
       setSheetVisible(true);
       return;
     }
-    // El comprobante es OPCIONAL al crear el pedido: el cliente puede subirlo
-    // ahora o después, pero el negocio no podrá pasar el pedido a preparación
-    // (métodos distintos a efectivo) hasta que el comprobante esté cargado.
+    // El pedido se manda al negocio SIN comprobante: primero decide si lo
+    // acepta y, si el pago no es efectivo, luego te pide el comprobante desde
+    // el detalle del pedido (ahí ves los datos para pagar). Ver §44.
     setSubmitting(true);
     try {
       const res = await ordersService.create({
@@ -142,15 +197,6 @@ export default function CheckoutScreen() {
         notes: notes.trim() || undefined,
       });
       const orderId = res.data.rowId;
-      // El soporte se sube DESPUÉS de crear (necesita el id). Si falla, el
-      // pedido igual queda creado y el soporte se puede subir del detalle.
-      if (payment !== 'EFEC' && proofUri) {
-        try {
-          await ordersService.uploadPaymentProof(Number(orderId), proofUri);
-        } catch {
-          // El interceptor HTTP ya mostró el error.
-        }
-      }
       cart.clear();
       router.replace({ pathname: '/orders/[id]', params: { id: orderId } });
     } catch {
@@ -161,8 +207,8 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <SafeAreaView className="flex-1 bg-card">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       {/* Cabecera */}
       <View className="flex-row items-center gap-3 px-5 pb-2 pt-2">
@@ -171,11 +217,12 @@ export default function CheckoutScreen() {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color="#1E1E2D" />
+          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
         </Pressable>
-        <Text className="text-lg font-extrabold text-dark">
+        <Text className="flex-1 text-lg font-extrabold text-ink">
           Confirmar pedido
         </Text>
+        <ThemeToggle />
       </View>
 
       {/* Scroll consciente del teclado: sube la nota al escribirla. */}
@@ -187,13 +234,13 @@ export default function CheckoutScreen() {
         {/* Negocio */}
         <View className="mb-4 flex-row items-center gap-2">
           <Ionicons name="storefront-outline" size={16} color="#7A7A8A" />
-          <Text className="text-sm font-bold text-dark">
+          <Text className="text-sm font-bold text-ink">
             {cart.businessName}
           </Text>
         </View>
 
         {/* Dirección de entrega */}
-        <Text className="mb-2 text-sm font-bold text-gray-700">Enviar a</Text>
+        <Text className="mb-2 text-sm font-bold text-ink">Enviar a</Text>
         {loadingAddr ? (
           <ActivityIndicator
             color="#FF5A3C"
@@ -202,13 +249,13 @@ export default function CheckoutScreen() {
         ) : (
           <Pressable
             onPress={() => setSheetVisible(true)}
-            className="mb-5 flex-row items-center gap-3 rounded-2xl border border-gray-200 p-3.5 active:opacity-70"
+            className="mb-5 flex-row items-center gap-3 rounded-2xl border border-border p-3.5 active:opacity-70"
           >
             <Ionicons name="location" size={20} color="#FF5A3C" />
             <View className="flex-1">
               {defaultAddress ? (
                 <>
-                  <Text className="text-[15px] font-bold text-dark">
+                  <Text className="text-[15px] font-bold text-ink">
                     {defaultAddress.label}
                   </Text>
                   <Text numberOfLines={1} className="text-xs text-muted">
@@ -230,7 +277,7 @@ export default function CheckoutScreen() {
 
         {/* Productos: editables mientras el pedido no se haya enviado al
             negocio (aún en el carrito) — sumar, restar o quitar cada uno. */}
-        <Text className="mb-2 text-sm font-bold text-gray-700">Tu pedido</Text>
+        <Text className="mb-2 text-sm font-bold text-ink">Tu pedido</Text>
         <View className="mb-5 rounded-2xl bg-surface p-3.5">
           {cart.items.map((item, idx) => {
             const price = finalPrice(
@@ -249,24 +296,24 @@ export default function CheckoutScreen() {
                   shape="rounded"
                 />
                 <View className="flex-1">
-                  <Text numberOfLines={1} className="text-[13px] text-dark">
+                  <Text numberOfLines={1} className="text-[13px] text-ink">
                     {item.product.name}
                   </Text>
-                  <Text className="text-[12px] font-semibold text-dark">
+                  <Text className="text-[12px] font-semibold text-ink">
                     {formatPrice(price * item.quantity)}
                   </Text>
                 </View>
 
                 {/* Stepper: restar (quita al llegar a 0) / cantidad / sumar */}
-                <View className="flex-row items-center gap-2 rounded-full bg-white px-1.5 py-1">
+                <View className="flex-row items-center gap-2 rounded-full bg-card px-1.5 py-1">
                   <Pressable
                     onPress={() => cart.decrement(item.product.id)}
                     hitSlop={6}
                     className="h-7 w-7 items-center justify-center rounded-full bg-surface active:opacity-70"
                   >
-                    <Ionicons name="remove" size={16} color="#1E1E2D" />
+                    <Ionicons name="remove" size={16} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
                   </Pressable>
-                  <Text className="min-w-[18px] text-center text-[14px] font-extrabold text-dark">
+                  <Text className="min-w-[18px] text-center text-[14px] font-extrabold text-ink">
                     {item.quantity}
                   </Text>
                   <Pressable
@@ -305,70 +352,26 @@ export default function CheckoutScreen() {
           onSelect={setPayment}
         />
 
-        {/* Datos para transferir + comprobante (obligatorio si no es efectivo) */}
-        {payment !== 'EFEC' && bizPay && (
-          <View className="-mt-1">
-            <View className="mb-4 rounded-2xl bg-primary-tint p-4">
-              <View className="mb-2 flex-row items-center gap-2">
-                <Ionicons name="swap-horizontal-outline" size={16} color="#FF5A3C" />
-                <Text className="flex-1 text-sm font-extrabold text-dark">
-                  Transfiere {formatPrice(total)}
-                  {bizPay.paymentHolderName
-                    ? ` a ${bizPay.paymentHolderName}`
-                    : ''}
-                </Text>
-              </View>
-
-              {payment === 'NEQUI' && !!bizPay.nequiNumber && (
-                <PayRow label="Número Nequi" value={bizPay.nequiNumber} />
-              )}
-              {payment === 'NEQUI' && !!bizPay.nequiKey && (
-                <PayRow label="Llave Nequi" value={bizPay.nequiKey} />
-              )}
-              {payment === 'TRAN' && !!bizPay.bancolombiaAccount && (
-                <PayRow
-                  label="Cuenta Bancolombia"
-                  value={bizPay.bancolombiaAccount}
-                />
-              )}
-              {payment === 'TRAN' && !!bizPay.bancolombiaQrUrl && (
-                <View className="mt-2 items-center rounded-xl bg-white p-3">
-                  <Image
-                    source={{ uri: bizPay.bancolombiaQrUrl }}
-                    style={{ width: 220, height: 220 }}
-                    resizeMode="contain"
-                  />
-                  <Text className="mt-1 text-xs text-muted">
-                    Escanea el QR desde tu app Bancolombia
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <DocumentPhotoField
-              label="Comprobante del pago (opcional)"
-              uri={proofUri}
-              onChange={(uri) => {
-                setProofUri(uri);
-                setProofError('');
-              }}
-              error={proofError}
-              placeholderIcon="receipt-outline"
-            />
-            <Text className="-mt-2 mb-4 text-xs text-muted">
-              Puedes subir el pantallazo ahora o desde el detalle del pedido. El
-              negocio necesita verlo para poder preparar tu pedido.
+        {/* Métodos distintos a efectivo: el pago (y el comprobante) se hacen
+            DESPUÉS de que el negocio acepte el pedido, desde su detalle. */}
+        {payment !== 'EFEC' && (
+          <View className="-mt-1 mb-4 flex-row gap-2.5 rounded-2xl bg-primary-tint px-4 py-3">
+            <Ionicons name="information-circle-outline" size={18} color="#FF5A3C" />
+            <Text className="flex-1 text-[13px] text-ink">
+              Primero mandamos tu pedido al negocio. Cuando lo acepte, te
+              pediremos el comprobante y verás los datos para pagar desde el
+              detalle del pedido.
             </Text>
           </View>
         )}
 
         {/* Nota */}
-        <Text className="mb-2 text-sm font-bold text-gray-700">
+        <Text className="mb-2 text-sm font-bold text-ink">
           Nota para el negocio (opcional)
         </Text>
-        <View className="mb-5 rounded-xl border border-gray-200 px-3.5 py-2.5">
+        <View className="mb-5 rounded-xl border border-border px-3.5 py-2.5">
           <TextInput
-            className="min-h-[44px] text-[15px] text-dark"
+            className="min-h-[44px] text-[15px] text-ink"
             placeholder="Ej: sin cebolla, timbre dañado — llamar."
             placeholderTextColor="#9CA3AF"
             value={notes}
@@ -385,13 +388,13 @@ export default function CheckoutScreen() {
             label="Domicilio"
             value={loadingFee ? 'Calculando…' : formatPrice(deliveryFee)}
           />
-          <View className="my-2 h-px bg-gray-200" />
+          <View className="my-2 h-px bg-border" />
           <Row label="Total" value={formatPrice(total)} bold />
         </View>
       </KeyboardAwareScrollView>
 
       {/* Confirmar */}
-      <View className="border-t border-gray-100 px-5 pb-6 pt-3">
+      <View className="border-t border-border px-5 pb-6 pt-3">
         <Pressable
           onPress={confirm}
           disabled={submitting || loadingFee}
@@ -422,21 +425,6 @@ export default function CheckoutScreen() {
   );
 }
 
-/** Dato de pago del negocio (número/llave/cuenta) en la tarjeta naranja. */
-function PayRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="mt-1 flex-row items-center justify-between">
-      <Text className="text-[13px] text-muted">{label}</Text>
-      <Text
-        selectable
-        className="text-[14px] font-extrabold tracking-wide text-dark"
-      >
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 function Row({
   label,
   value,
@@ -450,7 +438,7 @@ function Row({
     <View className="flex-row items-center justify-between">
       <Text
         className={
-          bold ? 'text-base font-extrabold text-dark' : 'text-sm text-muted'
+          bold ? 'text-base font-extrabold text-ink' : 'text-sm text-muted'
         }
       >
         {label}
@@ -459,7 +447,7 @@ function Row({
         className={
           bold
             ? 'text-base font-extrabold text-primary'
-            : 'text-sm font-semibold text-dark'
+            : 'text-sm font-semibold text-ink'
         }
       >
         {value}

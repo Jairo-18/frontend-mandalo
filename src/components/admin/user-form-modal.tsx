@@ -535,14 +535,14 @@ export function UserFormModal({
         <Pressable
           onPress={handleSendRecovery}
           disabled={sendingRecovery}
-          className="mb-6 flex-row items-center gap-2.5 rounded-2xl border border-gray-200 px-4 py-3 active:opacity-70"
+          className="mb-6 flex-row items-center gap-2.5 rounded-2xl border border-border px-4 py-3 active:opacity-70"
         >
           {sendingRecovery ? (
             <ActivityIndicator size="small" color="#FF5A3C" />
           ) : (
             <Ionicons name="key-outline" size={18} color="#FF5A3C" />
           )}
-          <Text className="flex-1 text-[13px] font-bold text-dark">
+          <Text className="flex-1 text-[13px] font-bold text-ink">
             Enviar correo de recuperación de contraseña
           </Text>
         </Pressable>

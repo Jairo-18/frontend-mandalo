@@ -16,7 +16,7 @@ export function Checkbox({ checked, onChange, label }: Props) {
     >
       <View
         className={`h-5 w-5 items-center justify-center rounded-md border ${
-          checked ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
+          checked ? 'border-primary bg-primary' : 'border-gray-300 bg-card'
         }`}
       >
         {checked && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}

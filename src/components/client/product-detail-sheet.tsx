@@ -71,7 +71,7 @@ export function ProductDetailSheet({
       <Pressable className="flex-1 bg-black/40" onPress={onClose} />
 
       <View
-        className="max-h-[85%] overflow-hidden rounded-t-[24px] bg-white"
+        className="max-h-[85%] overflow-hidden rounded-t-[24px] bg-card"
         style={{ paddingBottom: insets.bottom + 16 }}
       >
         {/* Carrusel de fotos (remonta por producto para arrancar en la 1ª) */}
@@ -125,7 +125,7 @@ export function ProductDetailSheet({
 
         {/* Datos del producto */}
         <ScrollView className="px-5 pt-4">
-          <Text className="text-xl font-extrabold text-dark">
+          <Text className="text-xl font-extrabold text-ink">
             {product?.name}
           </Text>
 
@@ -154,7 +154,7 @@ export function ProductDetailSheet({
           </View>
 
           {!!product?.description && (
-            <Text className="mb-2 mt-3 text-sm leading-5 text-dark">
+            <Text className="mb-2 mt-3 text-sm leading-5 text-ink">
               {product.description}
             </Text>
           )}
@@ -167,11 +167,11 @@ export function ProductDetailSheet({
               <Pressable
                 onPress={onDecrement}
                 hitSlop={6}
-                className="h-10 w-10 items-center justify-center rounded-full bg-white active:opacity-70"
+                className="h-10 w-10 items-center justify-center rounded-full bg-card active:opacity-70"
               >
                 <Ionicons name="remove" size={20} color="#FF5A3C" />
               </Pressable>
-              <Text className="text-base font-extrabold text-dark">
+              <Text className="text-base font-extrabold text-ink">
                 {quantity} en el carrito
               </Text>
               <Pressable

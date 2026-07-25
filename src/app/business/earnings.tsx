@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SettlementPeriodCard } from '@/components/admin/settlement-period-card';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useSettlementDrillDown } from '@/hooks/use-settlement-drilldown';
 import { formatPrice } from '@/lib/price';
 import { myBusinessSettlementsService, SettlementPeriod } from '@/services/admin-settlements';
@@ -12,10 +13,10 @@ import { myBusinessSettlementsService, SettlementPeriod } from '@/services/admin
 const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
 
 /**
- * "Mis cobros" del negocio (§42): año → mes → quincena, SOLO LECTURA — lo
- * que ya vendió y cuánto de eso ya le cobró Mándalo. Espejo de
- * `admin/billing.tsx` pero self-scoped y sin botón de marcar (el admin es
- * quien marca el cobro, acá el negocio solo consulta el estado).
+ * "Mis pagos" del negocio (§42): año → mes → quincena, SOLO LECTURA — lo que
+ * ya vendió y cuánto de eso ya le PAGÓ a Mándalo (el negocio nos paga la
+ * comisión). Espejo de `admin/billing.tsx` pero self-scoped y sin botón de
+ * marcar (el admin es quien marca el cobro, acá el negocio solo consulta).
  */
 export default function BusinessEarningsScreen() {
   const insets = useSafeAreaInsets();
@@ -40,15 +41,19 @@ export default function BusinessEarningsScreen() {
           </Pressable>
         )}
         <View className="flex-1">
-          <Text className="text-lg font-extrabold text-white">Mis cobros</Text>
+          <Text className="text-lg font-extrabold text-white">Mis pagos</Text>
           <Text className="text-xs text-white/70">
             {dd.level === 'year'
-              ? 'Lo que vendiste y lo que ya te cobró Mándalo, por año'
+              ? 'Lo que vendiste y lo que ya le pagaste a Mándalo, por año'
               : dd.level === 'month'
                 ? `${dd.year} · por mes`
                 : `${dd.month} · quincenas`}
           </Text>
         </View>
+        <ThemeToggle
+          className="h-10 w-10 items-center justify-center rounded-full bg-white/15 active:opacity-70"
+          iconColor="#FFFFFF"
+        />
       </View>
 
       {dd.loading ? (
@@ -70,7 +75,7 @@ export default function BusinessEarningsScreen() {
               secondaryLabel={`Comisión (${item.commissionRate}%)`}
               secondaryValue={formatPrice(item.commissionTotal)}
               isPaid={item.settlement?.isPaid}
-              paidLabel="Cobrado"
+              paidLabel="Pagado"
               pendingLabel="Pendiente"
               paidSubperiods={item.paidSubperiods}
               totalSubperiods={item.totalSubperiods}

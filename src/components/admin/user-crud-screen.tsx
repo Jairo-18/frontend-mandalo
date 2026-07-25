@@ -12,7 +12,9 @@ import { FilterChips, FilterChipOption } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { Paginator } from '@/components/ui/paginator';
 import { SearchBar } from '@/components/ui/search-bar';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
+import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import {
   AdminUser,
@@ -78,6 +80,7 @@ export function UserCrudScreen({
 }: Props) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { isDark } = useAppTheme();
 
   const [searchField, setSearchField] = useState<UserSearchField>('search');
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all');
@@ -153,12 +156,12 @@ export function UserCrudScreen({
       .join(', ');
 
     return (
-      <View className="mb-3 rounded-2xl bg-white p-4">
+      <View className="mb-3 rounded-2xl bg-card p-4">
         <View className="flex-row items-center gap-3">
           <Avatar uri={item.avatarUrl} label={item.fullName} />
 
           <View className="flex-1">
-            <Text numberOfLines={1} className="text-[15px] font-bold text-dark">
+            <Text numberOfLines={1} className="text-[15px] font-bold text-ink">
               {item.fullName}
             </Text>
             <Text numberOfLines={1} className="text-xs text-muted">
@@ -190,7 +193,7 @@ export function UserCrudScreen({
             hitSlop={8}
             className="h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-70"
           >
-            <Ionicons name="pencil-outline" size={17} color="#1E1E2D" />
+            <Ionicons name="pencil-outline" size={17} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
           </Pressable>
           <Pressable
             onPress={() => setToDelete(item)}
@@ -239,12 +242,17 @@ export function UserCrudScreen({
   return (
     <View className="flex-1">
       {/* Búsqueda por campo + contador */}
-      <View className="px-4 pb-1 pt-3">
-        <SearchBar
-          value={list.search}
-          onChangeText={list.setSearch}
-          placeholder={`Buscar ${entityNamePlural}…`}
-        />
+      <View className="px-4 pb-1" style={{ paddingTop: insets.top + 12 }}>
+        <View className="flex-row items-center gap-2.5">
+          <View className="flex-1">
+            <SearchBar
+              value={list.search}
+              onChangeText={list.setSearch}
+              placeholder={`Buscar ${entityNamePlural}…`}
+            />
+          </View>
+          <ThemeToggle />
+        </View>
 
         <View className="mt-2">
           <FilterChips
@@ -301,7 +309,7 @@ export function UserCrudScreen({
       )}
 
       {/* Paginador */}
-      <View style={{ paddingBottom: insets.bottom }} className="bg-white">
+      <View style={{ paddingBottom: insets.bottom }} className="bg-card">
         <Paginator
           pagination={list.meta}
           disabled={list.loading || list.refreshing}

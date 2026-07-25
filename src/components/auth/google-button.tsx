@@ -19,7 +19,7 @@ export function GoogleButton({
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      className={`h-[54px] flex-row items-center justify-center gap-3 rounded-[30px] border border-[#DADCE0] bg-white shadow-sm active:bg-[#F8F9FA] active:border-[#D2E3FC] ${
+      className={`h-[54px] flex-row items-center justify-center gap-3 rounded-[30px] border border-[#DADCE0] bg-card shadow-sm active:bg-[#F8F9FA] active:border-[#D2E3FC] ${
         disabled ? 'opacity-50' : ''
       }`}
       style={{

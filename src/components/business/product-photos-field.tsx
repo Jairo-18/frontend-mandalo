@@ -90,7 +90,7 @@ export function ProductPhotosField({
 
   return (
     <>
-      <Text className="mb-2 text-sm font-bold text-gray-700">
+      <Text className="mb-2 text-sm font-bold text-ink">
         Fotos (la primera es la principal)
       </Text>
       <View className="mb-5 flex-row flex-wrap gap-2">

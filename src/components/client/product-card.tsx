@@ -43,7 +43,7 @@ export function ProductCard({
   return (
     <Wrapper
       onPress={onPress}
-      className="mb-3 flex-row items-center gap-3 rounded-2xl bg-white p-3.5 active:opacity-80"
+      className="mb-3 flex-row items-center gap-3 rounded-2xl bg-card p-3.5 active:opacity-80"
     >
       {/* Tocar la foto abre la preview (el Pressable anidado gana el toque,
           así no navega al negocio ni agrega al carrito). */}
@@ -67,7 +67,7 @@ export function ProductCard({
       )}
 
       <View className="flex-1">
-        <Text numberOfLines={1} className="text-[15px] font-bold text-dark">
+        <Text numberOfLines={1} className="text-[15px] font-bold text-ink">
           {product.name}
         </Text>
 
@@ -126,7 +126,7 @@ export function ProductCard({
             >
               <Ionicons name="remove" size={18} color="#FF5A3C" />
             </Pressable>
-            <Text className="min-w-[18px] text-center text-[15px] font-extrabold text-dark">
+            <Text className="min-w-[18px] text-center text-[15px] font-extrabold text-ink">
               {quantity}
             </Text>
             <Pressable

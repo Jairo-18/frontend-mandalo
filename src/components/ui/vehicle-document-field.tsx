@@ -94,7 +94,7 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-bold text-gray-700">{label}</Text>
+      <Text className="mb-2 text-sm font-bold text-ink">{label}</Text>
 
       <Pressable
         onPress={choose}
@@ -102,7 +102,7 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
           error
             ? 'border-red-500'
             : value
-              ? 'border-gray-200'
+              ? 'border-border'
               : 'border-dashed border-gray-300 bg-surface'
         }`}
       >
@@ -115,7 +115,7 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
         ) : value?.kind === 'pdf' ? (
           <View className="items-center justify-center">
             <Ionicons name="document-text-outline" size={32} color="#FF5A3C" />
-            <Text className="mt-1.5 text-xs font-bold text-dark">
+            <Text className="mt-1.5 text-xs font-bold text-ink">
               Documento PDF listo
             </Text>
           </View>

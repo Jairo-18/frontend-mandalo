@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OrderDetailView } from '@/components/orders/order-detail-view';
+import { useAppTheme } from '@/context/app-theme';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { Order, ordersService } from '@/services/orders';
 
@@ -47,6 +48,7 @@ export function OrderDetailModal({
   actions,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -97,11 +99,11 @@ export function OrderDetailModal({
       statusBarTranslucent
     >
       <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
-        <View className="flex-row items-center gap-3 border-b border-gray-100 bg-white px-5 py-4">
+        <View className="flex-row items-center gap-3 border-b border-border bg-card px-5 py-4">
           <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={26} color="#1E1E2D" />
+            <Ionicons name="close" size={26} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
           </Pressable>
-          <Text className="text-lg font-extrabold text-dark">
+          <Text className="text-lg font-extrabold text-ink">
             Pedido #{orderId}
           </Text>
         </View>
@@ -129,7 +131,7 @@ export function OrderDetailModal({
                 </ScrollView>
                 {actionContent && (
                   <View
-                    className="border-t border-gray-100 bg-white px-5 pt-3"
+                    className="border-t border-border bg-card px-5 pt-3"
                     style={{ paddingBottom: insets.bottom + 12 }}
                   >
                     {actionContent}

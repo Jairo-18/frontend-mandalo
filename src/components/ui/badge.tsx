@@ -9,7 +9,7 @@ type Props = {
 export function Badge({ label, tone }: Props) {
   const tones = {
     green: 'bg-emerald-50 text-emerald-600',
-    gray: 'bg-gray-100 text-gray-500',
+    gray: 'bg-border text-muted',
     red: 'bg-red-50 text-red-600',
     amber: 'bg-amber-50 text-amber-600',
     primary: 'bg-primary-tint text-primary',

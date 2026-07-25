@@ -1,16 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProductFormModal } from '@/components/business/product-form-modal';
-import { Avatar } from '@/components/ui/avatar';
 import { Fab } from '@/components/ui/fab';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { Paginator } from '@/components/ui/paginator';
 import { SearchBar } from '@/components/ui/search-bar';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
+import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
+import { gridItemStyle } from '@/lib/grid-style';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { BusinessProduct, businessService } from '@/services/business';
 
@@ -21,6 +30,7 @@ import { BusinessProduct, businessService } from '@/services/business';
  */
 export function ProductCrudScreen() {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
 
   const list = usePaginatedList<BusinessProduct>(
     useCallback((params) => businessService.products.paginated(params), []),
@@ -57,73 +67,92 @@ export function ProductCrudScreen() {
     }
   }
 
-  function renderItem({ item }: { item: BusinessProduct }) {
+  function renderItem({
+    item,
+    index,
+  }: {
+    item: BusinessProduct;
+    index: number;
+  }) {
     const hasDiscount = item.discount > 0;
     const price = finalPrice(item.priceSale, item.discount);
+    const img = item.images?.[0];
 
     return (
-      <View className="mb-3 flex-row items-center gap-3 rounded-2xl bg-white p-3.5">
-        <Avatar
-          uri={item.images?.[0]}
-          icon="cube-outline"
-          size={56}
-          shape="rounded"
-        />
+      <View style={gridItemStyle(index, list.items.length)}>
+        <Pressable
+          onPress={() => openEdit(item)}
+          className="mb-3 overflow-hidden rounded-2xl bg-card active:opacity-80"
+        >
+          <View className="w-full bg-surface" style={{ aspectRatio: 1 }}>
+            {img ? (
+              <Image
+                source={{ uri: img }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View className="flex-1 items-center justify-center">
+                <Ionicons name="cube-outline" size={40} color="#C9C9D4" />
+              </View>
+            )}
 
-        <View className="flex-1">
-          <View className="flex-row items-center gap-2">
-            <Text
-              numberOfLines={1}
-              className="flex-shrink text-[15px] font-bold text-dark"
-            >
-              {item.name}
-            </Text>
+            {hasDiscount && (
+              <View className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5">
+                <Text className="text-[11px] font-extrabold text-white">
+                  -{item.discount}%
+                </Text>
+              </View>
+            )}
             {!item.isActive && (
-              <View className="rounded-full bg-gray-100 px-2 py-0.5">
-                <Text className="text-[10px] font-bold uppercase text-muted">
+              <View className="absolute right-2 top-2 rounded-full bg-dark px-2 py-0.5">
+                <Text className="text-[10px] font-bold uppercase text-white">
                   Inactivo
                 </Text>
               </View>
             )}
+
+            {/* Acciones (editar / eliminar) sobre la foto. */}
+            <View className="absolute bottom-2 right-2 flex-row gap-1.5">
+              <Pressable
+                onPress={() => openEdit(item)}
+                hitSlop={6}
+                className="h-8 w-8 items-center justify-center rounded-full bg-card shadow active:opacity-70"
+              >
+                <Ionicons name="pencil-outline" size={15} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
+              </Pressable>
+              <Pressable
+                onPress={() => setToDelete(item)}
+                hitSlop={6}
+                className="h-8 w-8 items-center justify-center rounded-full bg-card shadow active:opacity-70"
+              >
+                <Ionicons name="trash-outline" size={15} color="#DC2626" />
+              </Pressable>
+            </View>
           </View>
 
-          <View className="mt-0.5 flex-row items-center gap-2">
-            <Text className="text-sm font-extrabold text-primary">
-              {formatPrice(price)}
+          <View className="p-2.5">
+            <Text
+              numberOfLines={2}
+              className="min-h-[36px] text-[13px] font-bold text-ink"
+            >
+              {item.name}
             </Text>
-            {hasDiscount && (
-              <>
-                <Text className="text-xs text-muted line-through">
+            <View className="mt-1 flex-row items-center gap-1.5">
+              <Text className="text-[15px] font-extrabold text-primary">
+                {formatPrice(price)}
+              </Text>
+              {hasDiscount && (
+                <Text className="text-[11px] text-muted line-through">
                   {formatPrice(item.priceSale)}
                 </Text>
-                <View className="rounded-full bg-primary-tint px-1.5 py-0.5">
-                  <Text className="text-[10px] font-bold text-primary">
-                    -{item.discount}%
-                  </Text>
-                </View>
-              </>
-            )}
+              )}
+            </View>
+            <Text numberOfLines={1} className="mt-0.5 text-[11px] text-muted">
+              {[item.categoryType?.name, item.code].filter(Boolean).join(' · ') ||
+                'Sin categoría'}
+            </Text>
           </View>
-
-          <Text numberOfLines={1} className="mt-0.5 text-xs text-muted">
-            {[item.categoryType?.name, item.code].filter(Boolean).join(' · ') ||
-              'Sin categoría'}
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={() => openEdit(item)}
-          hitSlop={8}
-          className="h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-70"
-        >
-          <Ionicons name="pencil-outline" size={17} color="#1E1E2D" />
-        </Pressable>
-        <Pressable
-          onPress={() => setToDelete(item)}
-          hitSlop={8}
-          className="h-9 w-9 items-center justify-center rounded-full bg-red-50 active:opacity-70"
-        >
-          <Ionicons name="trash-outline" size={17} color="#DC2626" />
         </Pressable>
       </View>
     );
@@ -132,12 +161,17 @@ export function ProductCrudScreen() {
   return (
     <View className="flex-1">
       {/* Búsqueda + contador */}
-      <View className="px-4 pb-1 pt-3">
-        <SearchBar
-          value={list.search}
-          onChangeText={list.setSearch}
-          placeholder="Buscar por nombre o código…"
-        />
+      <View className="px-4 pb-1" style={{ paddingTop: insets.top + 12 }}>
+        <View className="flex-row items-center gap-2.5">
+          <View className="flex-1">
+            <SearchBar
+              value={list.search}
+              onChangeText={list.setSearch}
+              placeholder="Buscar por nombre o código…"
+            />
+          </View>
+          <ThemeToggle />
+        </View>
         {!list.loading && list.meta && (
           <Text className="mt-2 text-xs font-medium text-muted">
             {list.meta.total} {list.meta.total === 1 ? 'producto' : 'productos'}
@@ -153,6 +187,8 @@ export function ProductCrudScreen() {
         <FlatList
           data={list.items}
           keyExtractor={(item) => String(item.id)}
+          numColumns={2}
+          columnWrapperStyle={{ gap: 12 }}
           renderItem={renderItem}
           contentContainerStyle={{
             paddingHorizontal: 16,
@@ -175,7 +211,7 @@ export function ProductCrudScreen() {
       )}
 
       {/* Paginador */}
-      <View style={{ paddingBottom: insets.bottom }} className="bg-white">
+      <View style={{ paddingBottom: insets.bottom }} className="bg-card">
         <Paginator
           pagination={list.meta}
           disabled={list.loading || list.refreshing}

@@ -33,8 +33,8 @@ export default function PrivacyScreen() {
           body: 'Tus datos se almacenan en servidores con acceso restringido; las contraseñas se guardan cifradas y nunca se comparten. Las fotos de documentos las revisa un administrador humano exclusivamente para activar cuentas de domiciliario.',
         },
         {
-          heading: '6. Tus derechos (ARCO)',
-          body: 'Como titular de tus datos, puedes conocer, actualizar, rectificar y solicitar la eliminación de tu información, así como revocar tu autorización, escribiendo a los canales de soporte publicados dentro de la app. Algunos datos (p. ej. historial de pedidos) pueden conservarse el tiempo que exija la ley aunque solicites eliminación de la cuenta.',
+          heading: '6. Tus derechos (ARCO) y eliminar tu cuenta',
+          body: 'Como titular de tus datos, puedes conocer, actualizar y rectificar tu información escribiendo a los canales de soporte publicados dentro de la app. Para eliminar tu cuenta puedes hacerlo tú mismo desde Mi perfil → Cuenta → "Eliminar mi cuenta" (con sesión iniciada), o sin necesidad de tener la app instalada en mandaloweb.ecohotelsamawe.com/eliminar-cuenta. Tus datos personales (nombre, correo, teléfono, dirección, foto, documentos) se borran de inmediato; el registro de tus pedidos se conserva de forma anónima el tiempo que exija la ley contable, ya que forma parte del historial de otras personas (el negocio, el repartidor).',
         },
         {
           heading: '7. Cambios a esta política',

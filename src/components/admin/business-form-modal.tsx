@@ -456,7 +456,7 @@ export function BusinessFormModal({
       {selfBusiness && (
         <View className="mb-4 flex-row gap-2.5 rounded-xl bg-primary-tint px-3.5 py-3">
           <Ionicons name="lock-closed" size={18} color="#FF5A3C" />
-          <Text className="flex-1 text-[13px] text-dark">
+          <Text className="flex-1 text-[13px] text-ink">
             Los campos con candado (razón social, identificación, ubicación y
             etiquetas) los asigna el administrador y no se pueden editar aquí.
             Puedes cambiar el resto.
@@ -576,7 +576,7 @@ export function BusinessFormModal({
 
       {selfBusiness ? (
         /* Ubicación de solo lectura: la asigna el administrador. */
-        <View className="mb-4 flex-row items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3">
+        <View className="mb-4 flex-row items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-3">
           <Ionicons name="lock-closed" size={20} color="#9CA3AF" />
           <Text className="flex-1 text-[15px] text-muted">
             {coords
@@ -637,7 +637,7 @@ export function BusinessFormModal({
 
           {!isEdit && !owner && (
             <>
-              <Text className="mb-1 text-sm font-bold text-gray-700">
+              <Text className="mb-1 text-sm font-bold text-ink">
                 Cuenta de acceso del negocio
               </Text>
               <Text className="mb-3 text-xs text-muted">
@@ -680,7 +680,7 @@ export function BusinessFormModal({
       {/* Datos de pago: cuando el cliente elige un método distinto a efectivo,
           el checkout le muestra ESTOS datos para transferir y subir el
           soporte. Solo se ofrecen los métodos diligenciados. */}
-      <Text className="mb-1 text-sm font-bold text-gray-700">
+      <Text className="mb-1 text-sm font-bold text-ink">
         Datos de pago (transferencias)
       </Text>
       <Text className="mb-3 text-xs text-muted">
@@ -737,7 +737,7 @@ export function BusinessFormModal({
 
       {/* Horario de atención: fuera de él, el cliente ve el negocio "Cerrado"
           y el backend rechaza los pedidos. Sin horas = siempre abierto. */}
-      <Text className="mb-1 text-sm font-bold text-gray-700">
+      <Text className="mb-1 text-sm font-bold text-ink">
         Horario de atención
       </Text>
       <Text className="mb-3 text-xs text-muted">
@@ -806,7 +806,7 @@ export function BusinessFormModal({
 
       {!selfBusiness && (
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-bold text-gray-700">
+          <Text className="mb-2 text-sm font-bold text-ink">
             Comisión sobre lo vendido
           </Text>
           <View className="flex-row gap-2.5">
@@ -850,7 +850,7 @@ function CommissionChip({
     <Pressable
       onPress={onPress}
       className={`flex-1 items-center rounded-full border py-2.5 active:opacity-70 ${
-        active ? 'border-primary bg-primary-tint' : 'border-gray-200 bg-white'
+        active ? 'border-primary bg-primary-tint' : 'border-border bg-card'
       }`}
     >
       <Text

@@ -54,10 +54,10 @@ export function SettlementPeriodCard({
   return (
     <Pressable
       onPress={onPress}
-      className="mb-3 rounded-2xl bg-white p-4 active:opacity-80"
+      className="mb-3 rounded-2xl bg-card p-4 active:opacity-80"
     >
       <View className="flex-row items-center justify-between">
-        <Text className="text-[15px] font-extrabold text-dark">
+        <Text className="text-[15px] font-extrabold text-ink">
           {settlementPeriodLabel({ periodType, periodStart, periodEnd })}
         </Text>
         {isQuincena ? (
@@ -93,7 +93,7 @@ export function SettlementPeriodCard({
             <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
               {secondaryLabel}
             </Text>
-            <Text className="text-sm font-semibold text-dark">
+            <Text className="text-sm font-semibold text-ink">
               {secondaryValue}
             </Text>
           </View>

@@ -51,17 +51,25 @@ export function OrderDetailView({
   // dueño puede subirlo/cambiarlo mientras el pedido no esté cancelado; el
   // repartidor no lo necesita (el cobro es asunto cliente ↔ negocio).
   const paidInCash = order.paidType?.code === 'EFEC';
+  const state = order.stateType?.code ?? '';
+  // El pago (y su comprobante) se hacen DESPUÉS de que el negocio acepte, así
+  // que el cliente solo sube/paga en ACEP/PREP/RUTA (§44).
+  const paymentActionable = ['ACEP', 'PREP', 'RUTA'].includes(state);
   const canAttachProof =
-    perspective === 'client' &&
-    !paidInCash &&
-    order.stateType?.code !== 'CANC';
+    perspective === 'client' && !paidInCash && paymentActionable;
+  const rejected = !!order.paymentProofRejectedReason && !order.paymentProofUrl;
   // El domiciliario ve el comprobante (solo lectura) para confirmar que sí se
-  // pagó; el cliente/negocio lo ven siempre (subir/verificar). Nunca en efectivo.
+  // pagó; el cliente lo sube/paga; el negocio lo verifica o rechaza.
   const showProofSection =
     !paidInCash &&
     (perspective === 'delivery'
       ? !!order.paymentProofUrl
-      : !!order.paymentProofUrl || canAttachProof);
+      : !!order.paymentProofUrl || canAttachProof || rejected);
+
+  // Datos del negocio para pagar (los ve el cliente al subir el comprobante).
+  const org = order.organizational;
+  const hasNequi = !!(org?.nequiNumber || org?.nequiKey);
+  const hasBancolombia = !!(org?.bancolombiaAccount || org?.bancolombiaQrUrl);
 
   function attachProof() {
     pickPhoto('Soporte de pago', async (uri) => {
@@ -84,7 +92,7 @@ export function OrderDetailView({
   return (
     <View className="p-5">
       {/* Progreso + estimado vigente */}
-      <View className="mb-5 rounded-2xl bg-white p-4">
+      <View className="mb-5 rounded-2xl bg-card p-4">
         <OrderTimeline order={order} />
         <OrderEta order={order} perspective={perspective} />
       </View>
@@ -166,13 +174,13 @@ export function OrderDetailView({
       )}
 
       {/* Dirección de entrega */}
-      <Text className="mb-2 mt-1 text-sm font-bold text-gray-700">
+      <Text className="mb-2 mt-1 text-sm font-bold text-ink">
         Dirección de entrega
       </Text>
       <View className="mb-5 flex-row gap-2.5 rounded-2xl bg-surface p-3.5">
         <Ionicons name="location" size={18} color="#FF5A3C" />
         <View className="flex-1">
-          <Text className="text-[14px] font-semibold text-dark">
+          <Text className="text-[14px] font-semibold text-ink">
             {order.deliveryAddress}
           </Text>
           {!!order.deliveryDetails && (
@@ -182,7 +190,7 @@ export function OrderDetailView({
       </View>
 
       {/* Artículos */}
-      <Text className="mb-2 text-sm font-bold text-gray-700">Artículos</Text>
+      <Text className="mb-2 text-sm font-bold text-ink">Artículos</Text>
       <View className="mb-5 rounded-2xl bg-surface p-3.5">
         {(order.details ?? []).map((detail, idx) => (
           <View
@@ -199,11 +207,11 @@ export function OrderDetailView({
             <Text className="text-[13px] font-extrabold text-primary">
               {detail.quantity}×
             </Text>
-            <Text numberOfLines={1} className="flex-1 text-[13px] text-dark">
+            <Text numberOfLines={1} className="flex-1 text-[13px] text-ink">
               {detail.productName}
               {detail.discount > 0 ? ` (-${detail.discount}%)` : ''}
             </Text>
-            <Text className="text-[13px] font-semibold text-dark">
+            <Text className="text-[13px] font-semibold text-ink">
               {formatPrice(detail.lineTotal)}
             </Text>
           </View>
@@ -214,29 +222,88 @@ export function OrderDetailView({
       <View className="mb-5 rounded-2xl bg-surface p-3.5">
         <View className="flex-row items-center gap-2">
           <Ionicons name="cash-outline" size={16} color="#7A7A8A" />
-          <Text className="text-[13px] text-dark">
+          <Text className="text-[13px] text-ink">
             Pago: {order.paidType?.name ?? '—'} (contra-entrega)
           </Text>
         </View>
         {!!order.notes && (
           <View className="mt-2 flex-row items-start gap-2">
             <Ionicons name="chatbubble-ellipses-outline" size={16} color="#7A7A8A" />
-            <Text className="flex-1 text-[13px] text-dark">{order.notes}</Text>
+            <Text className="flex-1 text-[13px] text-ink">{order.notes}</Text>
           </View>
         )}
 
         {/* Soporte de pago (transferencia/Nequi/Daviplata): el cliente lo
             sube, el negocio lo revisa. Toca la imagen para verla completa. */}
         {showProofSection && (
-          <View className="mt-3 border-t border-gray-200 pt-3">
+          <View className="mt-3 border-t border-border pt-3">
             <Text className="mb-2 text-[12px] font-bold uppercase tracking-wide text-muted">
               Soporte de pago
             </Text>
 
+            {/* Comprobante rechazado por el negocio: el cliente ve el motivo. */}
+            {rejected && (
+              <View className="mb-2.5 flex-row gap-2 rounded-xl bg-red-50 p-3">
+                <Ionicons name="alert-circle-outline" size={18} color="#DC2626" />
+                <Text className="flex-1 text-[13px] text-red-600">
+                  {perspective === 'client'
+                    ? `El negocio rechazó tu comprobante: ${order.paymentProofRejectedReason}. Vuelve a subirlo.`
+                    : `Rechazaste el comprobante: ${order.paymentProofRejectedReason}`}
+                </Text>
+              </View>
+            )}
+
+            {/* Datos para pagar (cliente, cuando le toca subir el comprobante). */}
+            {perspective === 'client' &&
+              canAttachProof &&
+              !order.paymentProofUrl &&
+              (hasNequi || hasBancolombia) && (
+                <View className="mb-2.5 rounded-xl bg-primary-tint p-3">
+                  <View className="mb-1 flex-row items-center gap-2">
+                    <Ionicons
+                      name="swap-horizontal-outline"
+                      size={15}
+                      color="#FF5A3C"
+                    />
+                    <Text className="flex-1 text-[13px] font-extrabold text-ink">
+                      Paga {formatPrice(order.total)}
+                      {org?.paymentHolderName
+                        ? ` a ${org.paymentHolderName}`
+                        : ''}
+                    </Text>
+                  </View>
+                  {order.paidType?.code === 'NEQUI' && !!org?.nequiNumber && (
+                    <PayRow label="Número Nequi" value={org.nequiNumber} />
+                  )}
+                  {order.paidType?.code === 'NEQUI' && !!org?.nequiKey && (
+                    <PayRow label="Llave Nequi" value={org.nequiKey} />
+                  )}
+                  {order.paidType?.code === 'TRAN' &&
+                    !!org?.bancolombiaAccount && (
+                      <PayRow
+                        label="Cuenta Bancolombia"
+                        value={org.bancolombiaAccount}
+                      />
+                    )}
+                  {order.paidType?.code === 'TRAN' && !!org?.bancolombiaQrUrl && (
+                    <View className="mt-2 items-center rounded-lg bg-card p-2.5">
+                      <Image
+                        source={{ uri: org.bancolombiaQrUrl }}
+                        style={{ width: 180, height: 180 }}
+                        resizeMode="contain"
+                      />
+                      <Text className="mt-1 text-[11px] text-muted">
+                        Escanea el QR desde tu app Bancolombia
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
             {order.paymentProofUrl ? (
               <Pressable
                 onPress={() => setProofViewerOpen(true)}
-                className="h-44 overflow-hidden rounded-xl border border-gray-200 bg-white active:opacity-80"
+                className="h-44 overflow-hidden rounded-xl border border-border bg-card active:opacity-80"
               >
                 <Image
                   source={{ uri: order.paymentProofUrl }}
@@ -309,12 +376,27 @@ export function OrderDetailView({
       </Modal>
 
       {/* Totales */}
-      <View className="rounded-2xl bg-white p-4">
+      <View className="rounded-2xl bg-card p-4">
         <TotalRow label="Subtotal" value={formatPrice(order.subtotal)} />
         <TotalRow label="Domicilio" value={formatPrice(order.deliveryFee)} />
-        <View className="my-2 h-px bg-gray-100" />
+        <View className="my-2 h-px bg-border" />
         <TotalRow label="Total" value={formatPrice(order.total)} bold />
       </View>
+    </View>
+  );
+}
+
+/** Fila "etiqueta · valor" de los datos para pagar (número/llave/cuenta). */
+function PayRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="mt-1 flex-row items-center justify-between">
+      <Text className="text-[12px] text-muted">{label}</Text>
+      <Text
+        selectable
+        className="text-[13px] font-extrabold tracking-wide text-ink"
+      >
+        {value}
+      </Text>
     </View>
   );
 }
@@ -331,7 +413,7 @@ function ContactRow({
   caption?: string;
 }) {
   return (
-    <View className="mb-3 flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3.5">
+    <View className="mb-3 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5">
       <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-tint">
         <Ionicons name={icon} size={18} color="#FF5A3C" />
       </View>
@@ -341,7 +423,7 @@ function ContactRow({
             {caption}
           </Text>
         )}
-        <Text numberOfLines={1} className="text-[14px] font-bold text-dark">
+        <Text numberOfLines={1} className="text-[14px] font-bold text-ink">
           {label}
         </Text>
         {!!detail && (
@@ -367,7 +449,7 @@ function TotalRow({
     <View className="flex-row items-center justify-between">
       <Text
         className={
-          bold ? 'text-base font-extrabold text-dark' : 'text-sm text-muted'
+          bold ? 'text-base font-extrabold text-ink' : 'text-sm text-muted'
         }
       >
         {label}
@@ -376,7 +458,7 @@ function TotalRow({
         className={
           bold
             ? 'text-base font-extrabold text-primary'
-            : 'text-sm font-semibold text-dark'
+            : 'text-sm font-semibold text-ink'
         }
       >
         {value}
@@ -400,7 +482,7 @@ function CodeBanner({
       <Text className="text-[11px] font-bold uppercase tracking-widest text-primary">
         {label}
       </Text>
-      <Text className="mt-1 text-3xl font-extrabold tracking-[8px] text-dark">
+      <Text className="mt-1 text-3xl font-extrabold tracking-[8px] text-ink">
         {code}
       </Text>
       <Text className="mt-1 text-center text-xs text-muted">{caption}</Text>

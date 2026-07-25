@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+
 type Props = {
   title: string;
   /** Línea pequeña bajo el título (p. ej. "Panel del repartidor"). */
@@ -28,6 +30,10 @@ export function PanelHeader({ title, subtitle, menu }: Props) {
           </Text>
         )}
       </View>
+      <ThemeToggle
+        className="h-10 w-10 items-center justify-center rounded-full bg-white/15 active:opacity-70"
+        iconColor="#FFFFFF"
+      />
     </View>
   );
 }

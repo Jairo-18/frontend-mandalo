@@ -8,6 +8,7 @@ import { AuthHeader } from '@/components/auth/auth-header';
 import { TermsCheckbox } from '@/components/auth/terms-checkbox';
 import { Button } from '@/components/ui/button';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
+import { useAppTheme } from '@/context/app-theme';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { getSession, homePathFor, setSession } from '@/lib/session';
 import { authService } from '@/services/auth';
@@ -21,6 +22,7 @@ import { authService } from '@/services/auth';
  */
 export default function AcceptTermsScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -61,16 +63,16 @@ export default function AcceptTermsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <View className="flex-1 bg-card">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <KeyboardAwareScroll>
         <AuthHeader compact subtitle="Términos y condiciones" />
 
-        <View className="-mt-7 flex-1 rounded-t-[28px] bg-white px-6 pb-10 pt-7">
+        <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
           <View className="mb-4 h-14 w-14 items-center justify-center self-center rounded-full bg-primary-tint">
             <Ionicons name="shield-checkmark-outline" size={28} color="#FF5A3C" />
           </View>
-          <Text className="text-center text-[22px] font-extrabold text-dark">
+          <Text className="text-center text-[22px] font-extrabold text-ink">
             Un último paso
           </Text>
           <Text className="mb-6 mt-1.5 text-center text-sm leading-5 text-muted">

@@ -5,7 +5,7 @@ export function SectionTitle({ label }: { label: string }) {
   return (
     <View className="mb-2 flex-row items-center gap-2 px-5">
       <View className="h-4 w-1.5 rounded-full bg-primary" />
-      <Text className="text-base font-extrabold text-dark">{label}</Text>
+      <Text className="text-base font-extrabold text-ink">{label}</Text>
     </View>
   );
 }

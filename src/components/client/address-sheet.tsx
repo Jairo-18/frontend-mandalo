@@ -4,6 +4,7 @@ import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddressManager } from '@/components/client/address-manager';
+import { useAppTheme } from '@/context/app-theme';
 import { refreshAddresses } from '@/lib/user-data';
 
 type Props = {
@@ -18,6 +19,7 @@ type Props = {
  */
 export function AddressSheet({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
+  const { isDark } = useAppTheme();
 
   useEffect(() => {
     // Al abrir revalida si el TTL venció (normalmente no toca la red).
@@ -36,15 +38,15 @@ export function AddressSheet({ visible, onClose }: Props) {
       <Pressable className="flex-1 bg-black/40" onPress={onClose} />
 
       <View
-        className="max-h-[75%] rounded-t-[24px] bg-white px-5 pt-4"
+        className="max-h-[75%] rounded-t-[24px] bg-card px-5 pt-4"
         style={{ paddingBottom: insets.bottom + 16 }}
       >
         <View className="mb-3 flex-row items-center justify-between">
-          <Text className="text-lg font-extrabold text-dark">
+          <Text className="text-lg font-extrabold text-ink">
             Mis direcciones
           </Text>
           <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={24} color="#1E1E2D" />
+            <Ionicons name="close" size={24} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
           </Pressable>
         </View>
 

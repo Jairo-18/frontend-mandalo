@@ -11,7 +11,9 @@ import { FormSection } from '@/components/ui/form-section';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { PhotoField } from '@/components/ui/photo-field';
 import { TextField } from '@/components/ui/text-field';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { VehicleDocumentField } from '@/components/ui/vehicle-document-field';
+import { useAppTheme } from '@/context/app-theme';
 import { DocumentValue } from '@/lib/upload';
 import { profileService } from '@/services/profile';
 
@@ -34,6 +36,7 @@ function docValueFromUrl(url: string | null): DocumentValue | null {
  */
 export function ResendDocumentsScreen() {
   const router = useRouter();
+  const { isDark } = useAppTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   // Cuenta ya verificada (activa): los documentos quedan congelados.
@@ -111,20 +114,21 @@ export function ResendDocumentsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <SafeAreaView className="flex-1 bg-card">
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <View className="flex-row items-center gap-3 bg-white px-5 pb-2 pt-2">
+      <View className="flex-row items-center gap-3 bg-card px-5 pb-2 pt-2">
         <Pressable
           onPress={() => router.back()}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color="#1E1E2D" />
+          <Ionicons name="arrow-back" size={20} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
         </Pressable>
-        <Text className="text-lg font-extrabold text-dark">
+        <Text className="flex-1 text-lg font-extrabold text-ink">
           Reenviar documentos
         </Text>
+        <ThemeToggle />
       </View>
 
       {loading ? (
@@ -132,7 +136,7 @@ export function ResendDocumentsScreen() {
       ) : locked ? (
         <View className="flex-1 items-center justify-center px-8">
           <Ionicons name="shield-checkmark-outline" size={52} color="#22C55E" />
-          <Text className="mt-4 text-center text-lg font-extrabold text-dark">
+          <Text className="mt-4 text-center text-lg font-extrabold text-ink">
             Documentos verificados
           </Text>
           <Text className="mt-2 text-center text-[14px] leading-5 text-muted">

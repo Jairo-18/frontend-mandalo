@@ -23,7 +23,7 @@ export function StatCard({
     <Pressable
       onPress={onPress}
       className={`w-[48%] flex-grow rounded-2xl p-4 active:opacity-80 ${
-        highlight ? 'bg-primary' : 'bg-white'
+        highlight ? 'bg-primary' : 'bg-card'
       }`}
     >
       <View
@@ -35,7 +35,7 @@ export function StatCard({
       </View>
       <Text
         className={`mt-2 text-2xl font-extrabold ${
-          highlight ? 'text-white' : 'text-dark'
+          highlight ? 'text-white' : 'text-ink'
         }`}
       >
         {value ?? '—'}

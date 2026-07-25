@@ -11,9 +11,14 @@ module.exports = {
           soft: '#FF8C6E', // tinte medio (degradados)
           tint: '#FFE7E1', // tinte claro (fondos de iconos)
         },
-        dark: '#1E1E2D', // azul-negro (títulos / texto fuerte)
-        muted: '#7A7A8A', // gris (texto secundario)
-        surface: '#F2F2F2', // gris muy claro (fondos)
+        dark: '#1E1E2D', // azul-negro de marca (franjas/cabeceras) — FIJO, no cambia con el tema
+        // Tokens de tema (claro/oscuro), resueltos vía variables CSS en global.css
+        // y forzados a través de context/app-theme.tsx (ver NOTAS.md).
+        surface: 'rgb(var(--color-surface) / <alpha-value>)', // fondo de pantalla
+        card: 'rgb(var(--color-card) / <alpha-value>)', // tarjetas/inputs (reemplaza bg-white)
+        ink: 'rgb(var(--color-ink) / <alpha-value>)', // texto principal (reemplaza text-dark)
+        muted: 'rgb(var(--color-muted) / <alpha-value>)', // texto secundario
+        border: 'rgb(var(--color-border) / <alpha-value>)', // líneas/divisores/fondos sutiles (reemplaza border-gray-100/200, bg-gray-100/200/300)
       },
     },
   },

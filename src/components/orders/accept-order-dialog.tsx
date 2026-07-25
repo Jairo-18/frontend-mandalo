@@ -48,12 +48,12 @@ export function AcceptOrderDialog({ visible, onConfirm, onCancel }: Props) {
         className="flex-1 items-center justify-center bg-black/50 px-8"
         onPress={working ? undefined : onCancel}
       >
-        <Pressable className="w-full rounded-3xl bg-white p-6" onPress={() => {}}>
+        <Pressable className="w-full rounded-3xl bg-card p-6" onPress={() => {}}>
           <View className="mb-4 h-14 w-14 self-center items-center justify-center rounded-full bg-primary-tint">
             <Ionicons name="time-outline" size={26} color="#FF5A3C" />
           </View>
 
-          <Text className="text-center text-lg font-extrabold text-dark">
+          <Text className="text-center text-lg font-extrabold text-ink">
             ¿En cuánto tiempo estará listo?
           </Text>
           <Text className="mt-2 text-center text-sm leading-5 text-muted">
@@ -69,12 +69,12 @@ export function AcceptOrderDialog({ visible, onConfirm, onCancel }: Props) {
                   key={choice}
                   onPress={() => setMinutes(choice)}
                   className={`rounded-full border px-4 py-2.5 active:opacity-70 ${
-                    active ? 'border-primary bg-primary' : 'border-gray-200 bg-white'
+                    active ? 'border-primary bg-primary' : 'border-border bg-card'
                   }`}
                 >
                   <Text
                     className={`text-[14px] font-bold ${
-                      active ? 'text-white' : 'text-dark'
+                      active ? 'text-white' : 'text-ink'
                     }`}
                   >
                     {choice} min
@@ -88,11 +88,11 @@ export function AcceptOrderDialog({ visible, onConfirm, onCancel }: Props) {
             <Pressable
               onPress={onCancel}
               disabled={working}
-              className={`h-[48px] flex-1 items-center justify-center rounded-2xl border border-gray-200 active:opacity-70 ${
+              className={`h-[48px] flex-1 items-center justify-center rounded-2xl border border-border active:opacity-70 ${
                 working ? 'opacity-50' : ''
               }`}
             >
-              <Text className="text-[15px] font-bold text-dark">Volver</Text>
+              <Text className="text-[15px] font-bold text-ink">Volver</Text>
             </Pressable>
             <Pressable
               onPress={confirm}

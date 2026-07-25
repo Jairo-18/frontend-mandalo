@@ -181,7 +181,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   if (state.loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-card">
         <ActivityIndicator size="large" color="#FF5A3C" />
         <Text className="mt-4 text-sm text-muted">Cargando Mandalo…</Text>
       </View>
@@ -190,8 +190,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   if (state.error) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-8">
-        <Text className="mb-2 text-center text-lg font-bold text-dark">
+      <View className="flex-1 items-center justify-center bg-card px-8">
+        <Text className="mb-2 text-center text-lg font-bold text-ink">
           No se pudo cargar la app
         </Text>
         <Text className="mb-6 text-center text-sm text-muted">

@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SectionTitle } from '@/components/ui/section-title';
 import { countOf, StatCard } from '@/components/ui/stat-card';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useSession } from '@/hooks/use-session';
 import { adminBusinessesService } from '@/services/admin-businesses';
 import { adminUsersService } from '@/services/admin-users';
@@ -101,13 +102,21 @@ export default function AdminDashboardScreen() {
     >
       {/* Héroe de marca: continúa el header oscuro del drawer */}
       <View className="rounded-b-[28px] bg-dark px-5 pb-6 pt-1">
-        <Text className="text-2xl font-extrabold text-white">
-          ¡Hola{firstName ? `, ${firstName}` : ''}!
-        </Text>
-        <Text className="mt-0.5 text-xs text-white/70">
-          Así va{' '}
-          <Text className="font-extrabold text-primary-soft">Mándalo</Text> hoy.
-        </Text>
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1">
+            <Text className="text-2xl font-extrabold text-white">
+              ¡Hola{firstName ? `, ${firstName}` : ''}!
+            </Text>
+            <Text className="mt-0.5 text-xs text-white/70">
+              Así va{' '}
+              <Text className="font-extrabold text-primary-soft">Mándalo</Text> hoy.
+            </Text>
+          </View>
+          <ThemeToggle
+            className="h-10 w-10 items-center justify-center rounded-full bg-white/15 active:opacity-70"
+            iconColor="#FFFFFF"
+          />
+        </View>
       </View>
 
       {loading && (

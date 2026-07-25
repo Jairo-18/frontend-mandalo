@@ -27,7 +27,7 @@ export function TermsCheckbox({ checked, onChange, error }: Props) {
           onPress={() => onChange(!checked)}
           hitSlop={8}
           className={`mt-0.5 h-5 w-5 items-center justify-center rounded-md border ${
-            checked ? 'border-primary bg-primary' : 'border-gray-300 bg-white'
+            checked ? 'border-primary bg-primary' : 'border-gray-300 bg-card'
           }`}
         >
           {checked && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}

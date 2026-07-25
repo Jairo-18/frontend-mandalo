@@ -10,6 +10,7 @@ import {
 
 import { AddressFormModal } from '@/components/client/address-form-modal';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
+import { useAppTheme } from '@/context/app-theme';
 import { useUserAddresses } from '@/hooks/use-user-data';
 import { refreshAddresses } from '@/lib/user-data';
 import { UserAddress, userAddressesService } from '@/services/user-addresses';
@@ -30,6 +31,7 @@ type Props = {
  * el refresh y el resto de pantallas se enteran solas.
  */
 export function AddressManager({ fullScreen = false }: Props) {
+  const { isDark } = useAppTheme();
   const { addresses, loading } = useUserAddresses();
   const [settingId, setSettingId] = useState<number | null>(null);
 
@@ -87,7 +89,7 @@ export function AddressManager({ fullScreen = false }: Props) {
     return (
       <Pressable
         onPress={() => choose(item)}
-        className="mb-2 flex-row items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3.5 active:opacity-70"
+        className="mb-2 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5 active:opacity-70"
       >
         {/* Radio de selección */}
         {settingId === item.id ? (
@@ -102,7 +104,7 @@ export function AddressManager({ fullScreen = false }: Props) {
 
         <View className="flex-1">
           <View className="flex-row items-center gap-2">
-            <Text numberOfLines={1} className="text-[15px] font-bold text-dark">
+            <Text numberOfLines={1} className="text-[15px] font-bold text-ink">
               {item.label}
             </Text>
             {item.isDefault && (
@@ -128,7 +130,7 @@ export function AddressManager({ fullScreen = false }: Props) {
           hitSlop={8}
           className="h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="pencil-outline" size={16} color="#1E1E2D" />
+          <Ionicons name="pencil-outline" size={16} color={isDark ? '#EDEDF2' : '#1E1E2D'} />
         </Pressable>
         <Pressable
           onPress={() => setToDelete(item)}
