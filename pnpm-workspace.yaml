@@ -10,4 +10,6 @@ minimumReleaseAgeExclude:
   - '@expo/*'
   - 'babel-preset-expo'
 allowBuilds:
-  unrs-resolver: set this to true or false
+  # unrs-resolver: dependencia nativa de eslint-config-expo (resolución de
+  # imports). Su postinstall solo baja el binario precompilado.
+  unrs-resolver: true
