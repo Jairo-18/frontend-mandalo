@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MenuButton } from '@/components/client/menu-button';
 import { SettlementPeriodCard } from '@/components/admin/settlement-period-card';
@@ -25,6 +25,7 @@ const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
  * `admin/delivery-billing.tsx` pero self-scoped y sin botón de marcar.
  */
 export default function DeliveryEarningsScreen() {
+  const insets = useSafeAreaInsets();
   const fetcher = useCallback(async (periodType: 'quincena' | 'month' | 'year') => {
     const res = await myDeliverySettlementsService.periods(periodType);
     return res.data.periods;
@@ -86,7 +87,7 @@ export default function DeliveryEarningsScreen() {
                 onPress={() => item.periodType !== 'quincena' && dd.drillInto(item.periodStart)}
               />
             )}
-            contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }}
             ListEmptyComponent={
               <ListEmpty icon="bicycle-outline" message="Aún no has entregado pedidos." />
             }

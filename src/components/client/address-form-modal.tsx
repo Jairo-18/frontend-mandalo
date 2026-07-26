@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
+import { AddressMapPicker } from '@/components/client/address-map-picker';
 import { FormModal } from '@/components/ui/form-modal';
 import { TextField } from '@/components/ui/text-field';
 import { useFormErrors } from '@/hooks/use-form-errors';
-import { DeviceCoords, getDeviceLocation } from '@/lib/location';
+import { DeviceCoords } from '@/lib/location';
 import { getAppColors } from '@/lib/app-colors';
 import {
   UserAddress,
@@ -28,7 +29,7 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
   const [address, setAddress] = useState('');
   const [details, setDetails] = useState('');
   const [coords, setCoords] = useState<DeviceCoords>();
-  const [locating, setLocating] = useState(false);
+  const [mapVisible, setMapVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const { errors, setErrors, clearError, bind, validate } = useFormErrors();
 
@@ -48,22 +49,19 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
     );
   }, [visible, editing, setErrors]);
 
-  /** GPS: guarda coordenadas y prellena el texto (sigue editable). */
-  async function handleUseLocation() {
-    setLocating(true);
-    try {
-      const result = await getDeviceLocation();
-      if (result) {
-        setCoords(result.coords);
-        clearError('location');
-        if (result.address) {
-          setAddress(result.address);
-          clearError('address');
-        }
-      }
-    } finally {
-      setLocating(false);
+  /** Mapa: el usuario elige el punto (su GPS o cualquier otro, incluso otra
+   * ciudad — p. ej. para mandar un pedido a alguien en Mocoa) y confirma. */
+  function handleMapConfirm(result: {
+    coords: DeviceCoords;
+    address?: string;
+  }) {
+    setCoords(result.coords);
+    clearError('location');
+    if (result.address) {
+      setAddress(result.address);
+      clearError('address');
     }
+    setMapVisible(false);
   }
 
   async function handleSave() {
@@ -74,7 +72,7 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
       // repartidor ubicar la entrega: la ubicación GPS es obligatoria.
       location: coords
         ? undefined
-        : 'Marca la ubicación con "Usar mi ubicación actual".',
+        : 'Marca la ubicación en el mapa.',
       // El GPS marca el punto pero el texto suele quedar genérico ("Mocoa"):
       // el barrio/casa/referencias los pone el usuario y son obligatorios
       // para que el repartidor encuentre la puerta.
@@ -135,25 +133,18 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
         placeholder="Calle 1 # 2-3, Barrio Centro"
       />
       <Pressable
-        onPress={handleUseLocation}
-        disabled={locating}
+        onPress={() => setMapVisible(true)}
         className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
       >
-        {locating ? (
-          <ActivityIndicator size="small" color={getAppColors().primaryColor} />
-        ) : (
-          <Ionicons
-            name={coords ? 'checkmark-circle' : 'locate-outline'}
-            size={16}
-            color={getAppColors().primaryColor}
-          />
-        )}
+        <Ionicons
+          name={coords ? 'checkmark-circle' : 'map-outline'}
+          size={16}
+          color={getAppColors().primaryColor}
+        />
         <Text className="text-[13px] font-bold text-primary">
-          {locating
-            ? 'Obteniendo ubicación…'
-            : coords
-              ? 'Ubicación marcada — toca para actualizar'
-              : 'Usar mi ubicación actual (obligatorio)'}
+          {coords
+            ? 'Ubicación marcada — toca para cambiarla'
+            : 'Marcar ubicación en el mapa (obligatorio)'}
         </Text>
       </Pressable>
       {!!errors.location && (
@@ -170,6 +161,13 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
         onChangeText={bind('details', setDetails)}
         error={errors.details}
         placeholder="Barrio Centro, casa esquinera, portón café"
+      />
+
+      <AddressMapPicker
+        visible={mapVisible}
+        initialCoords={coords}
+        onClose={() => setMapVisible(false)}
+        onConfirm={handleMapConfirm}
       />
     </FormModal>
   );

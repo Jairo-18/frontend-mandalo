@@ -380,6 +380,7 @@ export function OrderDetailView({
       <View className="rounded-2xl bg-card p-4">
         <TotalRow label="Subtotal" value={formatPrice(order.subtotal)} />
         <TotalRow label="Domicilio" value={formatPrice(order.deliveryFee)} />
+        <TotalRow label="Servicio" value={formatPrice(order.serviceFee)} />
         <View className="my-2 h-px bg-border" />
         <TotalRow label="Total" value={formatPrice(order.total)} bold />
       </View>

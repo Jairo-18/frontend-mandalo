@@ -6,6 +6,7 @@ import { useColorScheme } from 'nativewind';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { LocationConsentHost } from '@/components/ui/location-consent-host';
 import { SigningOutOverlay } from '@/components/ui/signing-out-overlay';
 import { ToastHost } from '@/components/ui/toast';
 import { AppDataProvider } from '@/context/app-data';
@@ -35,6 +36,7 @@ export default function RootLayout() {
             </CartProvider>
             <SigningOutOverlay />
             <ToastHost />
+            <LocationConsentHost />
           </AppDataProvider>
         </KeyboardProvider>
       </ThemeProvider>

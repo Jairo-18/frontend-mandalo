@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 
+import { ensureLocationConsent } from '@/lib/location-consent';
 import { toast } from '@/lib/toast';
 
 export type DeviceCoords = { latitude: number; longitude: number };
@@ -129,6 +130,7 @@ export function samePlaceName(a?: string, b?: string): boolean {
  */
 export async function getDeviceCoordsSilently(): Promise<DeviceCoords | null> {
   try {
+    if (!(await ensureLocationConsent())) return null;
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') return null;
     if (!(await Location.hasServicesEnabledAsync())) return null;
@@ -159,7 +161,54 @@ export async function getDeviceCoordsSilently(): Promise<DeviceCoords | null> {
   }
 }
 
+/**
+ * Dirección legible para unas coordenadas YA conocidas (geocoding inverso +
+ * snap al municipio de operación más cercano) — la misma lógica que arma el
+ * texto en `getDeviceLocation`, pero reusable para cualquier punto (p. ej. el
+ * pin que el usuario mueve a mano en `AddressMapPicker`, no solo su GPS).
+ */
+export async function reverseGeocodeCoords(
+  coords: DeviceCoords,
+): Promise<{ address?: string; region?: string; city?: string }> {
+  let streetLine: string | undefined;
+  let region: string | undefined;
+  let city: string | undefined;
+  let geocoded = false;
+  try {
+    const [place] = await Location.reverseGeocodeAsync(coords);
+    if (place) {
+      geocoded = true;
+      // Cuando el punto no tiene dirección con nombre, Google devuelve un
+      // Plus Code ("49P2+V6") como `name` — se descarta (mejor el barrio o
+      // el fallback "Ubicación GPS (lat, lng)" del caller).
+      const name = isPlusCode(place.name) ? undefined : place.name;
+      streetLine = place.street || name || place.district || undefined;
+      region = place.region ?? undefined;
+      city = place.city ?? place.subregion ?? undefined;
+    }
+  } catch {
+    // Sin red el geocoder puede fallar: las coordenadas igual sirven.
+  }
+
+  // Municipio/departamento por DISTANCIA al punto dentro del área de
+  // operación; el nombre del geocoder queda solo como fallback fuera de ella
+  // (Google marcaba "Villagarzón" estando en Mocoa).
+  const nearest = nearestMunicipality(coords);
+  if (nearest) {
+    city = nearest.name;
+    region = nearest.region;
+  }
+
+  const address = geocoded
+    ? [streetLine, city].filter(Boolean).join(', ') || undefined
+    : undefined;
+
+  return { address, region, city };
+}
+
 export async function getDeviceLocation(): Promise<DeviceLocation | null> {
+  if (!(await ensureLocationConsent())) return null;
+
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
     toast.error('Necesitamos permiso de ubicación para marcar tu dirección.');
@@ -197,39 +246,7 @@ export async function getDeviceLocation(): Promise<DeviceLocation | null> {
     longitude: position.coords.longitude,
   };
 
-  // Calle/barrio legible del geocoder (solo para el TEXTO de la dirección).
-  let streetLine: string | undefined;
-  let region: string | undefined;
-  let city: string | undefined;
-  let geocoded = false;
-  try {
-    const [place] = await Location.reverseGeocodeAsync(coords);
-    if (place) {
-      geocoded = true;
-      // Cuando el punto no tiene dirección con nombre, Google devuelve un
-      // Plus Code ("49P2+V6") como `name` — se descarta (mejor el barrio o
-      // el fallback "Ubicación GPS (lat, lng)" del caller).
-      const name = isPlusCode(place.name) ? undefined : place.name;
-      streetLine = place.street || name || place.district || undefined;
-      region = place.region ?? undefined;
-      city = place.city ?? place.subregion ?? undefined;
-    }
-  } catch {
-    // Sin red el geocoder puede fallar: las coordenadas igual sirven.
-  }
-
-  // Municipio/departamento por DISTANCIA a la posición del dispositivo dentro
-  // del área de operación; el nombre del geocoder queda solo como fallback
-  // fuera de ella (Google marcaba "Villagarzón" estando en Mocoa).
-  const nearest = nearestMunicipality(coords);
-  if (nearest) {
-    city = nearest.name;
-    region = nearest.region;
-  }
-
-  const address = geocoded
-    ? [streetLine, city].filter(Boolean).join(', ') || undefined
-    : undefined;
+  const { address, region, city } = await reverseGeocodeCoords(coords);
 
   return { coords, address, region, city };
 }

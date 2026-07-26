@@ -32,6 +32,8 @@ export type Order = {
   deliveryLongitude: number | null;
   subtotal: number;
   deliveryFee: number;
+  /** Tarifa de servicio: % del subtotal (sin domicilio), topada en un máximo. */
+  serviceFee: number;
   total: number;
   notes: string | null;
   cancellationReason: string | null;
@@ -137,12 +139,15 @@ export const ordersService = {
   /**
    * Tarifa del domicilio EN VIVO por distancia (checkout): negocio +
    * coordenadas de la dirección elegida. Sin coordenadas cae a la tarifa fija
-   * de respaldo (el backend decide) y `distanceKm` sale `null`.
+   * de respaldo (el backend decide) y `distanceKm` sale `null`. De paso trae
+   * la tarifa de servicio (si se manda `subtotal`) — mismo cálculo que hace
+   * el backend al crear el pedido, así el checkout no duplica el % ni el tope.
    */
   deliveryFee: (params: {
     organizationalId: number;
     latitude?: number;
     longitude?: number;
+    subtotal?: number;
   }) => {
     const query = new URLSearchParams({
       organizationalId: String(params.organizationalId),
@@ -151,10 +156,10 @@ export const ordersService = {
     if (params.longitude != null) {
       query.set('longitude', String(params.longitude));
     }
-    return http<{ data: { deliveryFee: number; distanceKm: number | null } }>(
-      `/invoice/delivery-fee?${query.toString()}`,
-      { auth: true },
-    );
+    if (params.subtotal != null) query.set('subtotal', String(params.subtotal));
+    return http<{
+      data: { deliveryFee: number; distanceKm: number | null; serviceFee: number };
+    }>(`/invoice/delivery-fee?${query.toString()}`, { auth: true });
   },
 
   create: (payload: CreateOrderPayload) =>

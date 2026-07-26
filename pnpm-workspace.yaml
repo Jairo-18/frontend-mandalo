@@ -9,3 +9,5 @@ minimumReleaseAgeExclude:
   - 'expo-*'
   - '@expo/*'
   - 'babel-preset-expo'
+allowBuilds:
+  unrs-resolver: set this to true or false

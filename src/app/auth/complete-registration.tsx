@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
+import { AddressMapPicker } from '@/components/client/address-map-picker';
 import { AuthHeader } from '@/components/auth/auth-header';
 import { DeliveryVerification } from '@/components/auth/delivery-verification';
 import { TermsCheckbox } from '@/components/auth/terms-checkbox';
@@ -62,6 +63,7 @@ export default function CompleteRegistrationScreen() {
   const [details, setDetails] = useState('');
   const [coords, setCoords] = useState<DeviceCoords>();
   const [locating, setLocating] = useState(false);
+  const [mapVisible, setMapVisible] = useState(false);
 
   // Solo repartidor: identificación + fotos de verificación.
   const [identificationNumber, setIdentificationNumber] = useState('');
@@ -96,31 +98,38 @@ export default function CompleteRegistrationScreen() {
     [identificationTypes],
   );
 
+  /** Comparten el botón GPS del repartidor y el mapa del cliente. */
+  async function applyLocationResult(result: {
+    coords: DeviceCoords;
+    address?: string;
+    region?: string;
+    city?: string;
+  }) {
+    setCoords(result.coords);
+    clearError('location');
+    setAddress(
+      result.address ??
+        `Ubicación (${result.coords.latitude.toFixed(5)}, ${result.coords.longitude.toFixed(5)})`,
+    );
+    clearError('address');
+    if (result.region) {
+      const dept = departments.find((d) => samePlaceName(d.name, result.region));
+      if (dept && result.city) {
+        const muns = await muni.preload(dept.id);
+        const mun = muns.find((m) => samePlaceName(m.name, result.city));
+        if (mun) muni.setMunicipalityId(mun.id);
+        clearError('departmentId');
+        clearError('municipalityId');
+      }
+    }
+  }
+
+  /** Repartidor: ubicación REAL (va junto a sus documentos de verificación). */
   async function handleUseLocation() {
     setLocating(true);
     try {
       const result = await getDeviceLocation();
-      if (result) {
-        setCoords(result.coords);
-        clearError('location');
-        setAddress(
-          result.address ??
-            `Ubicación GPS (${result.coords.latitude.toFixed(5)}, ${result.coords.longitude.toFixed(5)})`,
-        );
-        clearError('address');
-        if (result.region) {
-          const dept = departments.find((d) =>
-            samePlaceName(d.name, result.region),
-          );
-          if (dept && result.city) {
-            const muns = await muni.preload(dept.id);
-            const mun = muns.find((m) => samePlaceName(m.name, result.city));
-            if (mun) muni.setMunicipalityId(mun.id);
-            clearError('departmentId');
-            clearError('municipalityId');
-          }
-        }
-      }
+      if (result) await applyLocationResult(result);
     } finally {
       setLocating(false);
     }
@@ -135,7 +144,9 @@ export default function CompleteRegistrationScreen() {
           : 'Ingresa un número de celular válido.',
       location: coords
         ? undefined
-        : 'Marca tu ubicación con "Usar mi ubicación actual".',
+        : isDelivery
+          ? 'Marca tu ubicación con "Usar mi ubicación actual".'
+          : 'Marca tu ubicación en el mapa.',
       departmentId: muni.departmentId ? undefined : 'Selecciona un departamento.',
       municipalityId: muni.municipalityId ? undefined : 'Selecciona un municipio.',
       acceptedTerms: acceptedTerms
@@ -350,38 +361,57 @@ export default function CompleteRegistrationScreen() {
                 error={errors.municipalityId}
               />
 
-              {/* Solo lectura: la llena "Usar mi ubicación actual". */}
+              {/* Solo lectura: se llena desde el GPS (repartidor) o el mapa
+                  (cliente). */}
               <TextField
                 label="Dirección (se llena con tu ubicación)"
                 icon="home-outline"
                 format="text"
                 value={address}
                 error={errors.address}
-                placeholder="Toca «Usar mi ubicación actual»"
+                placeholder={
+                  isDelivery ? 'Toca «Usar mi ubicación actual»' : 'Toca «Marcar en el mapa»'
+                }
                 editable={false}
               />
-              <Pressable
-                onPress={handleUseLocation}
-                disabled={locating}
-                className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
-              >
-                {locating ? (
-                  <ActivityIndicator size="small" color={getAppColors().primaryColor} />
-                ) : (
+              {isDelivery ? (
+                <Pressable
+                  onPress={handleUseLocation}
+                  disabled={locating}
+                  className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+                >
+                  {locating ? (
+                    <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+                  ) : (
+                    <Ionicons
+                      name={coords ? 'checkmark-circle' : 'locate-outline'}
+                      size={16}
+                      color={getAppColors().primaryColor}
+                    />
+                  )}
+                  <Text className="text-[13px] font-bold text-primary">
+                    {locating
+                      ? 'Obteniendo ubicación…'
+                      : coords
+                        ? 'Ubicación marcada — toca para actualizar'
+                        : 'Usar mi ubicación actual (obligatorio)'}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={() => setMapVisible(true)}
+                  className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+                >
                   <Ionicons
-                    name={coords ? 'checkmark-circle' : 'locate-outline'}
+                    name={coords ? 'checkmark-circle' : 'map-outline'}
                     size={16}
                     color={getAppColors().primaryColor}
                   />
-                )}
-                <Text className="text-[13px] font-bold text-primary">
-                  {locating
-                    ? 'Obteniendo ubicación…'
-                    : coords
-                      ? 'Ubicación marcada — toca para actualizar'
-                      : 'Usar mi ubicación actual (obligatorio)'}
-                </Text>
-              </Pressable>
+                  <Text className="text-[13px] font-bold text-primary">
+                    {coords ? 'Ubicación marcada — toca para cambiarla' : 'Marcar en el mapa (obligatorio)'}
+                  </Text>
+                </Pressable>
+              )}
               {!!errors.location && (
                 <Text className="-mt-2 mb-3 text-xs text-red-600">
                   {errors.location}
@@ -389,15 +419,26 @@ export default function CompleteRegistrationScreen() {
               )}
 
               {!isDelivery && (
-                <TextField
-                  label="Dirección específica"
-                  icon="information-circle-outline"
-                  format="text"
-                  value={details}
-                  onChangeText={bind('details', setDetails)}
-                  error={errors.details}
-                  placeholder="Barrio Centro, casa esquinera, portón café"
-                />
+                <>
+                  <AddressMapPicker
+                    visible={mapVisible}
+                    initialCoords={coords}
+                    onClose={() => setMapVisible(false)}
+                    onConfirm={(result) => {
+                      void applyLocationResult(result);
+                      setMapVisible(false);
+                    }}
+                  />
+                  <TextField
+                    label="Dirección específica"
+                    icon="information-circle-outline"
+                    format="text"
+                    value={details}
+                    onChangeText={bind('details', setDetails)}
+                    error={errors.details}
+                    placeholder="Barrio Centro, casa esquinera, portón café"
+                  />
+                </>
               )}
 
               {isDelivery && (

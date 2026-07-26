@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { AddressMapPicker } from '@/components/client/address-map-picker';
 import { AuthHeader } from '@/components/auth/auth-header';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { FormSection } from '@/components/ui/form-section';
@@ -75,6 +76,7 @@ export default function RegisterForm() {
 
   const [coords, setCoords] = useState<DeviceCoords>();
   const [locating, setLocating] = useState(false);
+  const [mapVisible, setMapVisible] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -93,39 +95,47 @@ export default function RegisterForm() {
   );
 
   /**
-   * Ubicación del dispositivo: guarda las coordenadas (van al backend) y
-   * prellena la dirección con el geocoding inverso (el campo sigue editable).
+   * Aplica un punto ya resuelto (coords + dirección/región/ciudad del
+   * geocoder) — lo comparten el botón GPS del repartidor y el mapa del
+   * cliente: guarda las coordenadas (van al backend) y preselecciona
+   * departamento/municipio según el geocoder (los selects siguen editables
+   * por si el nombre no matchea con el DANE).
    */
+  async function applyLocationResult(result: {
+    coords: DeviceCoords;
+    address?: string;
+    region?: string;
+    city?: string;
+  }) {
+    setCoords(result.coords);
+    clearError('location');
+    // El campo dirección es de solo lectura (las coords deben corresponder
+    // al texto): si el geocoder no da nombre, se pinta el punto para que se
+    // vea que quedó marcado.
+    setAddress(
+      result.address ??
+        `Ubicación (${result.coords.latitude.toFixed(5)}, ${result.coords.longitude.toFixed(5)})`,
+    );
+    clearError('address');
+    if (result.region) {
+      const dept = departments.find((d) => samePlaceName(d.name, result.region));
+      if (dept && result.city) {
+        const muns = await muni.preload(dept.id);
+        const mun = muns.find((m) => samePlaceName(m.name, result.city));
+        if (mun) muni.setMunicipalityId(mun.id);
+        clearError('departmentId');
+        clearError('municipalityId');
+      }
+    }
+  }
+
+  /** Repartidor: su ubicación debe ser la REAL (verificación de identidad
+   * junto a los documentos) — solo GPS, sin mapa libre. */
   async function handleUseLocation() {
     setLocating(true);
     try {
       const result = await getDeviceLocation();
-      if (result) {
-        setCoords(result.coords);
-        clearError('location');
-        // El campo dirección es de solo lectura (las coords deben
-        // corresponder al texto): si el geocoder no da nombre, se pinta
-        // el punto GPS para que se vea que quedó marcado.
-        setAddress(
-          result.address ??
-            `Ubicación GPS (${result.coords.latitude.toFixed(5)}, ${result.coords.longitude.toFixed(5)})`,
-        );
-        clearError('address');
-        // Preselección de departamento/municipio según el geocoder (los
-        // selects siguen editables por si el nombre no matchea con el DANE).
-        if (result.region) {
-          const dept = departments.find((d) =>
-            samePlaceName(d.name, result.region),
-          );
-          if (dept && result.city) {
-            const muns = await muni.preload(dept.id);
-            const mun = muns.find((m) => samePlaceName(m.name, result.city));
-            if (mun) muni.setMunicipalityId(mun.id);
-            clearError('departmentId');
-            clearError('municipalityId');
-          }
-        }
-      }
+      if (result) await applyLocationResult(result);
     } finally {
       setLocating(false);
     }
@@ -148,11 +158,13 @@ export default function RegisterForm() {
       departmentId: muni.departmentId ? undefined : 'Selecciona un departamento.',
       municipalityId: muni.municipalityId ? undefined : 'Selecciona un municipio.',
       address: address.trim() ? undefined : 'Ingresa tu dirección.',
-      // Las coordenadas SOLO salen del GPS (alimentan las distancias y el
-      // radio de cercanía): sin ubicación marcada no se puede registrar.
+      // Las coordenadas alimentan las distancias y el radio de cercanía:
+      // sin ubicación marcada no se puede registrar.
       location: coords
         ? undefined
-        : 'Marca tu ubicación con "Usar mi ubicación actual".',
+        : isDelivery
+          ? 'Marca tu ubicación con "Usar mi ubicación actual".'
+          : 'Marca tu ubicación en el mapa.',
       password: !password
         ? 'Ingresa una contraseña.'
         : password.length < 8
@@ -362,39 +374,63 @@ export default function RegisterForm() {
             error={errors.municipalityId}
           />
 
-          {/* Solo lectura: la llena "Usar mi ubicación actual" para que el
-              texto siempre corresponda a las coordenadas reales. */}
+          {/* Solo lectura: se llena desde el GPS (repartidor) o el mapa
+              (cliente) para que el texto siempre corresponda a las
+              coordenadas reales. */}
           <TextField
             label="Dirección (se llena con tu ubicación)"
             icon="home-outline"
             format="text"
             value={address}
             error={errors.address}
-            placeholder="Toca «Usar mi ubicación actual»"
+            placeholder={
+              isDelivery ? 'Toca «Usar mi ubicación actual»' : 'Toca «Marcar en el mapa»'
+            }
             editable={false}
           />
-          <Pressable
-            onPress={handleUseLocation}
-            disabled={locating}
-            className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
-          >
-            {locating ? (
-              <ActivityIndicator size="small" color={getAppColors().primaryColor} />
-            ) : (
+          {isDelivery ? (
+            // El repartidor necesita su ubicación REAL (va junto a sus
+            // documentos de verificación): solo GPS, sin mapa libre.
+            <Pressable
+              onPress={handleUseLocation}
+              disabled={locating}
+              className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+            >
+              {locating ? (
+                <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+              ) : (
+                <Ionicons
+                  name={coords ? 'checkmark-circle' : 'locate-outline'}
+                  size={16}
+                  color={getAppColors().primaryColor}
+                />
+              )}
+              <Text className="text-[13px] font-bold text-primary">
+                {locating
+                  ? 'Obteniendo ubicación…'
+                  : coords
+                    ? 'Ubicación marcada — toca para actualizar'
+                    : 'Usar mi ubicación actual (obligatorio)'}
+              </Text>
+            </Pressable>
+          ) : (
+            // El cliente puede marcar cualquier punto (mismo picker que las
+            // direcciones del perfil): así puede registrar de una vez una
+            // dirección en otro municipio si quiere.
+            <Pressable
+              onPress={() => setMapVisible(true)}
+              className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+            >
               <Ionicons
-                name={coords ? 'checkmark-circle' : 'locate-outline'}
+                name={coords ? 'checkmark-circle' : 'map-outline'}
                 size={16}
                 color={getAppColors().primaryColor}
               />
-            )}
-            <Text className="text-[13px] font-bold text-primary">
-              {locating
-                ? 'Obteniendo ubicación…'
-                : coords
-                  ? 'Ubicación marcada — toca para actualizar'
-                  : 'Usar mi ubicación actual (obligatorio)'}
-            </Text>
-          </Pressable>
+              <Text className="text-[13px] font-bold text-primary">
+                {coords ? 'Ubicación marcada — toca para cambiarla' : 'Marcar en el mapa (obligatorio)'}
+              </Text>
+            </Pressable>
+          )}
           {!!errors.location && (
             <Text className="-mt-2 mb-3 text-xs text-red-600">
               {errors.location}
@@ -402,15 +438,26 @@ export default function RegisterForm() {
           )}
 
           {!isDelivery && (
-            <TextField
-              label="Dirección específica"
-              icon="information-circle-outline"
-              format="text"
-              value={details}
-              onChangeText={bind('details', setDetails)}
-              error={errors.details}
-              placeholder="Barrio Centro, casa esquinera, portón café"
-            />
+            <>
+              <AddressMapPicker
+                visible={mapVisible}
+                initialCoords={coords}
+                onClose={() => setMapVisible(false)}
+                onConfirm={(result) => {
+                  void applyLocationResult(result);
+                  setMapVisible(false);
+                }}
+              />
+              <TextField
+                label="Dirección específica"
+                icon="information-circle-outline"
+                format="text"
+                value={details}
+                onChangeText={bind('details', setDetails)}
+                error={errors.details}
+                placeholder="Barrio Centro, casa esquinera, portón café"
+              />
+            </>
           )}
 
           {isDelivery && (

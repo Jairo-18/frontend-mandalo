@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
+import { AddressMapPicker } from '@/components/client/address-map-picker';
 import { AuthHeader } from '@/components/auth/auth-header';
 import { TermsCheckbox } from '@/components/auth/terms-checkbox';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
 import { useAppTheme } from '@/context/app-theme';
 import { useFormErrors } from '@/hooks/use-form-errors';
-import { DeviceCoords, getDeviceLocation } from '@/lib/location';
+import { DeviceCoords } from '@/lib/location';
 import { setSession } from '@/lib/session';
 import { EMAIL_RE, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
 import { authService } from '@/services/auth';
@@ -38,25 +39,15 @@ export default function QuickRegisterScreen() {
   const [address, setAddress] = useState('');
   const [details, setDetails] = useState('');
   const [coords, setCoords] = useState<DeviceCoords>();
-  const [locating, setLocating] = useState(false);
+  const [mapVisible, setMapVisible] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  async function handleUseLocation() {
-    setLocating(true);
-    try {
-      const result = await getDeviceLocation();
-      if (result) {
-        setCoords(result.coords);
-        setAddress(
-          result.address ??
-            `Ubicación GPS (${result.coords.latitude.toFixed(5)}, ${result.coords.longitude.toFixed(5)})`,
-        );
-        clearError('location');
-      }
-    } finally {
-      setLocating(false);
-    }
+  function handleMapConfirm(result: { coords: DeviceCoords; address?: string }) {
+    setCoords(result.coords);
+    if (result.address) setAddress(result.address);
+    clearError('location');
+    setMapVisible(false);
   }
 
   function validateForm() {
@@ -77,9 +68,7 @@ export default function QuickRegisterScreen() {
         normalizePhone(phone).replace('+', '').length >= 10
           ? undefined
           : 'Ingresa un número de celular válido.',
-      location: coords
-        ? undefined
-        : 'Marca tu ubicación con "Usar mi ubicación actual".',
+      location: coords ? undefined : 'Marca tu ubicación en el mapa.',
       details: details.trim()
         ? undefined
         : 'Ingresa la dirección específica (barrio, casa, referencias).',
@@ -188,38 +177,35 @@ export default function QuickRegisterScreen() {
             placeholder="+57 - 300 123 456 7"
           />
 
-          {/* Dirección de entrega: solo lectura, se llena con el GPS. */}
+          {/* Dirección de entrega: solo lectura, se llena con el mapa. */}
           <TextField
             label="Dirección (se llena con tu ubicación)"
             icon="home-outline"
             format="text"
             value={address}
             error={errors.location}
-            placeholder="Toca «Usar mi ubicación actual»"
+            placeholder="Toca «Marcar en el mapa»"
             editable={false}
           />
           <Pressable
-            onPress={handleUseLocation}
-            disabled={locating}
+            onPress={() => setMapVisible(true)}
             className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
           >
-            {locating ? (
-              <ActivityIndicator size="small" color={getAppColors().primaryColor} />
-            ) : (
-              <Ionicons
-                name={coords ? 'checkmark-circle' : 'locate-outline'}
-                size={16}
-                color={getAppColors().primaryColor}
-              />
-            )}
+            <Ionicons
+              name={coords ? 'checkmark-circle' : 'map-outline'}
+              size={16}
+              color={getAppColors().primaryColor}
+            />
             <Text className="text-[13px] font-bold text-primary">
-              {locating
-                ? 'Obteniendo ubicación…'
-                : coords
-                  ? 'Ubicación lista — tócala para actualizar'
-                  : 'Usar mi ubicación actual'}
+              {coords ? 'Ubicación lista — tócala para actualizar' : 'Marcar ubicación en el mapa'}
             </Text>
           </Pressable>
+          <AddressMapPicker
+            visible={mapVisible}
+            initialCoords={coords}
+            onClose={() => setMapVisible(false)}
+            onConfirm={handleMapConfirm}
+          />
 
           <TextField
             label="Dirección específica (barrio, casa, referencias)"

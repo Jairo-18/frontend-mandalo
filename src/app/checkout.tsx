@@ -29,7 +29,8 @@ import { getAppColors } from '@/lib/app-colors';
 /**
  * Checkout del cliente: revisa el carrito, elige a dónde enviar (dirección
  * principal, editable desde la hoja) y el método de pago, agrega una nota y
- * confirma. El total = subtotal (del carrito) + domicilio (tarifa del backend).
+ * confirma. El total = subtotal (del carrito) + domicilio + servicio (las
+ * dos últimas las calcula el backend en vivo, ver `ordersService.deliveryFee`).
  */
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -44,8 +45,10 @@ export default function CheckoutScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
 
   // Domicilio EN VIVO por distancia (negocio ↔ dirección elegida) — no es un
-  // dato global cacheable como antes, cambia con cada negocio/dirección.
+  // dato global cacheable como antes, cambia con cada negocio/dirección. La
+  // tarifa de servicio viaja en la misma respuesta (depende del subtotal).
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [serviceFee, setServiceFee] = useState(0);
   const [loadingFee, setLoadingFee] = useState(false);
   useEffect(() => {
     if (!cart.businessId) return;
@@ -55,13 +58,22 @@ export default function CheckoutScreen() {
         organizationalId: cart.businessId,
         latitude: defaultAddress?.latitude ?? undefined,
         longitude: defaultAddress?.longitude ?? undefined,
+        subtotal: cart.subtotal,
       })
-      .then((res) => setDeliveryFee(res.data.deliveryFee))
+      .then((res) => {
+        setDeliveryFee(res.data.deliveryFee);
+        setServiceFee(res.data.serviceFee);
+      })
       .catch(() => {
-        // El interceptor ya mostró el error; el total sigue sin domicilio.
+        // El interceptor ya mostró el error; el total sigue sin domicilio/servicio.
       })
       .finally(() => setLoadingFee(false));
-  }, [cart.businessId, defaultAddress?.latitude, defaultAddress?.longitude]);
+  }, [
+    cart.businessId,
+    cart.subtotal,
+    defaultAddress?.latitude,
+    defaultAddress?.longitude,
+  ]);
 
   const [payment, setPayment] = useState<string>('EFEC');
   const [notes, setNotes] = useState('');
@@ -102,7 +114,7 @@ export default function CheckoutScreen() {
     }
   }, [paymentOptions, payment]);
 
-  const total = cart.subtotal + deliveryFee;
+  const total = cart.subtotal + deliveryFee + serviceFee;
 
   // Carrito vacío (p. ej. tras confirmar): no hay nada que pagar.
   if (cart.count === 0) {
@@ -388,6 +400,10 @@ export default function CheckoutScreen() {
           <Row
             label="Domicilio"
             value={loadingFee ? 'Calculando…' : formatPrice(deliveryFee)}
+          />
+          <Row
+            label="Servicio"
+            value={loadingFee ? 'Calculando…' : formatPrice(serviceFee)}
           />
           <View className="my-2 h-px bg-border" />
           <Row label="Total" value={formatPrice(total)} bold />

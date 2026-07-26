@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { FormSection } from '@/components/ui/form-section';
@@ -108,6 +109,7 @@ function ColorField({
  * identificación — ver `context/app-data.tsx`).
  */
 export function AppSettingsScreen() {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [values, setValues] = useState<AppColors>(DEFAULT_APP_COLORS);
@@ -169,7 +171,11 @@ export function AppSettingsScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-surface" contentContainerClassName="p-5 pb-10">
+    <ScrollView
+      className="flex-1 bg-surface"
+      contentContainerClassName="p-5"
+      contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+    >
       <Text className="mb-4 text-sm leading-5 text-muted">
         Estos son los colores base de toda la app. Los cambios los ven los
         usuarios la próxima vez que abran Mándalo (no hace falta publicar una
