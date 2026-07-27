@@ -111,7 +111,13 @@ export default function StoreScreen() {
     .filter(Boolean)
     .join(' · ');
 
-  const cartBiz = { id: storeId, name: businessDisplayName(business) };
+  // `detail` completo (incluye datos de pago): el checkout lo reusa en vez de
+  // volver a pedir `exploreService.business()` (auditoría de peticiones).
+  const cartBiz = {
+    id: storeId,
+    name: businessDisplayName(business),
+    detail: business,
+  };
 
   const closed = business.isOpen === false;
 

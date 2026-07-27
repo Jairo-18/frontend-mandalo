@@ -64,10 +64,12 @@ export default function BusinessOrdersScreen() {
     useCallback(() => list.fetchPage(1, 'refresh'), [list.fetchPage]),
   );
 
+  // `reload` (ctx del modal) ya refresca el listado vía su `onChanged`
+  // (abajo) — llamarlo y ADEMÁS refrescar `list` acá era la misma petición
+  // dos veces por un solo cambio de estado (auditoría de peticiones).
   async function setState(id: number, code: OrderStateCode, reload: () => void) {
     await ordersService.changeState(id, code);
     reload();
-    list.fetchPage(1, 'refresh');
   }
 
   // Le pide al cliente el comprobante del pago (no cambia el estado; el backend
@@ -245,9 +247,9 @@ export default function BusinessOrdersScreen() {
             verificationCode,
           });
           setDispatchId(null);
+          // reload() ya dispara list.fetchPage vía onChanged (ver más abajo).
           detailReload.current?.();
           detailReload.current = null;
-          list.fetchPage(1, 'refresh');
         }}
         onCancel={() => setDispatchId(null)}
       />
@@ -261,9 +263,9 @@ export default function BusinessOrdersScreen() {
             prepEstimatedMinutes: minutes,
           });
           setAcceptId(null);
+          // reload() ya dispara list.fetchPage vía onChanged (ver más abajo).
           detailReload.current?.();
           detailReload.current = null;
-          list.fetchPage(1, 'refresh');
         }}
         onCancel={() => setAcceptId(null)}
       />
@@ -289,9 +291,9 @@ export default function BusinessOrdersScreen() {
           if (rejectId == null) return;
           await ordersService.rejectPayment(rejectId, reason);
           setRejectId(null);
+          // reload() ya dispara list.fetchPage vía onChanged (ver más abajo).
           detailReload.current?.();
           detailReload.current = null;
-          list.fetchPage(1, 'refresh');
         }}
         onCancel={() => setRejectId(null)}
       />

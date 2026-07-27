@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -31,9 +31,14 @@ export default function ClientOrderDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  // Esta pantalla recarga por 3 vías (foco, socket, deslizar) — evita que se
+  // pisen entre sí disparando peticiones en paralelo.
+  const busyRef = useRef(false);
 
   const load = useCallback(
     async (mode: 'initial' | 'refresh' = 'initial') => {
+      if (busyRef.current) return;
+      busyRef.current = true;
       if (mode === 'refresh') setRefreshing(true);
       try {
         const res = await ordersService.get(orderId);
@@ -43,6 +48,7 @@ export default function ClientOrderDetailScreen() {
       } finally {
         setLoading(false);
         setRefreshing(false);
+        busyRef.current = false;
       }
     },
     [orderId],

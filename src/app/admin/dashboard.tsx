@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -9,22 +9,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { QuickAction } from '@/components/ui/quick-action';
 import { SectionTitle } from '@/components/ui/section-title';
-import { countOf, StatCard } from '@/components/ui/stat-card';
+import { StatCard } from '@/components/ui/stat-card';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useSession } from '@/hooks/use-session';
-import { adminBusinessesService } from '@/services/admin-businesses';
-import { adminUsersService } from '@/services/admin-users';
-import { ordersService } from '@/services/orders';
+import { AdminDashboardStats, dashboardService } from '@/services/dashboard';
+import { formatPrice } from '@/lib/price';
 import { getAppColors } from '@/lib/app-colors';
 
 type Stats = {
-  users: number | null;
-  businesses: number | null;
-  deliveries: number | null;
-  pendingDeliveries: number | null;
-  pendingOrders: number | null;
-  activeOrders: number | null;
+  [K in keyof AdminDashboardStats]: AdminDashboardStats[K] | null;
 };
 
 const EMPTY: Stats = {
@@ -34,12 +29,14 @@ const EMPTY: Stats = {
   pendingDeliveries: null,
   pendingOrders: null,
   activeOrders: null,
+  serviceFeeTotal: null,
 };
 
 /**
  * Inicio del panel admin: contadores generales para ver el estado del negocio
- * de un vistazo. Cada tarjeta navega a su sección. Los números salen del
- * `pagination.total` de los listados (perPage=1) — sin endpoints nuevos.
+ * de un vistazo. Cada tarjeta navega a su sección. Todos los números salen de
+ * UNA sola petición (`/dashboard/admin`) — antes eran 7 peticiones separadas
+ * (perPage=1 en cada listado solo para leer `pagination.total`).
  */
 export default function AdminDashboardScreen() {
   const router = useRouter();
@@ -48,41 +45,26 @@ export default function AdminDashboardScreen() {
   // Primera carga: loader en vez de tarjetas vacías que "explotan" al llegar.
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Evita que deslizar repetido para recargar dispare peticiones en paralelo.
+  const busyRef = useRef(false);
 
   // Saludo del héroe (useSession: regla React Compiler, no getSession suelto).
   const firstName = useSession()?.user.fullName?.split(' ')[0];
 
   const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     if (mode === 'refresh') setRefreshing(true);
-    const page = { page: 1, perPage: 1 } as const;
     try {
-      const [users, businesses, deliveries, pendingDeliveries, pendingOrders, activeOrders] =
-        await Promise.all([
-          countOf(adminUsersService.paginated({ ...page, roleTypeCodes: ['USER'] })),
-          countOf(adminBusinessesService.paginated(page)),
-          countOf(adminUsersService.paginated({ ...page, roleTypeCodes: ['DELI'] })),
-          countOf(
-            adminUsersService.paginated({
-              ...page,
-              roleTypeCodes: ['DELI'],
-              isActive: false,
-            }),
-          ),
-          countOf(ordersService.paginated({ ...page, stateCodes: ['PEND'] })),
-          countOf(
-            ordersService.paginated({
-              ...page,
-              stateCodes: ['PEND', 'ACEP', 'PREP', 'RUTA'],
-            }),
-          ),
-        ]);
-      setStats({ users, businesses, deliveries, pendingDeliveries, pendingOrders, activeOrders });
+      const res = await dashboardService.admin();
+      setStats(res.data);
     } catch {
       // El interceptor HTTP ya mostró el error; sin esto el spinner quedaba
-      // infinito cuando alguna de las peticiones fallaba.
+      // infinito cuando la petición fallaba.
     } finally {
       setLoading(false);
       setRefreshing(false);
+      busyRef.current = false;
     }
   }, []);
 
@@ -172,6 +154,54 @@ export default function AdminDashboardScreen() {
           label="Domiciliarios"
           value={stats.deliveries}
           onPress={() => router.navigate('/admin/deliveries')}
+        />
+        <StatCard
+          icon="cash-outline"
+          label="Ingresos por servicio"
+          value={
+            stats.serviceFeeTotal != null ? formatPrice(stats.serviceFeeTotal) : null
+          }
+        />
+      </View>
+
+      <View className="pt-5">
+        <SectionTitle label="Accesos rápidos" />
+      </View>
+      <View className="flex-row flex-wrap gap-3 px-4">
+        <QuickAction
+          icon="receipt-outline"
+          label="Pedidos"
+          onPress={() => router.navigate('/admin/orders')}
+        />
+        <QuickAction
+          icon="storefront-outline"
+          label="Negocios"
+          onPress={() => router.navigate('/admin/businesses')}
+        />
+        <QuickAction
+          icon="people-outline"
+          label="Usuarios"
+          onPress={() => router.navigate('/admin/users')}
+        />
+        <QuickAction
+          icon="bicycle-outline"
+          label="Domiciliarios"
+          onPress={() => router.navigate('/admin/deliveries')}
+        />
+        <QuickAction
+          icon="pricetags-outline"
+          label="Etiquetas"
+          onPress={() => router.navigate('/admin/tags')}
+        />
+        <QuickAction
+          icon="grid-outline"
+          label="Categorías"
+          onPress={() => router.navigate('/admin/categories')}
+        />
+        <QuickAction
+          icon="color-palette-outline"
+          label="Aplicación"
+          onPress={() => router.navigate('/admin/app-settings')}
         />
       </View>
       </>

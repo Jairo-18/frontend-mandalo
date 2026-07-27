@@ -34,17 +34,33 @@ export function setMyBusiness(business: AdminBusiness | null): void {
   emitChange();
 }
 
+// Petición en curso (si hay una): la cabecera del drawer y "Mi negocio" corren
+// su propio refresh, y el pull-to-refresh puede repetirse rápido — sin esto
+// se disparaban varias peticiones en paralelo contra `/organizational/mine`.
+let inFlight: Promise<AdminBusiness | null> | null = null;
+
 /**
  * Trae el negocio propio del backend (`/organizational/mine`) y actualiza el
  * store. Si falla, el interceptor HTTP ya mostró el error y se conserva lo que
- * hubiera. Devuelve el negocio (o null si falló y no había nada).
+ * hubiera. Devuelve el negocio (o null si falló y no había nada). Si ya hay
+ * una petición en curso, se reusa (no dispara una nueva).
  */
 export async function refreshMyBusiness(): Promise<AdminBusiness | null> {
+  if (inFlight) return inFlight;
+
+  inFlight = (async () => {
+    try {
+      const res = await businessService.getMine();
+      setMyBusiness(res.data);
+    } catch {
+      // El interceptor HTTP ya avisó (p. ej. cuenta sin negocio).
+    }
+    return current;
+  })();
+
   try {
-    const res = await businessService.getMine();
-    setMyBusiness(res.data);
-  } catch {
-    // El interceptor HTTP ya avisó (p. ej. cuenta sin negocio).
+    return await inFlight;
+  } finally {
+    inFlight = null;
   }
-  return current;
 }

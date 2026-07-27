@@ -130,20 +130,30 @@ export function usePaymentRequested(
   }, [handler]);
 }
 
+/** Nombre de evento del gateway (para que el caller decida qué refrescar). */
+export type OrderEventName = (typeof ORDER_EVENTS)[number];
+
 /**
  * Suscribe un handler a los eventos de pedido en vivo. El handler debe venir
  * memoizado (useCallback). Es tolerante: si no hay sesión/socket, no hace
- * nada (las pantallas igual funcionan con pull-to-refresh).
+ * nada (las pantallas igual funcionan con pull-to-refresh). El 2º argumento
+ * (nombre del evento) es opcional — quien no lo necesita simplemente no lo
+ * declara en su callback.
  */
-export function useOrderEvents(handler: (payload: OrderEvent) => void): void {
+export function useOrderEvents(
+  handler: (payload: OrderEvent, event: OrderEventName) => void,
+): void {
   useEffect(() => {
     const s = getOrdersSocket();
     if (!s) return;
 
-    const cb = (payload: OrderEvent) => handler(payload);
-    ORDER_EVENTS.forEach((event) => s.on(event, cb));
+    const listeners = ORDER_EVENTS.map((event) => {
+      const cb = (payload: OrderEvent) => handler(payload, event);
+      s.on(event, cb);
+      return { event, cb };
+    });
     return () => {
-      ORDER_EVENTS.forEach((event) => s.off(event, cb));
+      listeners.forEach(({ event, cb }) => s.off(event, cb));
     };
   }, [handler]);
 }

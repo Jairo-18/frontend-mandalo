@@ -9,6 +9,7 @@ import { MenuButton } from '@/components/client/menu-button';
 import { DeliveryOrders } from '@/components/delivery/delivery-orders';
 import { Button } from '@/components/ui/button';
 import { PanelHeader } from '@/components/ui/panel-header';
+import { QuickAction } from '@/components/ui/quick-action';
 import { useSession } from '@/hooks/use-session';
 import { deviceStoreGet, deviceStoreSet } from '@/lib/device-store';
 import { setSession } from '@/lib/session';
@@ -118,6 +119,23 @@ export default function DeliveryScreen() {
             subtitle="Panel del domiciliario"
             menu={<MenuButton parent="/delivery" />}
           />
+          <View className="flex-row flex-wrap gap-3 px-4 pb-1 pt-3">
+            <QuickAction
+              icon="cash-outline"
+              label="Mis cobros"
+              onPress={() => router.navigate('/delivery/earnings')}
+            />
+            <QuickAction
+              icon="chatbubbles-outline"
+              label="Mis chats"
+              onPress={() => router.navigate('/delivery/chats')}
+            />
+            <QuickAction
+              icon="person-outline"
+              label="Mi perfil"
+              onPress={() => router.navigate('/delivery/profile')}
+            />
+          </View>
           <DeliveryOrders />
         </View>
       </SafeAreaView>

@@ -41,6 +41,14 @@ export function CatalogFormModal({
 
   const isEdit = !!editing;
 
+  // En edición, guardar solo se habilita si algo cambió respecto a lo cargado
+  // (evita PATCH inútiles); al crear siempre está habilitado.
+  const dirty =
+    !isEdit ||
+    name !== (editing?.name ?? '') ||
+    code !== (editing?.code ?? '') ||
+    icon !== (editing?.icon ?? '');
+
   // Prellena (edición) o limpia (creación) el formulario cada vez que se abre.
   useEffect(() => {
     if (!visible) return;
@@ -99,6 +107,7 @@ export function CatalogFormModal({
       saveLabel={isEdit ? 'Guardar cambios' : `Crear ${entityName}`}
       onSave={handleSave}
       saving={saving}
+      saveDisabled={!dirty}
     >
       <TextField
         label="Nombre"

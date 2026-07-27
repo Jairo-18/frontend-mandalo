@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { FormSection } from '@/components/ui/form-section';
 import { TextField } from '@/components/ui/text-field';
-import { AppColors, appSettingsService, DEFAULT_APP_COLORS } from '@/services/app-settings';
+import { useAppData } from '@/context/app-data';
+import { AppColors, appSettingsService } from '@/services/app-settings';
 
 const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
 
@@ -107,40 +108,18 @@ function ColorField({
  * `appSettings` (backend) y los usuarios los ven la PRÓXIMA VEZ que abran la
  * app (se cargan una vez al inicio, como departamentos/tipos de
  * identificación — ver `context/app-data.tsx`).
+ *
+ * El formulario se siembra desde `useAppData().appColors` — el arranque de la
+ * app YA los cargó (`GET /app-settings`), así que volver a pedirlos acá era
+ * la misma petición de nuevo cada vez que el admin abre esta pantalla
+ * (auditoría de peticiones).
  */
 export function AppSettingsScreen() {
   const insets = useSafeAreaInsets();
-  const [loading, setLoading] = useState(true);
+  const { appColors } = useAppData();
   const [saving, setSaving] = useState(false);
-  const [values, setValues] = useState<AppColors>(DEFAULT_APP_COLORS);
-  const [initial, setInitial] = useState<AppColors>(DEFAULT_APP_COLORS);
-
-  useEffect(() => {
-    appSettingsService
-      .get()
-      .then((res) => {
-        const loaded: AppColors = {
-          primaryColor: res.data.primaryColor,
-          darkColor: res.data.darkColor,
-          surfaceLightColor: res.data.surfaceLightColor,
-          surfaceDarkColor: res.data.surfaceDarkColor,
-          cardLightColor: res.data.cardLightColor,
-          cardDarkColor: res.data.cardDarkColor,
-          textPrimaryLightColor: res.data.textPrimaryLightColor,
-          textPrimaryDarkColor: res.data.textPrimaryDarkColor,
-          textSecondaryLightColor: res.data.textSecondaryLightColor,
-          textSecondaryDarkColor: res.data.textSecondaryDarkColor,
-          borderLightColor: res.data.borderLightColor,
-          borderDarkColor: res.data.borderDarkColor,
-        };
-        setValues(loaded);
-        setInitial(loaded);
-      })
-      .catch(() => {
-        // El interceptor HTTP ya mostró el error; se queda con los defaults.
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const [values, setValues] = useState<AppColors>(appColors);
+  const [initial, setInitial] = useState<AppColors>(appColors);
 
   const allValid = ALL_FIELDS.every((f) => isValidHex(values[f.key]));
   const dirty = ALL_FIELDS.some((f) => values[f.key] !== initial[f.key]);
@@ -160,14 +139,6 @@ export function AppSettingsScreen() {
 
   function setField(key: keyof AppColors, text: string) {
     setValues((v) => ({ ...v, [key]: text }));
-  }
-
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-surface">
-        <ActivityIndicator size="large" color={values.primaryColor} />
-      </View>
-    );
   }
 
   return (

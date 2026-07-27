@@ -75,6 +75,8 @@ export default function BusinessEarningsScreen() {
               primaryValue={formatPrice(item.salesTotal)}
               secondaryLabel={`Comisión (${item.commissionRate}%)`}
               secondaryValue={formatPrice(item.commissionTotal)}
+              tertiaryLabel="Tarifa de servicio a devolver"
+              tertiaryValue={formatPrice(item.serviceFeeTotal)}
               isPaid={item.settlement?.isPaid}
               paidLabel="Pagado"
               pendingLabel="Pendiente"

@@ -46,8 +46,19 @@ export function BusinessProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
 
+  // El drawer (siempre montado durante la sesión) ya trae el negocio al
+  // entrar al panel — si ya está en el store no hace falta volver a pedirlo
+  // acá (auditoría de peticiones); solo se pide si esta pantalla es la
+  // PRIMERA en necesitarlo (store vacío).
   useEffect(() => {
+    if (business) {
+      setLoading(false);
+      return;
+    }
     refreshMyBusiness().finally(() => setLoading(false));
+    // Solo al montar: es un chequeo de "¿ya hay algo cacheado?", no debe
+    // repetirse si `business` cambia después (lo actualiza el propio refresh).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleRefresh() {

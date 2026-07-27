@@ -162,6 +162,13 @@ export const ordersService = {
     }>(`/invoice/delivery-fee?${query.toString()}`, { auth: true });
   },
 
+  /** Total histórico de tarifa de servicio (ingreso de Mándalo). Solo ADMIN. */
+  serviceFeeSummary: () =>
+    http<{ data: { total: number; ordersCount: number } }>(
+      '/invoice/service-fee-summary',
+      { auth: true },
+    ),
+
   create: (payload: CreateOrderPayload) =>
     http<{ data: { rowId: string } }>('/invoice/create', {
       method: 'POST',

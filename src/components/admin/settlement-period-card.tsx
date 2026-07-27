@@ -16,6 +16,9 @@ type Props = {
   /** Cifra secundaria opcional ("Vendió", "Domicilios cobrados", …). */
   secondaryLabel?: string;
   secondaryValue?: string;
+  /** Tercera cifra opcional, en su propia fila (p. ej. "Tarifa de servicio"). */
+  tertiaryLabel?: string;
+  tertiaryValue?: string;
   /** Solo quincena: estado del cobro/pago. */
   isPaid?: boolean;
   paidLabel: string;
@@ -42,6 +45,8 @@ export function SettlementPeriodCard({
   primaryValue,
   secondaryLabel,
   secondaryValue,
+  tertiaryLabel,
+  tertiaryValue,
   isPaid,
   paidLabel,
   pendingLabel,
@@ -100,6 +105,15 @@ export function SettlementPeriodCard({
           </View>
         ) : null}
       </View>
+
+      {tertiaryLabel && tertiaryValue ? (
+        <View className="mt-2 flex-row items-center justify-between border-t border-border pt-2">
+          <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
+            {tertiaryLabel}
+          </Text>
+          <Text className="text-sm font-semibold text-ink">{tertiaryValue}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }

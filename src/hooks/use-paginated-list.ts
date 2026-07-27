@@ -44,9 +44,15 @@ export function usePaginatedList<T>(
   // Contador de petición para descartar respuestas viejas (p. ej. si el
   // usuario sigue escribiendo en la búsqueda).
   const requestIdRef = useRef(0);
+  // Verdadero mientras haya CUALQUIER fetch en curso — evita que deslizar
+  // repetido para recargar (RefreshControl no lo bloquea solo) dispare
+  // peticiones en paralelo contra el backend.
+  const busyRef = useRef(false);
 
   const fetchPage = useCallback(
     async (page: number, mode: FetchMode) => {
+      if (mode === 'refresh' && busyRef.current) return;
+      busyRef.current = true;
       const requestId = ++requestIdRef.current;
       if (mode === 'initial' || mode === 'page') setLoading(true);
       if (mode === 'refresh') setRefreshing(true);
@@ -66,6 +72,7 @@ export function usePaginatedList<T>(
           setRefreshing(false);
           setLoadingMore(false);
         }
+        busyRef.current = false;
       }
     },
     [fetcher, query, perPage],

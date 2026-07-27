@@ -66,11 +66,6 @@ export function DeliveryOrders() {
     ),
   );
 
-  const refreshAll = useCallback(() => {
-    available.fetchPage(1, 'refresh');
-    mine.fetchPage(1, 'refresh');
-  }, [available.fetchPage, mine.fetchPage]);
-
   // Tracking en vivo: mientras tenga pedidos EN RUTA, su GPS viaja por el
   // socket al mapa del cliente (se apaga solo al entregar). El permiso de
   // ubicación en segundo plano queda detrás de un aviso propio (abajo, con
@@ -87,25 +82,48 @@ export function DeliveryOrders() {
       .map((o) => o.id),
   );
 
-  // En vivo: pedidos que entran/salen de disponibles o cambian de estado.
-  useOrderEvents(useCallback(() => refreshAll(), [refreshAll]));
+  // En vivo: 'invoice:available'/'invoice:taken' son broadcast a TODOS los
+  // repartidores (entra o sale un pedido del pool) — solo afectan
+  // "Disponibles". 'invoice:updated' llega SOLO al repartidor asignado
+  // (emitToDelivery singular del backend) — siempre es sobre uno de "Mis
+  // entregas". Antes esto refrescaba las DOS listas ante cualquier evento de
+  // CUALQUIER negocio de la plataforma (auditoría de peticiones).
+  useOrderEvents(
+    useCallback(
+      (_payload, event) => {
+        if (event === 'invoice:available' || event === 'invoice:taken') {
+          available.fetchPage(1, 'refresh');
+        } else {
+          mine.fetchPage(1, 'refresh');
+        }
+      },
+      [available.fetchPage, mine.fetchPage],
+    ),
+  );
 
-  /** Tomar un pedido disponible directo desde la tarjeta. */
+  /**
+   * Tomar un pedido disponible directo desde la tarjeta. Al tomarlo con
+   * éxito, el backend hace broadcast de 'invoice:taken' a TODOS los
+   * repartidores (incluido este) — "Disponibles" se refresca solo con ese
+   * eco; acá solo hace falta refrescar "Mis entregas" a mano (no hay otro
+   * aviso de que este pedido ya es mío). Si falla (otro lo tomó primero), no
+   * hay un eco nuevo para MI intento fallido — se refresca "Disponibles" a
+   * mano para sacar el pedido stale de la lista.
+   */
   async function take(id: number) {
     try {
       await ordersService.take(id);
+      mine.fetchPage(1, 'refresh');
     } catch {
-      // Otro repartidor lo tomó primero (el interceptor ya mostró el error);
-      // igual se refresca para que el pedido salga de "Disponibles".
+      // El interceptor ya mostró el error.
+      available.fetchPage(1, 'refresh');
     }
-    refreshAll();
   }
 
   // Entrega verificada: pide el código que el CLIENTE ve en su app.
-  const [deliverTarget, setDeliverTarget] = useState<{
-    id: number;
-    reload?: () => void;
-  } | null>(null);
+  const [deliverTarget, setDeliverTarget] = useState<{ id: number } | null>(
+    null,
+  );
 
   /**
    * Acción de la tarjeta según la pestaña y el estado. El repartidor NO marca
@@ -225,8 +243,7 @@ export function DeliveryOrders() {
         orderId={selectedId}
         perspective="delivery"
         onClose={() => setSelectedId(null)}
-        onChanged={refreshAll}
-        actions={({ order, reload, close }) => {
+        actions={({ order, close }) => {
           const code = order.stateType?.code;
           // Pedido disponible (listo, sin repartidor): se puede tomar.
           if (!order.deliveryUserId && code === 'PREP') {
@@ -234,9 +251,15 @@ export function DeliveryOrders() {
               <ActionButton
                 label="Tomar pedido"
                 onPress={async () => {
-                  await ordersService.take(order.id);
-                  refreshAll();
-                  close();
+                  try {
+                    await ordersService.take(order.id);
+                    mine.fetchPage(1, 'refresh');
+                  } catch {
+                    // El interceptor ya mostró el error.
+                    available.fetchPage(1, 'refresh');
+                  } finally {
+                    close();
+                  }
                 }}
               />
             );
@@ -247,7 +270,7 @@ export function DeliveryOrders() {
               <ActionButton
                 label="Marcar entregado"
                 variant="success"
-                onPress={() => setDeliverTarget({ id: order.id, reload })}
+                onPress={() => setDeliverTarget({ id: order.id })}
               />
             );
           }
@@ -255,7 +278,9 @@ export function DeliveryOrders() {
         }}
       />
 
-      {/* Entrega verificada: el cliente dicta su código de entrega. */}
+      {/* Entrega verificada: el cliente dicta su código de entrega. Solo
+          "Mis entregas" cambia (el pedido nunca vuelve a "Disponibles"); el
+          detalle abierto (si lo hay) se autoactualiza con su propio socket. */}
       <VerificationCodeDialog
         visible={deliverTarget != null}
         title="Código de entrega"
@@ -265,9 +290,8 @@ export function DeliveryOrders() {
           await ordersService.changeState(deliverTarget.id, 'ENTR', {
             verificationCode,
           });
-          deliverTarget.reload?.();
+          mine.fetchPage(1, 'refresh');
           setDeliverTarget(null);
-          refreshAll();
         }}
         onCancel={() => setDeliverTarget(null)}
       />

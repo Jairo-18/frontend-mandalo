@@ -8,16 +8,22 @@ import {
 } from 'react';
 
 import { finalPrice } from '@/lib/price';
-import { ExploreProduct } from '@/services/explore';
+import { ExploreBusiness, ExploreProduct } from '@/services/explore';
 
 export type CartItem = { product: ExploreProduct; quantity: number };
 
-type CartBusiness = { id: number; name: string };
+type CartBusiness = { id: number; name: string; detail?: ExploreBusiness };
 
 type CartValue = {
   /** Negocio del carrito (un pedido = un negocio). */
   businessId: number | null;
   businessName: string | null;
+  /**
+   * Datos completos del negocio (pago, horario…) — los trae `store/[id].tsx`
+   * al agregar el primer producto; el checkout los reusa en vez de volver a
+   * pedir `exploreService.business()` (auditoría de peticiones).
+   */
+  businessDetail: ExploreBusiness | null;
   items: CartItem[];
   /** Unidades totales. */
   count: number;
@@ -43,7 +49,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const add = useCallback((product: ExploreProduct, biz: CartBusiness) => {
-    setBusiness(biz);
+    // El "+" del stepper en checkout llama a `add` sin `detail` (no lo tiene
+    // a mano) — sin este merge, borraría el detalle completo que store/[id]
+    // sí cargó al agregar el primer producto.
+    setBusiness((prev) => ({
+      id: biz.id,
+      name: biz.name,
+      detail: biz.detail ?? (prev?.id === biz.id ? prev.detail : undefined),
+    }));
     setItems((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
@@ -90,6 +103,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return {
       businessId: business?.id ?? null,
       businessName: business?.name ?? null,
+      businessDetail: business?.detail ?? null,
       items,
       count,
       subtotal,

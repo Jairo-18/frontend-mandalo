@@ -35,6 +35,16 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
 
   const isEdit = !!editing;
 
+  // En edición, guardar solo se habilita si algo cambió respecto a lo cargado
+  // (evita PATCH inútiles); al crear siempre está habilitado.
+  const dirty =
+    !isEdit ||
+    label !== (editing?.label ?? '') ||
+    address !== (editing?.address ?? '') ||
+    details !== (editing?.details ?? '') ||
+    (coords?.latitude ?? null) !== (editing?.latitude ?? null) ||
+    (coords?.longitude ?? null) !== (editing?.longitude ?? null);
+
   // Prellena (edición) o limpia (creación) cada vez que se abre.
   useEffect(() => {
     if (!visible) return;
@@ -112,6 +122,7 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
       saveLabel={isEdit ? 'Guardar cambios' : 'Guardar dirección'}
       onSave={handleSave}
       saving={saving}
+      saveDisabled={!dirty}
     >
       <TextField
         label="Nombre de la dirección"

@@ -80,17 +80,23 @@ export default function CheckoutScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   // Datos de pago del negocio (a dónde transferir). Definen qué métodos se
-  // ofrecen: sin datos diligenciados solo queda efectivo.
-  const [bizPay, setBizPay] = useState<ExploreBusiness | null>(null);
+  // ofrecen: sin datos diligenciados solo queda efectivo. `store/[id].tsx` ya
+  // los trajo al agregar el primer producto (`cart.businessDetail`) — se
+  // reusan en vez de volver a pedir `exploreService.business()` (auditoría de
+  // peticiones). Fallback defensivo por si el carrito no lo tuviera.
+  const [fallbackBizPay, setFallbackBizPay] = useState<ExploreBusiness | null>(
+    null,
+  );
   useEffect(() => {
-    if (!cart.businessId) return;
+    if (!cart.businessId || cart.businessDetail) return;
     exploreService
       .business(cart.businessId)
-      .then((res) => setBizPay(res.data.organizational))
+      .then((res) => setFallbackBizPay(res.data.organizational))
       .catch(() => {
         // Sin datos el checkout solo ofrece efectivo (el toast ya salió).
       });
-  }, [cart.businessId]);
+  }, [cart.businessId, cart.businessDetail]);
+  const bizPay = cart.businessDetail ?? fallbackBizPay;
 
   const hasNequi = !!(bizPay?.nequiNumber || bizPay?.nequiKey);
   const hasBancolombia = !!(

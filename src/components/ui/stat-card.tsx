@@ -17,9 +17,10 @@ export function StatCard({
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  value: number | null;
+  /** Número (contador) o texto ya formateado (p. ej. un precio con `formatPrice`). */
+  value: number | string | null;
   highlight?: boolean;
-  onPress: () => void;
+  onPress?: () => void;
 }) {
   return (
     <Pressable

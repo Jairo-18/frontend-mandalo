@@ -56,6 +56,23 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
 
   const isEdit = !!editing;
 
+  // En edición, guardar solo se habilita si algo cambió respecto a lo cargado
+  // (evita PATCH inútiles y subidas de fotos innecesarias); al crear siempre
+  // está habilitado. Precio/descuento se comparan contra el mismo string que
+  // los precargó (arriba), no el valor crudo, para no disparar falsos positivos
+  // por formato.
+  const dirty =
+    !isEdit ||
+    name !== (editing?.name ?? '') ||
+    code !== (editing?.code ?? '') ||
+    price !== formatText('cop', String(Math.round(editing?.priceSale ?? 0))) ||
+    discount !== (editing && editing.discount > 0 ? String(editing.discount) : '') ||
+    categoryTypeId !== (editing?.categoryTypeId ?? NO_CATEGORY) ||
+    description !== (editing?.description ?? '') ||
+    isActive !== (editing?.isActive ?? true) ||
+    removedUrls.length > 0 ||
+    pendingUris.length > 0;
+
   // Prellena (edición) o limpia (creación) el formulario cada vez que se abre.
   useEffect(() => {
     if (!visible) return;
@@ -170,6 +187,7 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
       saveLabel={isEdit ? 'Guardar cambios' : 'Crear producto'}
       onSave={handleSave}
       saving={saving}
+      saveDisabled={!dirty}
     >
       <ProductPhotosField
         savedImages={savedImages}

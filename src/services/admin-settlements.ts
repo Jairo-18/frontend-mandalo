@@ -27,6 +27,12 @@ export type SettlementPeriod = {
   salesTotal: number;
   commissionRate: number;
   commissionTotal: number;
+  /**
+   * Tarifa de servicio que el negocio recibió del cliente junto con el resto
+   * del pago (100% de Mándalo, §53 de NOTAS) — se le pide de vuelta igual que
+   * la comisión.
+   */
+  serviceFeeTotal: number;
   /** Solo quincena: el cobro real (se marca/desmarca). Null en mes/año. */
   settlement: SettlementSnapshot | null;
   /** Solo mes/año: cuántas de sus quincenas/meses ya están cobrados. */

@@ -116,6 +116,8 @@ export default function AdminBillingScreen() {
               primaryValue={formatPrice(item.commissionTotal)}
               secondaryLabel="Vendió"
               secondaryValue={formatPrice(item.salesTotal)}
+              tertiaryLabel="Tarifa de servicio"
+              tertiaryValue={formatPrice(item.serviceFeeTotal)}
               isPaid={item.settlement?.isPaid}
               paidLabel="Cobrado"
               pendingLabel="Pendiente"

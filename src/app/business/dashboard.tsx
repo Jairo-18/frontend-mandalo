@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -9,23 +9,20 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { QuickAction } from '@/components/ui/quick-action';
 import { SectionTitle } from '@/components/ui/section-title';
-import { countOf, StatCard } from '@/components/ui/stat-card';
+import { StatCard } from '@/components/ui/stat-card';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { usePendingOrdersCount } from '@/hooks/use-pending-orders-count';
 import { useSession } from '@/hooks/use-session';
-import { businessService } from '@/services/business';
-import { ordersService } from '@/services/orders';
+import { BusinessDashboardStats, dashboardService } from '@/services/dashboard';
 import { getAppColors } from '@/lib/app-colors';
 
 type Stats = {
-  pendingOrders: number | null;
-  activeOrders: number | null;
-  deliveredOrders: number | null;
-  products: number | null;
+  [K in keyof BusinessDashboardStats]: BusinessDashboardStats[K] | null;
 };
 
 const EMPTY: Stats = {
-  pendingOrders: null,
   activeOrders: null,
   deliveredOrders: null,
   products: null,
@@ -33,9 +30,10 @@ const EMPTY: Stats = {
 
 /**
  * Inicio del panel del negocio: contadores de SUS pedidos y productos (el
- * backend limita todo al negocio del JWT). Espejo del dashboard admin: los
- * números salen del `pagination.total` de los listados (perPage=1) y cada
- * tarjeta navega a su sección.
+ * backend limita todo al negocio del JWT). "Pedidos pendientes" viene del
+ * mismo store compartido que el badge del sidebar (`usePendingOrdersCount`,
+ * en vivo por socket) — el resto sale de UNA sola petición
+ * (`/dashboard/business`), antes eran 4 peticiones separadas.
  */
 export default function BusinessDashboardScreen() {
   const router = useRouter();
@@ -44,33 +42,27 @@ export default function BusinessDashboardScreen() {
   // Primera carga: loader en vez de tarjetas vacías que "explotan" al llegar.
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Evita que deslizar repetido para recargar dispare peticiones en paralelo.
+  const busyRef = useRef(false);
 
   // Saludo del héroe (useSession: regla React Compiler, no getSession suelto).
   const firstName = useSession()?.user.fullName?.split(' ')[0];
+  const pendingOrders = usePendingOrdersCount();
 
   const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     if (mode === 'refresh') setRefreshing(true);
-    const page = { page: 1, perPage: 1 } as const;
     try {
-      const [pendingOrders, activeOrders, deliveredOrders, products] =
-        await Promise.all([
-          countOf(ordersService.paginated({ ...page, stateCodes: ['PEND'] })),
-          countOf(
-            ordersService.paginated({
-              ...page,
-              stateCodes: ['ACEP', 'PREP', 'RUTA'],
-            }),
-          ),
-          countOf(ordersService.paginated({ ...page, stateCodes: ['ENTR'] })),
-          countOf(businessService.products.paginated(page)),
-        ]);
-      setStats({ pendingOrders, activeOrders, deliveredOrders, products });
+      const res = await dashboardService.business();
+      setStats(res.data);
     } catch {
       // El interceptor HTTP ya mostró el error; sin esto el spinner quedaba
-      // infinito cuando alguna de las peticiones fallaba.
+      // infinito cuando la petición fallaba.
     } finally {
       setLoading(false);
       setRefreshing(false);
+      busyRef.current = false;
     }
   }, []);
 
@@ -127,8 +119,8 @@ export default function BusinessDashboardScreen() {
         <StatCard
           icon="receipt-outline"
           label="Pedidos pendientes"
-          value={stats.pendingOrders}
-          highlight={(stats.pendingOrders ?? 0) > 0}
+          value={pendingOrders}
+          highlight={pendingOrders > 0}
           onPress={() => router.navigate('/business/orders')}
         />
         <StatCard
@@ -148,6 +140,22 @@ export default function BusinessDashboardScreen() {
           label="Productos"
           value={stats.products}
           onPress={() => router.navigate('/business/products')}
+        />
+      </View>
+
+      <View className="pt-5">
+        <SectionTitle label="Accesos rápidos" />
+      </View>
+      <View className="flex-row flex-wrap gap-3 px-4">
+        <QuickAction
+          icon="cash-outline"
+          label="Mis pagos"
+          onPress={() => router.navigate('/business/earnings')}
+        />
+        <QuickAction
+          icon="storefront-outline"
+          label="Mi negocio"
+          onPress={() => router.navigate('/business/profile')}
         />
       </View>
       </>
