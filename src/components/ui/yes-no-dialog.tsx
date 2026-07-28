@@ -97,11 +97,11 @@ export function YesNoDialog({
             <Pressable
               onPress={onCancel}
               disabled={working}
-              className={`h-[48px] flex-1 items-center justify-center rounded-2xl border border-border active:opacity-70 ${
+              className={`min-h-[48px] flex-1 items-center justify-center rounded-2xl border border-border px-2 py-3 active:opacity-70 ${
                 working ? 'opacity-50' : ''
               }`}
             >
-              <Text className="text-[15px] font-bold text-ink">
+              <Text className="text-center text-[15px] font-bold text-ink">
                 {cancelLabel}
               </Text>
             </Pressable>
@@ -109,14 +109,14 @@ export function YesNoDialog({
             <Pressable
               onPress={handleConfirm}
               disabled={working}
-              className={`h-[48px] flex-1 items-center justify-center rounded-2xl active:opacity-80 ${
+              className={`min-h-[48px] flex-1 items-center justify-center rounded-2xl px-2 py-3 active:opacity-80 ${
                 destructive ? 'bg-red-600' : 'bg-primary'
               }`}
             >
               {working ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text className="text-[15px] font-bold text-white">
+                <Text className="text-center text-[15px] font-bold text-white">
                   {confirmLabel}
                 </Text>
               )}

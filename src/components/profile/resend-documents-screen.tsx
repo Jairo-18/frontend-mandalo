@@ -17,6 +17,7 @@ import { useAppTheme } from '@/context/app-theme';
 import { DocumentValue } from '@/lib/upload';
 import { profileService } from '@/services/profile';
 import { getAppColors } from '@/lib/app-colors';
+import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
 
 /** Una URL guardada (http…) no es un archivo nuevo por subir; una uri local sí. */
 function isLocal(uri: string | null): uri is string {
@@ -163,6 +164,7 @@ export function ResendDocumentsScreen() {
               pendingUri={isLocal(avatarUri) ? avatarUri : null}
               onChange={setAvatarUri}
               shape="circle"
+              fallbackSource={DEFAULT_USER_AVATAR}
               placeholderIcon="person-outline"
             />
             <DocumentPhotoField

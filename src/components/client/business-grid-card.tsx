@@ -1,8 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image, Pressable, Text, View } from 'react-native';
 
-import { getAppColors } from '@/lib/app-colors';
 import { businessDisplayName, ExploreBusiness } from '@/services/explore';
+import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 
 type Props = {
   business: ExploreBusiness;
@@ -22,17 +21,11 @@ export function BusinessGridCard({ business, onPress }: Props) {
       className="mb-3 overflow-hidden rounded-2xl bg-card active:opacity-80"
     >
       <View className="w-full bg-surface" style={{ aspectRatio: 1 }}>
-        {logo ? (
-          <Image
-            source={{ uri: logo }}
-            style={{ width: '100%', height: '100%' }}
-            resizeMode="cover"
-          />
-        ) : (
-          <View className="flex-1 items-center justify-center">
-            <Ionicons name="storefront-outline" size={40} color={getAppColors().mutedColor} />
-          </View>
-        )}
+        <Image
+          source={logo ? { uri: logo } : DEFAULT_BUSINESS_LOGO}
+          style={{ width: '100%', height: '100%' }}
+          resizeMode="cover"
+        />
         {business.isOpen === false && (
           <View className="absolute left-2 top-2 rounded-full bg-dark px-2 py-0.5">
             <Text className="text-[10px] font-bold text-white">Cerrado</Text>

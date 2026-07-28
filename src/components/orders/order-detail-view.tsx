@@ -14,8 +14,10 @@ import { OrderEta } from '@/components/orders/order-eta';
 import { OrderMap } from '@/components/orders/order-map';
 import { OrderTimeline } from '@/components/orders/order-timeline';
 import { Avatar } from '@/components/ui/avatar';
+import { PhotoActionsSheet } from '@/components/ui/photo-actions-sheet';
 import { pickPhoto } from '@/lib/pick-photo';
 import { formatPrice } from '@/lib/price';
+import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
 import { businessDisplayName } from '@/services/explore';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
@@ -43,6 +45,7 @@ export function OrderDetailView({
   const router = useRouter();
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofViewerOpen, setProofViewerOpen] = useState(false);
+  const [proofMenuVisible, setProofMenuVisible] = useState(false);
 
   const businessName = order.organizational
     ? businessDisplayName(order.organizational)
@@ -72,18 +75,16 @@ export function OrderDetailView({
   const hasNequi = !!(org?.nequiNumber || org?.nequiKey);
   const hasBancolombia = !!(org?.bancolombiaAccount || org?.bancolombiaQrUrl);
 
-  function attachProof() {
-    pickPhoto('Soporte de pago', async (uri) => {
-      setUploadingProof(true);
-      try {
-        await ordersService.uploadPaymentProof(order.id, uri);
-        onPaymentProofChanged?.();
-      } catch {
-        // El interceptor HTTP ya mostró el error.
-      } finally {
-        setUploadingProof(false);
-      }
-    });
+  async function uploadProof(uri: string) {
+    setUploadingProof(true);
+    try {
+      await ordersService.uploadPaymentProof(order.id, uri);
+      onPaymentProofChanged?.();
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setUploadingProof(false);
+    }
   }
 
   // Chat cliente ↔ repartidor: existe desde que hay repartidor asignado
@@ -201,6 +202,7 @@ export function OrderDetailView({
             {/* Foto del producto (si el negocio lo borró, queda el icono). */}
             <Avatar
               uri={detail.product?.images?.[0]}
+              fallbackSource={DEFAULT_PRODUCT_IMAGE}
               icon="cube-outline"
               size={40}
               shape="rounded"
@@ -326,7 +328,7 @@ export function OrderDetailView({
 
             {canAttachProof && (
               <Pressable
-                onPress={attachProof}
+                onPress={() => setProofMenuVisible(true)}
                 disabled={uploadingProof}
                 className={`mt-2.5 h-11 flex-row items-center justify-center gap-2 rounded-xl border border-primary active:opacity-70 ${
                   uploadingProof ? 'opacity-60' : ''
@@ -375,6 +377,14 @@ export function OrderDetailView({
           </Pressable>
         </View>
       </Modal>
+
+      <PhotoActionsSheet
+        visible={proofMenuVisible}
+        label="Soporte de pago"
+        onPickLibrary={() => pickPhoto('library', uploadProof)}
+        onPickCamera={() => pickPhoto('camera', uploadProof)}
+        onClose={() => setProofMenuVisible(false)}
+      />
 
       {/* Totales */}
       <View className="rounded-2xl bg-card p-4">

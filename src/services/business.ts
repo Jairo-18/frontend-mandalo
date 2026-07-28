@@ -74,6 +74,20 @@ export const businessService = {
     );
   },
 
+  /** Quita el logo del negocio propio (sin reemplazo). */
+  removeMyLogo: () =>
+    http<{ message?: string }>('/organizational/mine/logo', {
+      method: 'DELETE',
+      auth: true,
+    }),
+
+  /** Quita el QR de Bancolombia del negocio propio (sin reemplazo). */
+  removeMyPaymentQr: () =>
+    http<{ message?: string }>('/organizational/mine/payment-qr', {
+      method: 'DELETE',
+      auth: true,
+    }),
+
   products: {
     paginated: (params: {
       page: number;

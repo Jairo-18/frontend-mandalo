@@ -167,4 +167,11 @@ export const adminUsersService = {
       auth: true,
     });
   },
+
+  /** Quita la foto de perfil (sin reemplazo). */
+  removeAvatar: (id: string) =>
+    http<{ message?: string }>(`/user/${id}/avatar`, {
+      method: 'DELETE',
+      auth: true,
+    }),
 };

@@ -19,6 +19,7 @@ import { useAppData } from '@/context/app-data';
 import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { getAppColors } from '@/lib/app-colors';
+import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 
 import {
   AdminBusiness,
@@ -110,7 +111,11 @@ export function BusinessCrudScreen() {
     return (
       <View className="mb-3 rounded-2xl bg-card p-4">
         <View className="flex-row items-center gap-3">
-          <Avatar uri={item.logoUrl} label={displayName} />
+          <Avatar
+            uri={item.logoUrl}
+            fallbackSource={DEFAULT_BUSINESS_LOGO}
+            label={displayName}
+          />
 
           <View className="flex-1">
             <Text numberOfLines={1} className="text-[15px] font-bold text-ink">

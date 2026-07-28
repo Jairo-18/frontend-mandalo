@@ -17,6 +17,7 @@ import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { ExploreProduct } from '@/services/explore';
 import { getAppColors } from '@/lib/app-colors';
+import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
 
 const CAROUSEL_HEIGHT = 280;
 
@@ -99,12 +100,11 @@ export function ProductDetailSheet({
               )}
             />
           ) : (
-            <View
-              className="items-center justify-center bg-surface"
+            <Image
+              source={DEFAULT_PRODUCT_IMAGE}
               style={{ width, height: CAROUSEL_HEIGHT }}
-            >
-              <Ionicons name="cube-outline" size={48} color={getAppColors().mutedColor} />
-            </View>
+              resizeMode="cover"
+            />
           )}
 
           {images.length > 1 && (

@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { Alert, Image, Pressable, Text, View } from 'react-native';
+import { Image, ImageSourcePropType, Pressable, Text, View } from 'react-native';
 
+import { PhotoActionsSheet } from '@/components/ui/photo-actions-sheet';
 import { PhotoEditor } from '@/components/ui/photo-editor';
+import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { toast } from '@/lib/toast';
 import { getAppColors } from '@/lib/app-colors';
 
@@ -15,9 +17,17 @@ type Props = {
   pendingUri?: string | null;
   /** Se eligió y recortó una foto nueva (uri local cuadrada). */
   onChange: (uri: string) => void;
+  /**
+   * Quitar la foto sin reemplazo (campo opcional: avatar, logo). Si se pasa,
+   * el menú al tocar una foto existente ofrece "Eliminar foto"; sin esto, el
+   * campo se trata como obligatorio y solo permite Ver/Cambiar.
+   */
+  onRemove?: () => void;
   /** Forma del preview: círculo (avatares) o cuadrado redondeado (logos). */
   shape?: 'circle' | 'rounded';
-  /** Icono del placeholder cuando no hay imagen. */
+  /** Imagen de respaldo (asset local) cuando no hay foto. Gana sobre `placeholderIcon`. */
+  fallbackSource?: ImageSourcePropType;
+  /** Icono del placeholder cuando no hay imagen ni `fallbackSource`. */
   placeholderIcon?: keyof typeof Ionicons.glyphMap;
   /** Mensaje de error de validación (para fotos obligatorias). */
   error?: string;
@@ -35,7 +45,9 @@ export function PhotoField({
   imageUrl,
   pendingUri,
   onChange,
+  onRemove,
   shape = 'circle',
+  fallbackSource,
   placeholderIcon = 'person-outline',
   error,
 }: Props) {
@@ -45,6 +57,8 @@ export function PhotoField({
     height: number;
   } | null>(null);
   const [editorVisible, setEditorVisible] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const shown = pendingUri || imageUrl;
   const radiusClass = shape === 'circle' ? 'rounded-full' : 'rounded-2xl';
@@ -85,18 +99,9 @@ export function PhotoField({
     }
   }
 
-  /** Galería o cámara, con el diálogo nativo. */
-  function choose() {
-    Alert.alert(label, undefined, [
-      { text: 'Elegir de la galería', onPress: () => pick('library') },
-      { text: 'Tomar foto', onPress: () => pick('camera') },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
-  }
-
   return (
     <View className="mb-4 items-center">
-      <Pressable onPress={choose} className="active:opacity-80">
+      <Pressable onPress={() => setMenuVisible(true)} className="active:opacity-80">
         <View
           className={`items-center justify-center overflow-hidden bg-primary-tint ${radiusClass}`}
           style={{ width: SIZE, height: SIZE }}
@@ -104,6 +109,12 @@ export function PhotoField({
           {shown ? (
             <Image
               source={{ uri: shown }}
+              style={{ width: SIZE, height: SIZE }}
+              resizeMode="cover"
+            />
+          ) : fallbackSource ? (
+            <Image
+              source={fallbackSource}
               style={{ width: SIZE, height: SIZE }}
               resizeMode="cover"
             />
@@ -133,6 +144,18 @@ export function PhotoField({
           setEditorVisible(false);
           onChange(uri);
         }}
+      />
+
+      <PhotoPreviewModal uri={preview} onClose={() => setPreview(null)} />
+
+      <PhotoActionsSheet
+        visible={menuVisible}
+        label={label}
+        onView={shown ? () => setPreview(shown) : undefined}
+        onPickLibrary={() => pick('library')}
+        onPickCamera={() => pick('camera')}
+        onRemove={shown ? onRemove : undefined}
+        onClose={() => setMenuVisible(false)}
       />
     </View>
   );

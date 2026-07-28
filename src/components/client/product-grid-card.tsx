@@ -4,6 +4,7 @@ import { Image, Pressable, Text, View } from 'react-native';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { businessDisplayName, ExploreProduct } from '@/services/explore';
 import { getAppColors } from '@/lib/app-colors';
+import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
 
 type Props = {
   product: ExploreProduct;
@@ -38,17 +39,11 @@ export function ProductGridCard({
       className="mb-3 overflow-hidden rounded-2xl bg-card active:opacity-80"
     >
       <View className="w-full bg-surface" style={{ aspectRatio: 1 }}>
-        {img ? (
-          <Image
-            source={{ uri: img }}
-            style={{ width: '100%', height: '100%' }}
-            resizeMode="cover"
-          />
-        ) : (
-          <View className="flex-1 items-center justify-center">
-            <Ionicons name="cube-outline" size={40} color={getAppColors().mutedColor} />
-          </View>
-        )}
+        <Image
+          source={img ? { uri: img } : DEFAULT_PRODUCT_IMAGE}
+          style={{ width: '100%', height: '100%' }}
+          resizeMode="cover"
+        />
 
         {hasDiscount && (
           <View className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5">

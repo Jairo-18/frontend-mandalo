@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { Alert, Image, Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 
+import { PhotoActionsSheet } from '@/components/ui/photo-actions-sheet';
 import { PhotoEditor } from '@/components/ui/photo-editor';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { toast } from '@/lib/toast';
@@ -42,6 +43,7 @@ export function ProductPhotosField({
   const [editorVisible, setEditorVisible] = useState(false);
   // Foto abierta a pantalla completa (tocar una miniatura).
   const [preview, setPreview] = useState<string | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   async function pick(source: 'library' | 'camera') {
     try {
@@ -73,14 +75,6 @@ export function ProductPhotosField({
           : 'No se pudo abrir la galería',
       );
     }
-  }
-
-  function addPhoto() {
-    Alert.alert('Foto del producto', undefined, [
-      { text: 'Elegir de la galería', onPress: () => pick('library') },
-      { text: 'Tomar foto', onPress: () => pick('camera') },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
   }
 
   // Tiles: guardadas + pendientes (la primera es la principal).
@@ -127,7 +121,7 @@ export function ProductPhotosField({
 
         {/* Agregar foto */}
         <Pressable
-          onPress={addPhoto}
+          onPress={() => setMenuVisible(true)}
           className="items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-surface active:opacity-70"
           style={{ width: TILE, height: TILE }}
         >
@@ -139,6 +133,14 @@ export function ProductPhotosField({
       </View>
 
       <PhotoPreviewModal uri={preview} onClose={() => setPreview(null)} />
+
+      <PhotoActionsSheet
+        visible={menuVisible}
+        label="Foto del producto"
+        onPickLibrary={() => pick('library')}
+        onPickCamera={() => pick('camera')}
+        onClose={() => setMenuVisible(false)}
+      />
 
       <PhotoEditor
         visible={editorVisible}

@@ -23,6 +23,7 @@ import { useAppData } from '@/context/app-data';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
 import { getGoogleIdToken } from '@/lib/google-auth';
+import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
 import {
   DeviceCoords,
   getDeviceLocation,
@@ -85,6 +86,7 @@ export function ProfileScreen({
   const [identificationNumber, setIdentificationNumber] = useState('');
   const [identificationTypeId, setIdentificationTypeId] = useState<number>();
   const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
   const [saving, setSaving] = useState(false);
   // Ubicación re-marcada con el GPS en ESTA visita (null = quedó la guardada).
   const [coords, setCoords] = useState<DeviceCoords | null>(null);
@@ -161,6 +163,7 @@ export function ProfileScreen({
   // Sin cambios no hay nada que guardar (evita PATCH inútiles al backend).
   const dirty =
     !!pendingAvatar ||
+    avatarRemoved ||
     !!coords ||
     (!!initial &&
       (fullName !== initial.fullName ||
@@ -245,7 +248,12 @@ export function ProfileScreen({
         avatarUrl = res.data.avatarUrl;
         setPendingAvatar(null);
         setProfile((p) => (p ? { ...p, avatarUrl } : p));
+      } else if (avatarRemoved && profile?.avatarUrl) {
+        await profileService.removeAvatar();
+        avatarUrl = null;
+        setProfile((p) => (p ? { ...p, avatarUrl: null } : p));
       }
+      setAvatarRemoved(false);
       await refreshSessionUser({ fullName: fullName.trim(), avatarUrl });
 
       // Lo recién guardado pasa a ser el punto de partida: el botón vuelve
@@ -347,9 +355,21 @@ export function ProfileScreen({
             <View className="items-center">
               <PhotoField
                 label="Foto de perfil"
-                imageUrl={profile?.avatarUrl}
+                imageUrl={avatarRemoved ? null : profile?.avatarUrl}
                 pendingUri={pendingAvatar}
-                onChange={setPendingAvatar}
+                onChange={(uri) => {
+                  setPendingAvatar(uri);
+                  setAvatarRemoved(false);
+                }}
+                onRemove={
+                  pendingAvatar || profile?.avatarUrl
+                    ? () => {
+                        if (pendingAvatar) setPendingAvatar(null);
+                        else setAvatarRemoved(true);
+                      }
+                    : undefined
+                }
+                fallbackSource={DEFAULT_USER_AVATAR}
               />
             </View>
 

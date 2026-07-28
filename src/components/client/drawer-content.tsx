@@ -10,6 +10,7 @@ import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { useSession } from '@/hooks/use-session';
 import { useUnreadChats } from '@/hooks/use-unread-chats';
 import { signOutEverywhere } from '@/lib/sign-out';
+import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
 
 type ClientRoute = '/home' | '/orders' | '/chats' | '/addresses' | '/profile';
 
@@ -96,6 +97,7 @@ export function ClientDrawerContent({ navigation }: Props) {
         >
           <Avatar
             uri={user?.avatarUrl}
+            fallbackSource={DEFAULT_USER_AVATAR}
             label={user?.fullName}
             icon={isGuest ? 'person' : undefined}
             tone="solid"

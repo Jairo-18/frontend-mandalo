@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Alert, Image, Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Image, Pressable, Text, View } from 'react-native';
 
+import { PhotoActionsSheet } from '@/components/ui/photo-actions-sheet';
+import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { toast } from '@/lib/toast';
 import { getAppColors } from '@/lib/app-colors';
 
@@ -10,6 +13,9 @@ type Props = {
   /** Uri local de la foto elegida (o URL guardada, para previsualizar). */
   uri?: string | null;
   onChange: (uri: string) => void;
+  /** Quitar sin reemplazo (campo opcional, p. ej. el QR de pago). Sin esto
+   *  el campo se trata como obligatorio: solo Ver/Cambiar. */
+  onRemove?: () => void;
   /** Mensaje de error de validación (se muestra debajo del campo). */
   error?: string;
   /** Icono del placeholder cuando no hay foto. */
@@ -25,9 +31,13 @@ export function DocumentPhotoField({
   label,
   uri,
   onChange,
+  onRemove,
   error,
   placeholderIcon = 'card-outline',
 }: Props) {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
+
   async function pick(source: 'library' | 'camera') {
     try {
       let result: ImagePicker.ImagePickerResult;
@@ -58,20 +68,12 @@ export function DocumentPhotoField({
     }
   }
 
-  function choose() {
-    Alert.alert(label, undefined, [
-      { text: 'Elegir de la galería', onPress: () => pick('library') },
-      { text: 'Tomar foto', onPress: () => pick('camera') },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
-  }
-
   return (
     <View className="mb-4">
       <Text className="mb-2 text-sm font-bold text-ink">{label}</Text>
 
       <Pressable
-        onPress={choose}
+        onPress={() => setMenuVisible(true)}
         className={`h-[130px] items-center justify-center overflow-hidden rounded-xl border active:opacity-80 ${
           error
             ? 'border-red-500'
@@ -105,6 +107,18 @@ export function DocumentPhotoField({
       {error ? (
         <Text className="mt-1 text-xs font-medium text-red-500">{error}</Text>
       ) : null}
+
+      <PhotoPreviewModal uri={preview} onClose={() => setPreview(null)} />
+
+      <PhotoActionsSheet
+        visible={menuVisible}
+        label={label}
+        onView={uri ? () => setPreview(uri) : undefined}
+        onPickLibrary={() => pick('library')}
+        onPickCamera={() => pick('camera')}
+        onRemove={uri ? onRemove : undefined}
+        onClose={() => setMenuVisible(false)}
+      />
     </View>
   );
 }

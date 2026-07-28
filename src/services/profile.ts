@@ -79,6 +79,12 @@ export const profileService = {
     });
   },
 
+  removeAvatar: () =>
+    http<{ message?: string }>('/user/me/avatar', {
+      method: 'DELETE',
+      auth: true,
+    }),
+
   changePassword: (currentPassword: string, newPassword: string) =>
     http<{ message?: string }>('/user/me/password', {
       method: 'PATCH',

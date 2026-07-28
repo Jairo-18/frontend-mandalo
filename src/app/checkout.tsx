@@ -22,6 +22,7 @@ import { useSession } from '@/hooks/use-session';
 import { useUserAddresses } from '@/hooks/use-user-data';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { toast } from '@/lib/toast';
+import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
 import { ExploreBusiness, exploreService } from '@/services/explore';
 import { ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
@@ -310,6 +311,7 @@ export default function CheckoutScreen() {
               >
                 <Avatar
                   uri={item.product.images?.[0]}
+                  fallbackSource={DEFAULT_PRODUCT_IMAGE}
                   icon="cube-outline"
                   size={40}
                   shape="rounded"

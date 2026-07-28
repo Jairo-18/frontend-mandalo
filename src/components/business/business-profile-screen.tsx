@@ -17,6 +17,7 @@ import { useMyBusiness } from '@/hooks/use-my-business';
 import { refreshMyBusiness } from '@/lib/my-business';
 import { formatHour12, formatText } from '@/lib/text-format';
 import { getAppColors } from '@/lib/app-colors';
+import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 
 /** Nombres cortos de los días (0 = domingo), para mostrar el horario. */
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -122,6 +123,7 @@ export function BusinessProfileScreen() {
         </View>
         <Avatar
           uri={business.logoUrl}
+          fallbackSource={DEFAULT_BUSINESS_LOGO}
           icon="storefront"
           shape="rounded"
           tone="solid"

@@ -161,4 +161,18 @@ export const adminBusinessesService = {
       { method: 'POST', body: form, auth: true },
     );
   },
+
+  /** Quita el logo del negocio (sin reemplazo). */
+  removeLogo: (id: number) =>
+    http<{ message?: string }>(`/organizational/${id}/logo`, {
+      method: 'DELETE',
+      auth: true,
+    }),
+
+  /** Quita el QR de Bancolombia del negocio (sin reemplazo). */
+  removePaymentQr: (id: number) =>
+    http<{ message?: string }>(`/organizational/${id}/payment-qr`, {
+      method: 'DELETE',
+      auth: true,
+    }),
 };

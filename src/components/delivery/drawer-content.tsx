@@ -10,6 +10,7 @@ import { useSession } from '@/hooks/use-session';
 import { useUnreadChats } from '@/hooks/use-unread-chats';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { signOutEverywhere } from '@/lib/sign-out';
+import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
 
 type DeliveryRoute =
   | '/delivery'
@@ -83,7 +84,12 @@ export function DeliveryDrawerContent({ navigation }: Props) {
           onPress={() => go('/delivery/profile')}
           className="mt-4 flex-row items-center gap-3 active:opacity-70"
         >
-          <Avatar uri={user?.avatarUrl} label={user?.fullName} tone="solid" />
+          <Avatar
+            uri={user?.avatarUrl}
+            fallbackSource={DEFAULT_USER_AVATAR}
+            label={user?.fullName}
+            tone="solid"
+          />
           <View className="flex-1">
             <Text numberOfLines={1} className="text-sm font-bold text-white">
               {user?.fullName ?? 'Mi cuenta'}

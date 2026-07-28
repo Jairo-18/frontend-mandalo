@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Avatar } from '@/components/ui/avatar';
 import { businessDisplayName, ExploreBusiness } from '@/services/explore';
 import { getAppColors } from '@/lib/app-colors';
+import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 
 type Props = {
   business: ExploreBusiness;
@@ -23,6 +24,7 @@ export function BusinessCard({ business, onPress }: Props) {
     >
       <Avatar
         uri={business.logoUrl}
+        fallbackSource={DEFAULT_BUSINESS_LOGO}
         icon="storefront-outline"
         size={64}
         shape="rounded"

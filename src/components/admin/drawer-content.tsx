@@ -12,6 +12,7 @@ import { getSession, setSession } from '@/lib/session';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { AdminUser, adminUsersService } from '@/services/admin-users';
+import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
 
 type AdminRoute =
   | '/admin/dashboard'
@@ -139,7 +140,13 @@ export function AdminDrawerContent({ navigation }: Props) {
           disabled={loadingProfile}
           className="mt-4 flex-row items-center gap-3 active:opacity-70"
         >
-          <Avatar uri={avatarUrl} label={displayName} size={40} tone="solid" />
+          <Avatar
+            uri={avatarUrl}
+            fallbackSource={DEFAULT_USER_AVATAR}
+            label={displayName}
+            size={40}
+            tone="solid"
+          />
           <View className="flex-1">
             <Text numberOfLines={1} className="text-sm font-bold text-white">
               {displayName}

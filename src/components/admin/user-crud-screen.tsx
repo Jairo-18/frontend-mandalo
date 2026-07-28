@@ -17,6 +17,7 @@ import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { getAppColors } from '@/lib/app-colors';
+import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
 
 import {
   AdminUser,
@@ -160,7 +161,11 @@ export function UserCrudScreen({
     return (
       <View className="mb-3 rounded-2xl bg-card p-4">
         <View className="flex-row items-center gap-3">
-          <Avatar uri={item.avatarUrl} label={item.fullName} />
+          <Avatar
+            uri={item.avatarUrl}
+            fallbackSource={DEFAULT_USER_AVATAR}
+            label={item.fullName}
+          />
 
           <View className="flex-1">
             <Text numberOfLines={1} className="text-[15px] font-bold text-ink">

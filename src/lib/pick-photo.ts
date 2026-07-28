@@ -1,23 +1,15 @@
 import * as ImagePicker from 'expo-image-picker';
-import { Alert } from 'react-native';
 
 import { toast } from '@/lib/toast';
 
 /**
- * Selector de foto de un solo toque (sin campo de formulario): Alert nativo
- * "galería / cámara" → entrega la uri tal cual (el backend la optimiza).
- * Mismo flujo que DocumentPhotoField pero para acciones puntuales (p. ej.
- * subir el soporte de pago desde el detalle del pedido).
+ * Selector de foto de un solo toque (sin campo de formulario, sin editor de
+ * recorte): entrega la uri tal cual (el backend la optimiza). Lo usan
+ * acciones puntuales fuera de un formulario (p. ej. subir el soporte de pago
+ * desde el detalle del pedido) junto con `PhotoActionsSheet` para elegir
+ * galería/cámara con la estética de la marca.
  */
-export function pickPhoto(title: string, onPicked: (uri: string) => void) {
-  Alert.alert(title, undefined, [
-    { text: 'Elegir de la galería', onPress: () => pick('library', onPicked) },
-    { text: 'Tomar foto', onPress: () => pick('camera', onPicked) },
-    { text: 'Cancelar', style: 'cancel' },
-  ]);
-}
-
-async function pick(
+export async function pickPhoto(
   source: 'library' | 'camera',
   onPicked: (uri: string) => void,
 ) {

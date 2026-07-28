@@ -7,6 +7,7 @@ import { TextField } from '@/components/ui/text-field';
 import { VehicleDocumentField } from '@/components/ui/vehicle-document-field';
 import { FormErrors } from '@/hooks/use-form-errors';
 import { DocumentValue } from '@/lib/upload';
+import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
 
 type Props = {
   avatarUri: string | null;
@@ -68,6 +69,7 @@ export function DeliveryVerification({
         pendingUri={avatarUri}
         onChange={onAvatar}
         shape="circle"
+        fallbackSource={DEFAULT_USER_AVATAR}
         placeholderIcon="person-outline"
         error={errors.avatar}
       />

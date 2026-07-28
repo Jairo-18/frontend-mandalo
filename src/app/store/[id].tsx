@@ -21,6 +21,7 @@ import { gridItemStyle } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
 import { formatHour12 } from '@/lib/text-format';
 import { toast } from '@/lib/toast';
+import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import {
   businessDisplayName,
@@ -158,6 +159,7 @@ export default function StoreScreen() {
         <BackButton onPress={() => router.back()} />
         <Avatar
           uri={business.logoUrl}
+          fallbackSource={DEFAULT_BUSINESS_LOGO}
           icon="storefront-outline"
           size={48}
           shape="rounded"

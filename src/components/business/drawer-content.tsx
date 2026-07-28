@@ -12,6 +12,7 @@ import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { useSession } from '@/hooks/use-session';
 import { refreshMyBusiness } from '@/lib/my-business';
 import { signOutEverywhere } from '@/lib/sign-out';
+import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 
 type BusinessRoute =
   | '/business/dashboard'
@@ -101,6 +102,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
         >
           <Avatar
             uri={business?.logoUrl}
+            fallbackSource={DEFAULT_BUSINESS_LOGO}
             icon="storefront"
             shape="rounded"
             tone="solid"

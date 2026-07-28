@@ -25,7 +25,7 @@ export function LocationConsentHost() {
       visible={visible}
       title="Necesitamos tu ubicación"
       message="La usamos para mostrarte los negocios cerca de la dirección que elijas, calcular la ruta y el costo del domicilio. A continuación Android te va a pedir el permiso — puedes aceptarlo o rechazarlo ahí."
-      confirmLabel="Entendido, continuar"
+      confirmLabel="Entendido"
       cancelLabel="Ahora no"
       icon="location-outline"
       onConfirm={() => resolveLocationConsent(true)}

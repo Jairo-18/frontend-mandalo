@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { File } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import { Alert, Image, Platform, Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Image, Linking, Platform, Pressable, Text, View } from 'react-native';
 
+import { PhotoActionsSheet } from '@/components/ui/photo-actions-sheet';
+import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { toast } from '@/lib/toast';
 import { DocumentValue } from '@/lib/upload';
 import { getAppColors } from '@/lib/app-colors';
@@ -45,6 +48,9 @@ async function pickPdf(): Promise<{ uri: string } | null> {
  * impreso da peor calidad. El backend decide cómo guardarlo según el mimetype.
  */
 export function VehicleDocumentField({ label, value, onChange, error }: Props) {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
+
   async function pickImage(source: 'library' | 'camera') {
     try {
       let result: ImagePicker.ImagePickerResult;
@@ -84,13 +90,13 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
     }
   }
 
-  function choose() {
-    Alert.alert(label, undefined, [
-      { text: 'Elegir de la galería', onPress: () => pickImage('library') },
-      { text: 'Tomar foto', onPress: () => pickImage('camera') },
-      { text: 'Elegir archivo PDF', onPress: handlePickPdf },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
+  async function openPdf() {
+    if (!value || value.kind !== 'pdf') return;
+    try {
+      await Linking.openURL(value.uri);
+    } catch {
+      toast.error('No se pudo abrir el documento');
+    }
   }
 
   return (
@@ -98,7 +104,7 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
       <Text className="mb-2 text-sm font-bold text-ink">{label}</Text>
 
       <Pressable
-        onPress={choose}
+        onPress={() => setMenuVisible(true)}
         className={`h-[130px] items-center justify-center overflow-hidden rounded-xl border active:opacity-80 ${
           error
             ? 'border-red-500'
@@ -139,6 +145,25 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
       {error ? (
         <Text className="mt-1 text-xs font-medium text-red-500">{error}</Text>
       ) : null}
+
+      <PhotoPreviewModal uri={preview} onClose={() => setPreview(null)} />
+
+      <PhotoActionsSheet
+        visible={menuVisible}
+        label={label}
+        onView={
+          value?.kind === 'image'
+            ? () => setPreview(value.uri)
+            : value?.kind === 'pdf'
+              ? openPdf
+              : undefined
+        }
+        viewLabel={value?.kind === 'pdf' ? 'Abrir PDF' : 'Ver foto'}
+        onPickLibrary={() => pickImage('library')}
+        onPickCamera={() => pickImage('camera')}
+        onPickPdf={handlePickPdf}
+        onClose={() => setMenuVisible(false)}
+      />
     </View>
   );
 }

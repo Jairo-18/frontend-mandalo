@@ -7,6 +7,7 @@ import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { businessDisplayName, ExploreProduct } from '@/services/explore';
 import { getAppColors } from '@/lib/app-colors';
+import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
 
 type Props = {
   product: ExploreProduct;
@@ -55,6 +56,7 @@ export function ProductCard({
         >
           <Avatar
             uri={images[0]}
+            fallbackSource={DEFAULT_PRODUCT_IMAGE}
             icon="cube-outline"
             size={64}
             shape="rounded"
@@ -64,7 +66,7 @@ export function ProductCard({
           </View>
         </Pressable>
       ) : (
-        <Avatar icon="cube-outline" size={64} shape="rounded" />
+        <Avatar fallbackSource={DEFAULT_PRODUCT_IMAGE} icon="cube-outline" size={64} shape="rounded" />
       )}
 
       <View className="flex-1">

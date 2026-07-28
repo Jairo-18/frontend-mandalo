@@ -10,6 +10,7 @@ import { PhotoField } from '@/components/ui/photo-field';
 import { Select } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
+import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
 import {
@@ -80,6 +81,7 @@ export function UserFormModal({
   const [observations, setObservations] = useState('');
   // Foto recortada por el PhotoEditor pendiente de subir (se sube al guardar).
   const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
   // Ubicación re-marcada con el GPS (solo edición del propio perfil).
   const [coords, setCoords] = useState<DeviceCoords | null>(null);
   const [locating, setLocating] = useState(false);
@@ -98,6 +100,7 @@ export function UserFormModal({
     setPassword('');
     setConfirm('');
     setPendingAvatar(null);
+    setAvatarRemoved(false);
     setCoords(null);
     setFullName(editing?.fullName ?? '');
     setUsername(editing?.username ?? '');
@@ -140,6 +143,7 @@ export function UserFormModal({
   const dirty =
     !isEdit ||
     !!pendingAvatar ||
+    avatarRemoved ||
     !!coords ||
     fullName !== (editing?.fullName ?? '') ||
     username !== (editing?.username ?? '') ||
@@ -279,6 +283,8 @@ export function UserFormModal({
       // La foto se sube después de guardar (al crear recién existe el id).
       if (pendingAvatar && userId) {
         await adminUsersService.uploadAvatar(userId, pendingAvatar);
+      } else if (avatarRemoved && userId && editing?.avatarUrl) {
+        await adminUsersService.removeAvatar(userId);
       }
       onSaved();
     } catch {
@@ -302,9 +308,21 @@ export function UserFormModal({
         label={
           pendingAvatar ? 'Foto lista (se sube al guardar)' : 'Foto de perfil'
         }
-        imageUrl={editing?.avatarUrl}
+        imageUrl={avatarRemoved ? null : editing?.avatarUrl}
         pendingUri={pendingAvatar}
-        onChange={setPendingAvatar}
+        onChange={(uri) => {
+          setPendingAvatar(uri);
+          setAvatarRemoved(false);
+        }}
+        onRemove={
+          pendingAvatar || editing?.avatarUrl
+            ? () => {
+                if (pendingAvatar) setPendingAvatar(null);
+                else setAvatarRemoved(true);
+              }
+            : undefined
+        }
+        fallbackSource={DEFAULT_USER_AVATAR}
         shape="circle"
         placeholderIcon="person-outline"
       />

@@ -23,6 +23,7 @@ import {
   PHONE_PREFIX,
   phoneOrNull,
 } from '@/lib/text-format';
+import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 import {
   AdminBusiness,
   AdminBusinessPayload,
@@ -128,6 +129,7 @@ export function BusinessFormModal({
   const [temporarilyClosed, setTemporarilyClosed] = useState(false);
   // Logo recortado por el PhotoEditor pendiente de subir (se sube al guardar).
   const [pendingLogo, setPendingLogo] = useState<string | null>(null);
+  const [logoRemoved, setLogoRemoved] = useState(false);
   // Datos de pago (el cliente los ve en el checkout si no paga en efectivo).
   const [paymentHolderName, setPaymentHolderName] = useState('');
   const [nequiNumber, setNequiNumber] = useState('');
@@ -135,6 +137,7 @@ export function BusinessFormModal({
   const [bancolombiaAccount, setBancolombiaAccount] = useState('');
   // QR de Bancolombia pendiente de subir (se sube al guardar, como el logo).
   const [pendingQr, setPendingQr] = useState<string | null>(null);
+  const [qrRemoved, setQrRemoved] = useState(false);
 
   // Etiquetas disponibles para los chips.
   const [allTags, setAllTags] = useState<CatalogItem[]>([]);
@@ -150,6 +153,7 @@ export function BusinessFormModal({
 
     setErrors({});
     setPendingLogo(null);
+    setLogoRemoved(false);
     // La razón social va SIEMPRE en mayúsculas (también las guardadas antes).
     setLegalName(formatText('upper', editing?.legalName ?? ''));
     setTradeName(editing?.tradeName ?? '');
@@ -186,6 +190,7 @@ export function BusinessFormModal({
     setNequiKey(editing?.nequiKey ?? '');
     setBancolombiaAccount(editing?.bancolombiaAccount ?? '');
     setPendingQr(null);
+    setQrRemoved(false);
 
     muni.preload(
       editing?.department ? Number(editing.department.id) : undefined,
@@ -254,6 +259,7 @@ export function BusinessFormModal({
   const dirty =
     !isEdit ||
     !!pendingLogo ||
+    logoRemoved ||
     legalName !== formatText('upper', editing?.legalName ?? '') ||
     tradeName !== (editing?.tradeName ?? '') ||
     identificationNumber !== (editing?.identificationNumber ?? '') ||
@@ -281,6 +287,7 @@ export function BusinessFormModal({
     daysToPayload(openDaysSel) !== daysToPayload(parseOpenDays(editing?.openDays)) ||
     temporarilyClosed !== (editing?.temporarilyClosed ?? false) ||
     !!pendingQr ||
+    qrRemoved ||
     paymentHolderName !== (editing?.paymentHolderName ?? '') ||
     nequiNumber !== (editing?.nequiNumber ?? '') ||
     nequiKey !== (editing?.nequiKey ?? '') ||
@@ -314,7 +321,7 @@ export function BusinessFormModal({
           nequiKey.trim() ||
           bancolombiaAccount.trim() ||
           pendingQr ||
-          editing?.bancolombiaQrUrl) &&
+          (!qrRemoved && editing?.bancolombiaQrUrl)) &&
         !paymentHolderName.trim()
           ? 'Ingresa el nombre del titular de los pagos.'
           : undefined,
@@ -398,7 +405,11 @@ export function BusinessFormModal({
         };
         await businessService.updateMine(minePayload);
         if (pendingLogo) await businessService.uploadMyLogo(pendingLogo);
+        else if (logoRemoved && editing?.logoUrl) await businessService.removeMyLogo();
         if (pendingQr) await businessService.uploadMyPaymentQr(pendingQr);
+        else if (qrRemoved && editing?.bancolombiaQrUrl) {
+          await businessService.removeMyPaymentQr();
+        }
         onSaved();
         return;
       }
@@ -413,9 +424,13 @@ export function BusinessFormModal({
       // El logo y el QR se suben después de guardar (al crear recién existe el id).
       if (pendingLogo && businessId) {
         await adminBusinessesService.uploadLogo(businessId, pendingLogo);
+      } else if (logoRemoved && businessId && editing?.logoUrl) {
+        await adminBusinessesService.removeLogo(businessId);
       }
       if (pendingQr && businessId) {
         await adminBusinessesService.uploadPaymentQr(businessId, pendingQr);
+      } else if (qrRemoved && businessId && editing?.bancolombiaQrUrl) {
+        await adminBusinessesService.removePaymentQr(businessId);
       }
       onSaved();
     } catch {
@@ -445,9 +460,21 @@ export function BusinessFormModal({
         label={
           pendingLogo ? 'Logo listo (se sube al guardar)' : 'Logo del negocio'
         }
-        imageUrl={editing?.logoUrl}
+        imageUrl={logoRemoved ? null : editing?.logoUrl}
         pendingUri={pendingLogo}
-        onChange={setPendingLogo}
+        onChange={(uri) => {
+          setPendingLogo(uri);
+          setLogoRemoved(false);
+        }}
+        onRemove={
+          pendingLogo || editing?.logoUrl
+            ? () => {
+                if (pendingLogo) setPendingLogo(null);
+                else setLogoRemoved(true);
+              }
+            : undefined
+        }
+        fallbackSource={DEFAULT_BUSINESS_LOGO}
         shape="rounded"
         placeholderIcon="storefront-outline"
       />
@@ -731,8 +758,19 @@ export function BusinessFormModal({
             ? 'QR de Bancolombia listo (se sube al guardar)'
             : 'QR de Bancolombia'
         }
-        uri={pendingQr ?? editing?.bancolombiaQrUrl}
-        onChange={setPendingQr}
+        uri={pendingQr ?? (qrRemoved ? null : editing?.bancolombiaQrUrl)}
+        onChange={(uri) => {
+          setPendingQr(uri);
+          setQrRemoved(false);
+        }}
+        onRemove={
+          pendingQr || editing?.bancolombiaQrUrl
+            ? () => {
+                if (pendingQr) setPendingQr(null);
+                else setQrRemoved(true);
+              }
+            : undefined
+        }
         placeholderIcon="qr-code-outline"
       />
 

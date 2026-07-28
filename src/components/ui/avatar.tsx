@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image, Text, View } from 'react-native';
+import { Image, ImageSourcePropType, Text, View } from 'react-native';
 
 import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
-  /** Foto; si falta se muestra la inicial de `label` o el `icon`. */
+  /** Foto; si falta se muestra `fallbackSource`, si no el `icon`, si no la inicial de `label`. */
   uri?: string | null;
+  /** Imagen de respaldo (asset local, p. ej. `DEFAULT_USER_AVATAR`). Gana sobre `icon`/inicial. */
+  fallbackSource?: ImageSourcePropType;
   /** Texto del que sale la inicial de respaldo (p. ej. el nombre). */
   label?: string;
   /** Icono de respaldo (gana sobre la inicial si se pasa). */
@@ -16,9 +18,10 @@ type Props = {
   tone?: 'tint' | 'solid';
 };
 
-/** Avatar/logo con respaldo de inicial o icono (listados y cabeceras). */
+/** Avatar/logo con respaldo de imagen por defecto, inicial o icono (listados y cabeceras). */
 export function Avatar({
   uri,
+  fallbackSource,
   label,
   icon,
   size = 44,
@@ -38,6 +41,12 @@ export function Avatar({
       {uri ? (
         <Image
           source={{ uri }}
+          style={{ width: size, height: size }}
+          resizeMode="cover"
+        />
+      ) : fallbackSource ? (
+        <Image
+          source={fallbackSource}
           style={{ width: size, height: size }}
           resizeMode="cover"
         />
