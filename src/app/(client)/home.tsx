@@ -35,13 +35,15 @@ import {
  * Home del cliente (rol USER). Todo scrollea junto:
  * - Buscador global de productos.
  * - Sección "Negocios": chips de etiquetas (Restaurante, Ferretería…) —
- *   elegir una (o "Todos") muestra el feed de NEGOCIOS.
+ *   "Todos" abre el feed de NEGOCIOS (tarjetas, sin filtrar); elegir UNA
+ *   etiqueta puntual filtra el feed de PRODUCTOS por esa etiqueta.
  * - Sección "Categorías": cards cuadradas en slider (Aseo, Comida, Licores…)
- *   — elegir una filtra el feed global de PRODUCTOS.
- * - Feed: por defecto todos los productos (con el negocio que los vende);
- *   con texto/categoría, los resultados; con tag/"Todos", los negocios.
- * Las selecciones se excluyen entre sí (elegir tag limpia búsqueda/categoría
- * y viceversa) para que el feed nunca sea ambiguo.
+ *   — elegir una filtra el feed de PRODUCTOS por esa categoría.
+ * - Categoría y etiqueta se COMBINAN entre sí (ej. "Pizza" + "Restaurante"):
+ *   ambas son filtros del mismo feed de productos, no son excluyentes. El
+ *   buscador de texto sí es excluyente de las dos (limpia categoría/etiqueta
+ *   y viceversa) para no mezclar 3 filtros a la vez. "Todos los negocios" es
+ *   aparte: un modo de solo NAVEGAR negocios, limpia lo demás.
  */
 export default function HomeScreen() {
   const router = useRouter();
@@ -71,8 +73,8 @@ export default function HomeScreen() {
   const nearLat = defaultAddress?.latitude ?? null;
   const nearLng = defaultAddress?.longitude ?? null;
 
-  /** Feed de negocios: hay un tag elegido o el chip "Todos" activo. */
-  const businessMode = allBusinesses || selectedTagIds.length > 0;
+  /** Feed de negocios: solo el chip "Todos" lo abre (navegar negocios sin filtrar). */
+  const businessMode = allBusinesses;
 
   const businessList = usePaginatedList<ExploreBusiness>(
     useCallback(
@@ -80,16 +82,16 @@ export default function HomeScreen() {
         exploreService.businesses({
           page: params.page,
           perPage: params.perPage,
-          tagIds: selectedTagIds,
+          tagIds: [],
           near:
             nearLat != null && nearLng != null
               ? { latitude: nearLat, longitude: nearLng }
               : null,
         }),
-      [selectedTagIds, nearLat, nearLng],
+      [nearLat, nearLng],
     ),
-    // Perezoso: solo se fetchea cuando el usuario abre el feed de negocios
-    // (tag o "Todos") — por defecto el home muestra productos.
+    // Perezoso: solo se fetchea al abrir "Todos los negocios" — por defecto
+    // el home muestra productos.
     { enabled: businessMode },
   );
 
@@ -99,31 +101,35 @@ export default function HomeScreen() {
         exploreService.allProducts({
           ...params,
           categoryTypeId: selectedCategoryId ?? undefined,
+          tagIds: selectedTagIds.length ? selectedTagIds : undefined,
           near:
             nearLat != null && nearLng != null
               ? { latitude: nearLat, longitude: nearLng }
               : null,
         }),
-      [selectedCategoryId, nearLat, nearLng],
+      [selectedCategoryId, selectedTagIds, nearLat, nearLng],
     ),
     // Espera la dirección principal (caché instantánea salvo el primer
     // arranque): evita fetchear sin coords y refetchear al llegar.
     { enabled: !loadingAddress },
   );
   const searching =
-    productList.search.trim().length > 0 || selectedCategoryId != null;
+    productList.search.trim().length > 0 ||
+    selectedCategoryId != null ||
+    selectedTagIds.length > 0;
 
   function handleSearchChange(text: string) {
     productList.setSearch(text);
     if (text.trim()) {
       setSelectedTagIds([]);
+      setSelectedCategoryId(null);
       setAllBusinesses(false);
     }
   }
 
+  /** Etiqueta puntual: filtra productos, se combina con la categoría elegida. */
   function toggleTag(id: number) {
     setAllBusinesses(false);
-    setSelectedCategoryId(null);
     productList.setSearch('');
     setSelectedTagIds((prev) =>
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
@@ -137,11 +143,12 @@ export default function HomeScreen() {
     productList.setSearch('');
   }
 
+  /** Categoría: filtra productos, se combina con las etiquetas elegidas. */
   function selectCategory(id: number | null) {
     setSelectedCategoryId(id);
+    setAllBusinesses(false);
     if (id != null) {
-      setSelectedTagIds([]);
-      setAllBusinesses(false);
+      productList.setSearch('');
     }
   }
 
@@ -153,9 +160,7 @@ export default function HomeScreen() {
   }
 
   const feedTitle = businessMode
-    ? allBusinesses
-      ? 'Todos los negocios'
-      : 'Negocios'
+    ? 'Todos los negocios'
     : searching
       ? 'Resultados'
       : 'Todos los productos';
@@ -309,11 +314,7 @@ export default function HomeScreen() {
             ) : (
               <ListEmpty
                 icon="storefront-outline"
-                message={
-                  selectedTagIds.length > 0
-                    ? 'No hay negocios con esas etiquetas.'
-                    : 'Aún no hay negocios disponibles en tu zona. ¡Vuelve pronto!'
-                }
+                message="Aún no hay negocios disponibles en tu zona. ¡Vuelve pronto!"
               />
             )
           }

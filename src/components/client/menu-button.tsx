@@ -2,8 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import { Pressable } from 'react-native';
 
-import { useAppTheme } from '@/context/app-theme';
-import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /**
  * Botón hamburguesa de las navbars de los paneles con drawer: abre el drawer
@@ -15,14 +14,19 @@ import { getAppColors } from '@/lib/app-colors';
  */
 export function MenuButton({ parent = '/(client)' }: { parent?: string }) {
   const navigation = useNavigation<{ openDrawer(): void }>(parent);
-  const { isDark } = useAppTheme();
+  // `getAppColors()` (singleton no reactivo) se queda pegado al primer color
+  // que pinta — el compilador de React lo cachea para siempre porque no
+  // depende de nada rastreable (mismo bug de NOTAS §51-quater). Este botón
+  // vive en TODAS las navbars y casi nunca se re-renderiza por otro motivo,
+  // así que hace falta el hook reactivo para que el icono siga el tema.
+  const colors = useResolvedAppColors();
   return (
     <Pressable
       onPress={() => navigation.openDrawer()}
       hitSlop={8}
       className="h-10 w-10 items-center justify-center rounded-full bg-card active:opacity-70"
     >
-      <Ionicons name="menu" size={20} color={getAppColors().inkColor} />
+      <Ionicons name="menu" size={20} color={colors.inkColor} />
     </Pressable>
   );
 }

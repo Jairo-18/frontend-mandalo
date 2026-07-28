@@ -131,6 +131,8 @@ export const exploreService = {
     perPage?: number;
     search?: string;
     categoryTypeId?: number;
+    /** Etiquetas del negocio que vende el producto (combinable con la categoría). */
+    tagIds?: number[];
     /** Coords del "enviar a": limita al radio de cercanía del backend. */
     near?: NearCoords | null;
   }) => {
@@ -142,6 +144,7 @@ export const exploreService = {
     if (params.categoryTypeId) {
       query.set('categoryTypeId', String(params.categoryTypeId));
     }
+    if (params.tagIds?.length) query.set('tagIds', params.tagIds.join(','));
     appendNear(query, params.near);
 
     return http<Paginated<ExploreProduct>>(
