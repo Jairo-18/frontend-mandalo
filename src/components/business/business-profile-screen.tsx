@@ -245,8 +245,13 @@ export function BusinessProfileScreen() {
                 {business.nequiNumber || '—'}
               </InfoRow>
               <InfoRow icon="business-outline" label="Bancolombia" last>
-                {business.bancolombiaAccount ||
-                  (business.bancolombiaQrUrl ? 'QR disponible' : '—')}
+                {business.bancolombiaAccount
+                  ? business.bancolombiaAccountType
+                    ? `${business.bancolombiaAccount} (${business.bancolombiaAccountType === 'AHORROS' ? 'Ahorros' : 'Corriente'})`
+                    : business.bancolombiaAccount
+                  : business.bancolombiaQrUrl
+                    ? 'QR disponible'
+                    : '—'}
               </InfoRow>
             </>
           ) : (

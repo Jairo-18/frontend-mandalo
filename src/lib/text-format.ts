@@ -74,6 +74,15 @@ function formatPhone(value: string): string {
     return `+${prefix} - ${groupDigits(digits.slice(-10))}`;
   }
 
+  // Sin '+' pero con dígitos: dato viejo guardado sin indicativo, o el
+  // usuario borró el prefijo entero y empezó a escribir de cero. Se asume
+  // Colombia (+57) — si es de otro país, escribe su propio "+CC" adelante.
+  if (!hasPlus && digits.length > 0) {
+    return digits.length > 10
+      ? `+${digits.slice(0, digits.length - 10)} - ${groupDigits(digits.slice(-10))}`
+      : `+57 - ${groupDigits(digits)}`;
+  }
+
   return (hasPlus ? '+' : '') + groupDigits(digits);
 }
 

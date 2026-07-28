@@ -1,6 +1,7 @@
 import { ScrollView } from 'react-native';
 
-import { catalogIcon, SquareCard } from '@/components/client/square-card';
+import { SquareCard } from '@/components/client/square-card';
+import { catalogIcon } from '@/lib/catalog-icon';
 import { ExploreFilterItem } from '@/services/explore';
 
 type Props = {
@@ -32,7 +33,7 @@ export function TagCards({
     >
       <SquareCard
         label="Todos"
-        icon="storefront-outline"
+        icon={{ family: 'ionicons', name: 'storefront-outline' }}
         selected={allSelected}
         onPress={onToggleAll}
       />

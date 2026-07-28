@@ -135,6 +135,9 @@ export function BusinessFormModal({
   const [nequiNumber, setNequiNumber] = useState('');
   const [nequiKey, setNequiKey] = useState('');
   const [bancolombiaAccount, setBancolombiaAccount] = useState('');
+  const [bancolombiaAccountType, setBancolombiaAccountType] = useState<
+    'AHORROS' | 'CORRIENTE' | undefined
+  >();
   // QR de Bancolombia pendiente de subir (se sube al guardar, como el logo).
   const [pendingQr, setPendingQr] = useState<string | null>(null);
   const [qrRemoved, setQrRemoved] = useState(false);
@@ -166,7 +169,7 @@ export function BusinessFormModal({
     setDescription(editing?.description ?? '');
     // Al crear nace con el indicativo "+57 - " (borrable, como el registro);
     // al editar muestra el guardado ya formateado.
-    setPhone(editing ? formatText('phone', editing.phone ?? '') : PHONE_PREFIX);
+    setPhone(editing?.phone ? formatText('phone', editing.phone) : PHONE_PREFIX);
     setAddress(editing?.address ?? '');
     setMapsUrl('');
     setCoords(
@@ -189,6 +192,7 @@ export function BusinessFormModal({
     setNequiNumber(editing?.nequiNumber ?? '');
     setNequiKey(editing?.nequiKey ?? '');
     setBancolombiaAccount(editing?.bancolombiaAccount ?? '');
+    setBancolombiaAccountType(editing?.bancolombiaAccountType ?? undefined);
     setPendingQr(null);
     setQrRemoved(false);
 
@@ -291,7 +295,8 @@ export function BusinessFormModal({
     paymentHolderName !== (editing?.paymentHolderName ?? '') ||
     nequiNumber !== (editing?.nequiNumber ?? '') ||
     nequiKey !== (editing?.nequiKey ?? '') ||
-    bancolombiaAccount !== (editing?.bancolombiaAccount ?? '');
+    bancolombiaAccount !== (editing?.bancolombiaAccount ?? '') ||
+    bancolombiaAccountType !== (editing?.bancolombiaAccountType ?? undefined);
 
   function validateForm() {
     return validate({
@@ -381,6 +386,7 @@ export function BusinessFormModal({
       nequiNumber: nequiNumber.trim() || null,
       nequiKey: nequiKey.trim() || null,
       bancolombiaAccount: bancolombiaAccount.trim() || null,
+      bancolombiaAccountType: bancolombiaAccountType ?? null,
     };
 
     try {
@@ -402,6 +408,7 @@ export function BusinessFormModal({
           nequiNumber: payload.nequiNumber,
           nequiKey: payload.nequiKey,
           bancolombiaAccount: payload.bancolombiaAccount,
+          bancolombiaAccountType: payload.bancolombiaAccountType,
         };
         await businessService.updateMine(minePayload);
         if (pendingLogo) await businessService.uploadMyLogo(pendingLogo);
@@ -751,6 +758,18 @@ export function BusinessFormModal({
         onChangeText={bind('bancolombiaAccount', setBancolombiaAccount)}
         error={errors.bancolombiaAccount}
         placeholder="123-456789-01"
+      />
+      <Select
+        label="Tipo de cuenta Bancolombia"
+        icon="wallet-outline"
+        placeholder="Selecciona el tipo"
+        options={[
+          { label: 'Ahorros', value: 'AHORROS' },
+          { label: 'Corriente', value: 'CORRIENTE' },
+        ]}
+        value={bancolombiaAccountType}
+        onSelect={(v) => setBancolombiaAccountType(v as 'AHORROS' | 'CORRIENTE')}
+        error={errors.bancolombiaAccountType}
       />
       <DocumentPhotoField
         label={

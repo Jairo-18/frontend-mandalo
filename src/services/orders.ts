@@ -73,6 +73,7 @@ export type Order = {
     nequiNumber?: string | null;
     nequiKey?: string | null;
     bancolombiaAccount?: string | null;
+    bancolombiaAccountType?: 'AHORROS' | 'CORRIENTE' | null;
     bancolombiaQrUrl?: string | null;
   } | null;
   // El cliente (visible para negocio/repartidor/admin).

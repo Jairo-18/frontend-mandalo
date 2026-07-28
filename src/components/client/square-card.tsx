@@ -1,11 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
+import { CatalogIconRef, CatalogIconView } from '@/lib/catalog-icon';
 import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: CatalogIconRef;
   selected: boolean;
   onPress: () => void;
 };
@@ -28,8 +28,8 @@ export function SquareCard({ label, icon, selected, onPress }: Props) {
           selected ? 'bg-white/25' : 'bg-primary-tint'
         }`}
       >
-        <Ionicons
-          name={icon}
+        <CatalogIconView
+          icon={icon}
           size={26}
           color={selected ? '#FFFFFF' : getAppColors().primaryColor}
         />
@@ -44,14 +44,4 @@ export function SquareCard({ label, icon, selected, onPress }: Props) {
       </Text>
     </Pressable>
   );
-}
-
-/** Icono del catálogo validado contra Ionicons (con respaldo). */
-export function catalogIcon(
-  icon: string | null,
-  fallback: keyof typeof Ionicons.glyphMap,
-): keyof typeof Ionicons.glyphMap {
-  return icon && icon in Ionicons.glyphMap
-    ? (icon as keyof typeof Ionicons.glyphMap)
-    : fallback;
 }

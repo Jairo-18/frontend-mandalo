@@ -5,6 +5,7 @@ import { Image, Pressable, Text, View } from 'react-native';
 
 import { PhotoActionsSheet } from '@/components/ui/photo-actions-sheet';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
+import { resizeForUpload } from '@/lib/upload';
 import { toast } from '@/lib/toast';
 import { getAppColors } from '@/lib/app-colors';
 
@@ -58,7 +59,8 @@ export function DocumentPhotoField({
         });
       }
       if (result.canceled || !result.assets?.[0]) return;
-      onChange(result.assets[0].uri);
+      const asset = result.assets[0];
+      onChange(await resizeForUpload(asset.uri, asset.width, asset.height));
     } catch {
       toast.error(
         source === 'camera'

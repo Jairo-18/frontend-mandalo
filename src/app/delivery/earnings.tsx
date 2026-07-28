@@ -6,9 +6,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { MenuButton } from '@/components/client/menu-button';
 import { SettlementPeriodCard } from '@/components/admin/settlement-period-card';
+import { InactiveAccountNotice } from '@/components/delivery/inactive-account-notice';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { PanelHeader } from '@/components/ui/panel-header';
 import { useSettlementDrillDown } from '@/hooks/use-settlement-drilldown';
+import { useSession } from '@/hooks/use-session';
 import { formatPrice } from '@/lib/price';
 import { getAppColors } from '@/lib/app-colors';
 import {
@@ -26,11 +28,29 @@ const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
  */
 export default function DeliveryEarningsScreen() {
   const insets = useSafeAreaInsets();
-  const fetcher = useCallback(async (periodType: 'quincena' | 'month' | 'year') => {
-    const res = await myDeliverySettlementsService.periods(periodType);
-    return res.data.periods;
-  }, []);
+  const session = useSession();
+  // Cuenta en revisión: no puede haber pedidos entregados todavía — ni vale
+  // la pena pedirlos (siempre saldría vacío) ni tiene sentido dejar
+  // "navegar" la pantalla como si tuviera datos.
+  const pending = session?.user.isActive === false;
+  const fetcher = useCallback(
+    async (periodType: 'quincena' | 'month' | 'year') => {
+      if (pending) return [];
+      const res = await myDeliverySettlementsService.periods(periodType);
+      return res.data.periods;
+    },
+    [pending],
+  );
   const dd = useSettlementDrillDown<DeliverySettlementPeriod>(fetcher);
+
+  if (pending) {
+    return (
+      <InactiveAccountNotice
+        title="Mis cobros"
+        menu={<MenuButton parent="/delivery" />}
+      />
+    );
+  }
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-dark">

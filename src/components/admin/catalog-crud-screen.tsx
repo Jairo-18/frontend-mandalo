@@ -13,6 +13,7 @@ import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { CatalogCrudService, CatalogItem } from '@/services/admin-catalogs';
+import { catalogIcon, CatalogIconView } from '@/lib/catalog-icon';
 import { getAppColors } from '@/lib/app-colors';
 
 
@@ -79,15 +80,12 @@ export function CatalogCrudScreen({
   }
 
   function renderItem({ item }: { item: CatalogItem }) {
-    const iconName =
-      item.icon && item.icon in Ionicons.glyphMap
-        ? (item.icon as keyof typeof Ionicons.glyphMap)
-        : fallbackIcon;
+    const icon = catalogIcon(item.icon, fallbackIcon);
 
     return (
       <View className="mb-3 flex-row items-center gap-3 rounded-2xl bg-card p-4">
         <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-tint">
-          <Ionicons name={iconName} size={20} color={getAppColors().primaryColor} />
+          <CatalogIconView icon={icon} size={20} color={getAppColors().primaryColor} />
         </View>
 
         <View className="flex-1">

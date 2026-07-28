@@ -7,7 +7,7 @@ import { Image, Linking, Platform, Pressable, Text, View } from 'react-native';
 import { PhotoActionsSheet } from '@/components/ui/photo-actions-sheet';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { toast } from '@/lib/toast';
-import { DocumentValue } from '@/lib/upload';
+import { DocumentValue, resizeForUpload } from '@/lib/upload';
 import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
@@ -71,7 +71,9 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
         });
       }
       if (result.canceled || !result.assets?.[0]) return;
-      onChange({ uri: result.assets[0].uri, kind: 'image' });
+      const asset = result.assets[0];
+      const uri = await resizeForUpload(asset.uri, asset.width, asset.height);
+      onChange({ uri, kind: 'image' });
     } catch {
       toast.error(
         source === 'camera'

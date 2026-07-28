@@ -107,7 +107,7 @@ export function UserFormModal({
     setEmail(editing?.email ?? '');
     // Al crear nace con el indicativo "+57 - " (borrable, como el registro);
     // al editar muestra el guardado ya formateado.
-    setPhone(editing ? formatText('phone', editing.phone ?? '') : PHONE_PREFIX);
+    setPhone(editing?.phone ? formatText('phone', editing.phone) : PHONE_PREFIX);
     setAddress(editing?.address ?? '');
     setIdentificationNumber(editing?.identificationNumber ?? '');
     setIdentificationTypeId(

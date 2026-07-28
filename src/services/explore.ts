@@ -41,6 +41,7 @@ export type ExploreBusiness = {
   nequiNumber?: string | null;
   nequiKey?: string | null;
   bancolombiaAccount?: string | null;
+  bancolombiaAccountType?: 'AHORROS' | 'CORRIENTE' | null;
   bancolombiaQrUrl?: string | null;
 };
 

@@ -38,6 +38,7 @@ export type AdminBusiness = {
   nequiNumber: string | null;
   nequiKey: string | null;
   bancolombiaAccount: string | null;
+  bancolombiaAccountType: 'AHORROS' | 'CORRIENTE' | null;
   bancolombiaQrUrl: string | null;
   identificationType: CatalogRef | null;
   municipality: CatalogRef | null;
@@ -84,6 +85,7 @@ export type AdminBusinessPayload = {
   nequiNumber?: string | null;
   nequiKey?: string | null;
   bancolombiaAccount?: string | null;
+  bancolombiaAccountType?: 'AHORROS' | 'CORRIENTE' | null;
 };
 
 /** Campo por el que busca el admin ('search' = nombre comercial/razón/NIT). */

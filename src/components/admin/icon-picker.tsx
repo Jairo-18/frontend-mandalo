@@ -1,228 +1,307 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { SearchBar } from '@/components/ui/search-bar';
+import {
+  CatalogIconRef,
+  CatalogIconView,
+  IoniconsName,
+  MciName,
+  toCatalogIconValue,
+} from '@/lib/catalog-icon';
 import { getAppColors } from '@/lib/app-colors';
 
-type IconName = keyof typeof Ionicons.glyphMap;
-
 type IconEntry = {
-  name: IconName;
+  ref: CatalogIconRef;
   /** Palabras clave EN ESPAÑOL para el buscador (además del nombre). */
   keywords: string;
 };
 
+function ion(name: IoniconsName, keywords: string): IconEntry {
+  return { ref: { family: 'ionicons', name }, keywords };
+}
+
+function mci(name: MciName, keywords: string): IconEntry {
+  return { ref: { family: 'mci', name }, keywords };
+}
+
 /**
  * Iconos que puede elegir el admin para categorías de producto y etiquetas de
- * negocio (Ionicons, los mismos de toda la app). El `name` es lo que se
- * guarda en `icon` en el backend. Cada entrada trae palabras clave en español
- * para que el buscador funcione sin saber el nombre en inglés.
+ * negocio. Dos librerías (ambas ya vienen con `@expo/vector-icons`, sin
+ * dependencia nueva): Ionicons para todo lo general (mismos de toda la app)
+ * y MaterialCommunityIcons SOLO para comida — Ionicons apenas tiene una
+ * docena de iconos de comida en total, MaterialCommunityIcons tiene cientos.
+ * El valor guardado en `icon` distingue la librería con el prefijo "mci:"
+ * (ver `lib/catalog-icon.ts`); sin prefijo se asume Ionicons como siempre.
  */
 const ICON_ENTRIES: IconEntry[] = [
-  // ---- Comida y bebida ----
-  { name: 'fast-food-outline', keywords: 'hamburguesa comida rapida' },
-  { name: 'restaurant-outline', keywords: 'restaurante cubiertos comida' },
-  { name: 'pizza-outline', keywords: 'pizza pizzeria' },
-  { name: 'cafe-outline', keywords: 'cafe tinto taza bebida caliente' },
-  { name: 'ice-cream-outline', keywords: 'helado postre heladeria' },
-  { name: 'fish-outline', keywords: 'pescado pescaderia mar' },
-  { name: 'nutrition-outline', keywords: 'manzana fruta verdura saludable' },
-  { name: 'egg-outline', keywords: 'huevo desayuno' },
-  { name: 'pint-outline', keywords: 'cerveza jarra vaso' },
-  { name: 'beer-outline', keywords: 'cerveza licor bar' },
-  { name: 'wine-outline', keywords: 'vino copa licor licoreria' },
-  { name: 'water-outline', keywords: 'agua gota bebida' },
-  { name: 'flame-outline', keywords: 'fuego asado parrilla brasa' },
-  { name: 'bonfire-outline', keywords: 'fogata leña hoguera' },
+  // ---- Comida y bebida (Ionicons) ----
+  ion('fast-food-outline', 'hamburguesa comida rapida'),
+  ion('restaurant-outline', 'restaurante cubiertos comida'),
+  ion('pizza-outline', 'pizza pizzeria'),
+  ion('cafe-outline', 'cafe tinto taza bebida caliente'),
+  ion('ice-cream-outline', 'helado postre heladeria'),
+  ion('fish-outline', 'pescado pescaderia mar'),
+  ion('nutrition-outline', 'manzana fruta verdura saludable'),
+  ion('egg-outline', 'huevo desayuno'),
+  ion('pint-outline', 'cerveza jarra vaso'),
+  ion('beer-outline', 'cerveza licor bar'),
+  ion('wine-outline', 'vino copa licor licoreria'),
+  ion('water-outline', 'agua gota bebida'),
+  ion('flame-outline', 'fuego asado parrilla brasa'),
+  ion('bonfire-outline', 'fogata leña hoguera'),
+  // ---- Comida y bebida (MaterialCommunityIcons — mucho más específicos) ----
+  mci('hamburger', 'hamburguesa burger comida rapida'),
+  mci('taco', 'taco comida mexicana'),
+  mci('food-hot-dog', 'perro caliente hotdog salchipapa'),
+  mci('noodles', 'fideos pasta asiatica ramen sopa'),
+  mci('pasta', 'pasta espagueti italiana macarrones'),
+  mci('rice', 'arroz'),
+  mci('popcorn', 'crispetas palomitas cine'),
+  mci('pretzel', 'pretzel'),
+  mci('sausage', 'salchicha embutido chorizo carniceria'),
+  mci('bread-slice', 'pan panaderia tostada'),
+  mci('bread-slice-outline', 'pan panaderia tostada'),
+  mci('cheese', 'queso lacteo'),
+  mci('cheese-off', 'sin queso sin lacteos'),
+  mci('cake', 'torta pastel cumpleaños ponque'),
+  mci('cake-variant', 'torta decorada pasteleria repostería'),
+  mci('cake-variant-outline', 'torta decorada pasteleria reposteria'),
+  mci('cupcake', 'cupcake ponque magdalena'),
+  mci('cookie', 'galleta'),
+  mci('cookie-outline', 'galleta'),
+  mci('candy', 'dulce caramelo dulceria'),
+  mci('candy-outline', 'dulce caramelo dulceria'),
+  mci('candycane', 'baston de dulce navidad'),
+  mci('muffin', 'mecato panecillo ponquesito'),
+  mci('french-fries', 'papas fritas'),
+  mci('egg-fried', 'huevo frito desayuno'),
+  mci('egg-easter', 'huevo de pascua decorado'),
+  mci('corn', 'maiz mazorca choclo'),
+  mci('corn-off', 'sin maiz'),
+  mci('carrot', 'zanahoria verdura'),
+  mci('mushroom', 'champiñon hongo seta'),
+  mci('mushroom-outline', 'champiñon hongo seta'),
+  mci('peanut', 'mani cacahuate'),
+  mci('peanut-outline', 'mani cacahuate'),
+  mci('fruit-cherries', 'cerezas fruta'),
+  mci('fruit-citrus', 'citricos naranja limon mandarina'),
+  mci('fruit-grapes', 'uvas fruta vino'),
+  mci('fruit-grapes-outline', 'uvas fruta vino'),
+  mci('fruit-pear', 'pera fruta'),
+  mci('fruit-pineapple', 'piña fruta'),
+  mci('fruit-watermelon', 'sandia patilla fruta'),
+  mci('food-apple-outline', 'manzana fruta'),
+  mci('food-croissant', 'croissant cachito panaderia'),
+  mci('food-drumstick-outline', 'pierna muslo pollo asado'),
+  mci('food-steak', 'carne filete res asado'),
+  mci('food-takeout-box-outline', 'comida para llevar domicilio caja'),
+  mci('food-turkey', 'pavo navidad'),
+  mci('food-variant', 'plato de comida general'),
+  mci('food-fork-drink', 'comer y beber restaurante'),
+  mci('barley', 'cebada malta cerveceria artesanal'),
+  mci('coffee-to-go', 'cafe para llevar vaso desechable'),
+  mci('coffee-to-go-outline', 'cafe para llevar vaso desechable'),
+  mci('coffee-maker', 'cafetera electrodomestico'),
+  mci('kettle', 'tetera pava agua caliente'),
+  mci('kettle-outline', 'tetera pava agua caliente'),
+  mci('tea', 'te aromatica infusion'),
+  mci('tea-outline', 'te aromatica infusion'),
+  mci('glass-cocktail', 'coctel coctelería bar'),
+  mci('glass-mug-variant', 'jarra de cerveza chop'),
+  mci('bottle-soda-classic-outline', 'gaseosa refresco soda'),
+  mci('bottle-wine-outline', 'botella de vino vinoteca'),
+  mci('chef-hat', 'gorro de chef cocina cocinero'),
+  mci('food-halal', 'comida halal'),
+  mci('food-kosher', 'comida kosher'),
   // ---- Naturaleza y mascotas ----
-  { name: 'leaf-outline', keywords: 'hoja natural vegano organico' },
-  { name: 'rose-outline', keywords: 'rosa flor' },
-  { name: 'flower-outline', keywords: 'flor floristeria jardin' },
-  { name: 'paw-outline', keywords: 'mascota veterinaria perro gato huella' },
-  { name: 'bug-outline', keywords: 'insecto fumigacion plaga' },
-  { name: 'earth-outline', keywords: 'mundo tierra planeta' },
-  { name: 'planet-outline', keywords: 'planeta espacio saturno' },
-  { name: 'sunny-outline', keywords: 'sol dia clima' },
-  { name: 'moon-outline', keywords: 'luna noche nocturno' },
-  { name: 'rainy-outline', keywords: 'lluvia clima' },
-  { name: 'snow-outline', keywords: 'nieve frio congelado' },
-  { name: 'thermometer-outline', keywords: 'termometro temperatura' },
+  ion('leaf-outline', 'hoja natural vegano organico'),
+  ion('rose-outline', 'rosa flor'),
+  ion('flower-outline', 'flor floristeria jardin'),
+  ion('paw-outline', 'mascota veterinaria perro gato huella'),
+  ion('bug-outline', 'insecto fumigacion plaga'),
+  ion('earth-outline', 'mundo tierra planeta'),
+  ion('planet-outline', 'planeta espacio saturno'),
+  ion('sunny-outline', 'sol dia clima'),
+  ion('moon-outline', 'luna noche nocturno'),
+  ion('rainy-outline', 'lluvia clima'),
+  ion('snow-outline', 'nieve frio congelado'),
+  ion('thermometer-outline', 'termometro temperatura'),
   // ---- Comercio y dinero ----
-  { name: 'storefront-outline', keywords: 'tienda negocio local' },
-  { name: 'cart-outline', keywords: 'carrito mercado compras' },
-  { name: 'basket-outline', keywords: 'canasta mercado compras' },
-  { name: 'bag-handle-outline', keywords: 'bolsa compras boutique' },
-  { name: 'gift-outline', keywords: 'regalo detalle sorpresa' },
-  { name: 'pricetag-outline', keywords: 'etiqueta precio oferta' },
-  { name: 'pricetags-outline', keywords: 'etiquetas precios ofertas' },
-  { name: 'cash-outline', keywords: 'efectivo dinero billete' },
-  { name: 'card-outline', keywords: 'tarjeta pago credito' },
-  { name: 'wallet-outline', keywords: 'billetera cartera' },
-  { name: 'receipt-outline', keywords: 'factura recibo cuenta' },
-  { name: 'cube-outline', keywords: 'paquete caja producto envio' },
-  { name: 'diamond-outline', keywords: 'diamante joya joyeria lujo' },
-  { name: 'watch-outline', keywords: 'reloj pulsera relojeria' },
-  { name: 'glasses-outline', keywords: 'gafas lentes optica' },
-  { name: 'shirt-outline', keywords: 'ropa camiseta moda boutique' },
-  { name: 'briefcase-outline', keywords: 'maletin oficina trabajo' },
-  { name: 'business-outline', keywords: 'edificio empresa oficina' },
+  ion('storefront-outline', 'tienda negocio local'),
+  ion('cart-outline', 'carrito mercado compras'),
+  ion('basket-outline', 'canasta mercado compras'),
+  ion('bag-handle-outline', 'bolsa compras boutique'),
+  ion('gift-outline', 'regalo detalle sorpresa'),
+  ion('pricetag-outline', 'etiqueta precio oferta'),
+  ion('pricetags-outline', 'etiquetas precios ofertas'),
+  ion('cash-outline', 'efectivo dinero billete'),
+  ion('card-outline', 'tarjeta pago credito'),
+  ion('wallet-outline', 'billetera cartera'),
+  ion('receipt-outline', 'factura recibo cuenta'),
+  ion('cube-outline', 'paquete caja producto envio'),
+  ion('diamond-outline', 'diamante joya joyeria lujo'),
+  ion('watch-outline', 'reloj pulsera relojeria'),
+  ion('glasses-outline', 'gafas lentes optica'),
+  ion('shirt-outline', 'ropa camiseta moda boutique'),
+  ion('briefcase-outline', 'maletin oficina trabajo'),
+  ion('business-outline', 'edificio empresa oficina'),
   // ---- Premios y diversión ----
-  { name: 'trophy-outline', keywords: 'trofeo premio campeonato' },
-  { name: 'medal-outline', keywords: 'medalla premio' },
-  { name: 'ribbon-outline', keywords: 'cinta premio calidad garantia' },
-  { name: 'balloon-outline', keywords: 'globo fiesta cumpleaños piñateria' },
-  { name: 'dice-outline', keywords: 'dados juego azar' },
-  { name: 'game-controller-outline', keywords: 'videojuegos consola control' },
-  { name: 'extension-puzzle-outline', keywords: 'rompecabezas jugueteria juegos' },
-  { name: 'telescope-outline', keywords: 'telescopio astronomia' },
-  { name: 'rocket-outline', keywords: 'cohete rapido envio express' },
-  { name: 'sparkles-outline', keywords: 'brillos nuevo destacado limpio' },
-  { name: 'star-outline', keywords: 'estrella favorito destacado' },
-  { name: 'heart-outline', keywords: 'corazon amor favorito' },
-  { name: 'happy-outline', keywords: 'feliz carita sonrisa' },
-  { name: 'thumbs-up-outline', keywords: 'me gusta recomendado bueno' },
+  ion('trophy-outline', 'trofeo premio campeonato'),
+  ion('medal-outline', 'medalla premio'),
+  ion('ribbon-outline', 'cinta premio calidad garantia'),
+  ion('balloon-outline', 'globo fiesta cumpleaños piñateria'),
+  ion('dice-outline', 'dados juego azar'),
+  ion('game-controller-outline', 'videojuegos consola control'),
+  ion('extension-puzzle-outline', 'rompecabezas jugueteria juegos'),
+  ion('telescope-outline', 'telescopio astronomia'),
+  ion('rocket-outline', 'cohete rapido envio express'),
+  ion('sparkles-outline', 'brillos nuevo destacado limpio'),
+  ion('star-outline', 'estrella favorito destacado'),
+  ion('heart-outline', 'corazon amor favorito'),
+  ion('happy-outline', 'feliz carita sonrisa'),
+  ion('thumbs-up-outline', 'me gusta recomendado bueno'),
   // ---- Salud y bienestar ----
-  { name: 'medkit-outline', keywords: 'botiquin drogueria farmacia salud' },
-  { name: 'medical-outline', keywords: 'cruz medico salud clinica' },
-  { name: 'bandage-outline', keywords: 'curita vendaje herida' },
-  { name: 'fitness-outline', keywords: 'salud pulso cardio ejercicio' },
-  { name: 'barbell-outline', keywords: 'pesas gimnasio gym ejercicio' },
-  { name: 'pulse-outline', keywords: 'pulso ritmo cardiaco' },
-  { name: 'eyedrop-outline', keywords: 'gotero laboratorio medicina' },
-  { name: 'flask-outline', keywords: 'laboratorio quimica ciencia' },
-  { name: 'accessibility-outline', keywords: 'accesibilidad discapacidad inclusion' },
-  { name: 'body-outline', keywords: 'cuerpo persona' },
-  { name: 'man-outline', keywords: 'hombre caballero' },
-  { name: 'woman-outline', keywords: 'mujer dama' },
-  { name: 'people-outline', keywords: 'personas grupo familia' },
-  { name: 'person-outline', keywords: 'persona perfil usuario' },
-  { name: 'walk-outline', keywords: 'caminar peaton paseo' },
-  { name: 'footsteps-outline', keywords: 'pasos huellas caminata' },
+  ion('medkit-outline', 'botiquin drogueria farmacia salud'),
+  ion('medical-outline', 'cruz medico salud clinica'),
+  ion('bandage-outline', 'curita vendaje herida'),
+  ion('fitness-outline', 'salud pulso cardio ejercicio'),
+  ion('barbell-outline', 'pesas gimnasio gym ejercicio'),
+  ion('pulse-outline', 'pulso ritmo cardiaco'),
+  ion('eyedrop-outline', 'gotero laboratorio medicina'),
+  ion('flask-outline', 'laboratorio quimica ciencia'),
+  ion('accessibility-outline', 'accesibilidad discapacidad inclusion'),
+  ion('body-outline', 'cuerpo persona'),
+  ion('man-outline', 'hombre caballero'),
+  ion('woman-outline', 'mujer dama'),
+  ion('people-outline', 'personas grupo familia'),
+  ion('person-outline', 'persona perfil usuario'),
+  ion('walk-outline', 'caminar peaton paseo'),
+  ion('footsteps-outline', 'pasos huellas caminata'),
   // ---- Deporte ----
-  { name: 'basketball-outline', keywords: 'baloncesto basquet balon' },
-  { name: 'football-outline', keywords: 'futbol balon deporte' },
-  { name: 'american-football-outline', keywords: 'futbol americano balon' },
-  { name: 'baseball-outline', keywords: 'beisbol pelota' },
-  { name: 'tennisball-outline', keywords: 'tenis pelota' },
-  { name: 'golf-outline', keywords: 'golf bandera' },
-  { name: 'bicycle-outline', keywords: 'bicicleta ciclismo domicilio' },
+  ion('basketball-outline', 'baloncesto basquet balon'),
+  ion('football-outline', 'futbol balon deporte'),
+  ion('american-football-outline', 'futbol americano balon'),
+  ion('baseball-outline', 'beisbol pelota'),
+  ion('tennisball-outline', 'tenis pelota'),
+  ion('golf-outline', 'golf bandera'),
+  ion('bicycle-outline', 'bicicleta ciclismo domicilio'),
   // ---- Transporte y ubicación ----
-  { name: 'car-outline', keywords: 'carro auto vehiculo taller' },
-  { name: 'car-sport-outline', keywords: 'carro deportivo auto' },
-  { name: 'bus-outline', keywords: 'bus buseta transporte' },
-  { name: 'airplane-outline', keywords: 'avion viajes vuelo agencia' },
-  { name: 'boat-outline', keywords: 'barco lancha rio' },
-  { name: 'train-outline', keywords: 'tren transporte' },
-  { name: 'navigate-outline', keywords: 'navegacion gps flecha' },
-  { name: 'compass-outline', keywords: 'brujula orientacion' },
-  { name: 'map-outline', keywords: 'mapa turismo' },
-  { name: 'location-outline', keywords: 'ubicacion pin lugar' },
-  { name: 'trail-sign-outline', keywords: 'señal sendero letrero' },
+  ion('car-outline', 'carro auto vehiculo taller'),
+  ion('car-sport-outline', 'carro deportivo auto'),
+  ion('bus-outline', 'bus buseta transporte'),
+  ion('airplane-outline', 'avion viajes vuelo agencia'),
+  ion('boat-outline', 'barco lancha rio'),
+  ion('train-outline', 'tren transporte'),
+  ion('navigate-outline', 'navegacion gps flecha'),
+  ion('compass-outline', 'brujula orientacion'),
+  ion('map-outline', 'mapa turismo'),
+  ion('location-outline', 'ubicacion pin lugar'),
+  ion('trail-sign-outline', 'señal sendero letrero'),
   // ---- Hogar, construcción y servicios ----
-  { name: 'home-outline', keywords: 'casa hogar inmobiliaria' },
-  { name: 'bed-outline', keywords: 'cama hotel dormitorio hospedaje' },
-  { name: 'key-outline', keywords: 'llave cerrajeria seguridad' },
-  { name: 'construct-outline', keywords: 'herramientas construccion taller' },
-  { name: 'hammer-outline', keywords: 'martillo ferreteria construccion' },
-  { name: 'build-outline', keywords: 'llave inglesa reparacion mantenimiento' },
-  { name: 'cut-outline', keywords: 'tijeras peluqueria barberia corte' },
-  { name: 'brush-outline', keywords: 'brocha pintura pintor' },
-  { name: 'color-palette-outline', keywords: 'pintura arte colores diseño' },
-  { name: 'flashlight-outline', keywords: 'linterna luz' },
-  { name: 'bulb-outline', keywords: 'bombillo idea electrico luz' },
-  { name: 'flash-outline', keywords: 'rayo electrico energia electricista' },
-  { name: 'battery-charging-outline', keywords: 'bateria carga pila' },
-  { name: 'power-outline', keywords: 'encendido energia boton' },
-  { name: 'magnet-outline', keywords: 'iman atraccion' },
-  { name: 'umbrella-outline', keywords: 'paraguas sombrilla lluvia' },
-  { name: 'trash-outline', keywords: 'basura aseo reciclaje limpieza' },
-  { name: 'shield-checkmark-outline', keywords: 'escudo seguro garantia proteccion' },
-  { name: 'lock-closed-outline', keywords: 'candado seguridad privado' },
+  ion('home-outline', 'casa hogar inmobiliaria'),
+  ion('bed-outline', 'cama hotel dormitorio hospedaje'),
+  ion('key-outline', 'llave cerrajeria seguridad'),
+  ion('construct-outline', 'herramientas construccion taller'),
+  ion('hammer-outline', 'martillo ferreteria construccion'),
+  ion('build-outline', 'llave inglesa reparacion mantenimiento'),
+  ion('cut-outline', 'tijeras peluqueria barberia corte'),
+  ion('brush-outline', 'brocha pintura pintor'),
+  ion('color-palette-outline', 'pintura arte colores diseño'),
+  ion('flashlight-outline', 'linterna luz'),
+  ion('bulb-outline', 'bombillo idea electrico luz'),
+  ion('flash-outline', 'rayo electrico energia electricista'),
+  ion('battery-charging-outline', 'bateria carga pila'),
+  ion('power-outline', 'encendido energia boton'),
+  ion('magnet-outline', 'iman atraccion'),
+  ion('umbrella-outline', 'paraguas sombrilla lluvia'),
+  ion('trash-outline', 'basura aseo reciclaje limpieza'),
+  ion('shield-checkmark-outline', 'escudo seguro garantia proteccion'),
+  ion('lock-closed-outline', 'candado seguridad privado'),
   // ---- Tecnología ----
-  { name: 'desktop-outline', keywords: 'computador pc escritorio' },
-  { name: 'laptop-outline', keywords: 'portatil laptop computador' },
-  { name: 'phone-portrait-outline', keywords: 'celular telefono movil' },
-  { name: 'tablet-portrait-outline', keywords: 'tablet tableta' },
-  { name: 'tv-outline', keywords: 'televisor television pantalla' },
-  { name: 'camera-outline', keywords: 'camara fotografia fotos' },
-  { name: 'videocam-outline', keywords: 'video camara filmacion' },
-  { name: 'headset-outline', keywords: 'audifonos diadema soporte gamer' },
-  { name: 'mic-outline', keywords: 'microfono karaoke sonido' },
-  { name: 'musical-notes-outline', keywords: 'musica notas sonido' },
-  { name: 'radio-outline', keywords: 'radio emisora' },
-  { name: 'disc-outline', keywords: 'disco dj vinilo' },
-  { name: 'film-outline', keywords: 'cine pelicula rollo' },
-  { name: 'images-outline', keywords: 'imagenes fotos galeria' },
-  { name: 'print-outline', keywords: 'impresora papeleria impresion' },
-  { name: 'hardware-chip-outline', keywords: 'chip electronica tecnologia' },
-  { name: 'terminal-outline', keywords: 'consola codigo sistemas' },
-  { name: 'code-slash-outline', keywords: 'programacion desarrollo software' },
-  { name: 'server-outline', keywords: 'servidor datos hosting' },
-  { name: 'wifi-outline', keywords: 'wifi internet red' },
-  { name: 'cloud-outline', keywords: 'nube clima internet' },
-  { name: 'calculator-outline', keywords: 'calculadora contabilidad cuentas' },
-  { name: 'call-outline', keywords: 'telefono llamada contacto' },
-  { name: 'chatbubbles-outline', keywords: 'chat mensajes conversacion' },
-  { name: 'mail-outline', keywords: 'correo carta sobre' },
-  { name: 'send-outline', keywords: 'enviar avion papel mensajeria' },
-  { name: 'megaphone-outline', keywords: 'megafono publicidad promocion anuncio' },
-  { name: 'notifications-outline', keywords: 'campana notificacion aviso' },
+  ion('desktop-outline', 'computador pc escritorio'),
+  ion('laptop-outline', 'portatil laptop computador'),
+  ion('phone-portrait-outline', 'celular telefono movil'),
+  ion('tablet-portrait-outline', 'tablet tableta'),
+  ion('tv-outline', 'televisor television pantalla'),
+  ion('camera-outline', 'camara fotografia fotos'),
+  ion('videocam-outline', 'video camara filmacion'),
+  ion('headset-outline', 'audifonos diadema soporte gamer'),
+  ion('mic-outline', 'microfono karaoke sonido'),
+  ion('musical-notes-outline', 'musica notas sonido'),
+  ion('radio-outline', 'radio emisora'),
+  ion('disc-outline', 'disco dj vinilo'),
+  ion('film-outline', 'cine pelicula rollo'),
+  ion('images-outline', 'imagenes fotos galeria'),
+  ion('print-outline', 'impresora papeleria impresion'),
+  ion('hardware-chip-outline', 'chip electronica tecnologia'),
+  ion('terminal-outline', 'consola codigo sistemas'),
+  ion('code-slash-outline', 'programacion desarrollo software'),
+  ion('server-outline', 'servidor datos hosting'),
+  ion('wifi-outline', 'wifi internet red'),
+  ion('cloud-outline', 'nube clima internet'),
+  ion('calculator-outline', 'calculadora contabilidad cuentas'),
+  ion('call-outline', 'telefono llamada contacto'),
+  ion('chatbubbles-outline', 'chat mensajes conversacion'),
+  ion('mail-outline', 'correo carta sobre'),
+  ion('send-outline', 'enviar avion papel mensajeria'),
+  ion('megaphone-outline', 'megafono publicidad promocion anuncio'),
+  ion('notifications-outline', 'campana notificacion aviso'),
   // ---- Educación y papelería ----
-  { name: 'book-outline', keywords: 'libro libreria lectura' },
-  { name: 'library-outline', keywords: 'biblioteca libros' },
-  { name: 'school-outline', keywords: 'colegio educacion birrete graduacion' },
-  { name: 'pencil-outline', keywords: 'lapiz papeleria escribir' },
-  { name: 'newspaper-outline', keywords: 'periodico noticias prensa' },
-  { name: 'document-text-outline', keywords: 'documento archivo papel' },
-  { name: 'clipboard-outline', keywords: 'portapapeles lista inventario' },
-  { name: 'folder-outline', keywords: 'carpeta archivo documentos' },
+  ion('book-outline', 'libro libreria lectura'),
+  ion('library-outline', 'biblioteca libros'),
+  ion('school-outline', 'colegio educacion birrete graduacion'),
+  ion('pencil-outline', 'lapiz papeleria escribir'),
+  ion('newspaper-outline', 'periodico noticias prensa'),
+  ion('document-text-outline', 'documento archivo papel'),
+  ion('clipboard-outline', 'portapapeles lista inventario'),
+  ion('folder-outline', 'carpeta archivo documentos'),
   // ---- Tiempo y varios ----
-  { name: 'time-outline', keywords: 'reloj hora 24 horas' },
-  { name: 'alarm-outline', keywords: 'alarma despertador' },
-  { name: 'timer-outline', keywords: 'temporizador rapido cronometro' },
-  { name: 'hourglass-outline', keywords: 'reloj de arena espera' },
-  { name: 'calendar-outline', keywords: 'calendario agenda fecha citas' },
-  { name: 'shapes-outline', keywords: 'figuras formas geometria' },
-  { name: 'layers-outline', keywords: 'capas niveles' },
-  { name: 'grid-outline', keywords: 'cuadricula general categorias' },
-  { name: 'apps-outline', keywords: 'aplicaciones variado surtido' },
+  ion('time-outline', 'reloj hora 24 horas'),
+  ion('alarm-outline', 'alarma despertador'),
+  ion('timer-outline', 'temporizador rapido cronometro'),
+  ion('hourglass-outline', 'reloj de arena espera'),
+  ion('calendar-outline', 'calendario agenda fecha citas'),
+  ion('shapes-outline', 'figuras formas geometria'),
+  ion('layers-outline', 'capas niveles'),
+  ion('grid-outline', 'cuadricula general categorias'),
+  ion('apps-outline', 'aplicaciones variado surtido'),
   // ---- Ampliación 2026-07-11 ----
-  { name: 'ticket-outline', keywords: 'boleta entrada eventos rifa' },
-  { name: 'barcode-outline', keywords: 'codigo de barras producto' },
-  { name: 'qr-code-outline', keywords: 'codigo qr escanear' },
-  { name: 'scale-outline', keywords: 'balanza peso carniceria granero' },
-  { name: 'speedometer-outline', keywords: 'velocimetro rapido taller motos' },
-  { name: 'id-card-outline', keywords: 'identificacion carnet documento' },
-  { name: 'globe-outline', keywords: 'mundo internet idiomas' },
-  { name: 'flag-outline', keywords: 'bandera meta pais' },
-  { name: 'bookmark-outline', keywords: 'marcador guardado favorito' },
-  { name: 'eye-outline', keywords: 'ojo optica vision mirar' },
-  { name: 'paper-plane-outline', keywords: 'avion de papel mensajeria envio' },
-  { name: 'stats-chart-outline', keywords: 'estadisticas grafica finanzas' },
-  { name: 'trending-up-outline', keywords: 'crecimiento subida inversion' },
-  { name: 'list-outline', keywords: 'lista items menu' },
-  { name: 'options-outline', keywords: 'opciones ajustes controles' },
-  { name: 'checkmark-circle-outline', keywords: 'chulo aprobado verificado' },
-  { name: 'warning-outline', keywords: 'advertencia peligro precaucion' },
-  { name: 'female-outline', keywords: 'mujer femenino genero' },
-  { name: 'male-outline', keywords: 'hombre masculino genero' },
-  { name: 'finger-print-outline', keywords: 'huella identidad biometria' },
-  { name: 'ear-outline', keywords: 'oreja audicion audifonos medicos' },
-  { name: 'easel-outline', keywords: 'caballete arte pintura tablero' },
-  { name: 'bowling-ball-outline', keywords: 'bolos boliche bola' },
-  { name: 'help-buoy-outline', keywords: 'salvavidas ayuda piscina rescate' },
-  { name: 'save-outline', keywords: 'guardar diskette respaldo' },
-  { name: 'scan-outline', keywords: 'escanear lector' },
-  { name: 'share-social-outline', keywords: 'compartir redes sociales' },
-  { name: 'link-outline', keywords: 'enlace cadena conexion' },
-  { name: 'pin-outline', keywords: 'chinche tachuela fijar' },
-  { name: 'journal-outline', keywords: 'diario cuaderno agenda' },
-  { name: 'reader-outline', keywords: 'lector documento lectura' },
-  { name: 'archive-outline', keywords: 'archivo caja almacenamiento bodega' },
-  { name: 'file-tray-outline', keywords: 'bandeja documentos oficina' },
-  { name: 'albums-outline', keywords: 'albumes coleccion fotos' },
-  { name: 'copy-outline', keywords: 'copiar duplicar fotocopias' },
+  ion('ticket-outline', 'boleta entrada eventos rifa'),
+  ion('barcode-outline', 'codigo de barras producto'),
+  ion('qr-code-outline', 'codigo qr escanear'),
+  ion('scale-outline', 'balanza peso carniceria granero'),
+  ion('speedometer-outline', 'velocimetro rapido taller motos'),
+  ion('id-card-outline', 'identificacion carnet documento'),
+  ion('globe-outline', 'mundo internet idiomas'),
+  ion('flag-outline', 'bandera meta pais'),
+  ion('bookmark-outline', 'marcador guardado favorito'),
+  ion('eye-outline', 'ojo optica vision mirar'),
+  ion('paper-plane-outline', 'avion de papel mensajeria envio'),
+  ion('stats-chart-outline', 'estadisticas grafica finanzas'),
+  ion('trending-up-outline', 'crecimiento subida inversion'),
+  ion('list-outline', 'lista items menu'),
+  ion('options-outline', 'opciones ajustes controles'),
+  ion('checkmark-circle-outline', 'chulo aprobado verificado'),
+  ion('warning-outline', 'advertencia peligro precaucion'),
+  ion('female-outline', 'mujer femenino genero'),
+  ion('male-outline', 'hombre masculino genero'),
+  ion('finger-print-outline', 'huella identidad biometria'),
+  ion('ear-outline', 'oreja audicion audifonos medicos'),
+  ion('easel-outline', 'caballete arte pintura tablero'),
+  ion('bowling-ball-outline', 'bolos boliche bola'),
+  ion('help-buoy-outline', 'salvavidas ayuda piscina rescate'),
+  ion('save-outline', 'guardar diskette respaldo'),
+  ion('scan-outline', 'escanear lector'),
+  ion('share-social-outline', 'compartir redes sociales'),
+  ion('link-outline', 'enlace cadena conexion'),
+  ion('pin-outline', 'chinche tachuela fijar'),
+  ion('journal-outline', 'diario cuaderno agenda'),
+  ion('reader-outline', 'lector documento lectura'),
+  ion('archive-outline', 'archivo caja almacenamiento bodega'),
+  ion('file-tray-outline', 'bandeja documentos oficina'),
+  ion('albums-outline', 'albumes coleccion fotos'),
+  ion('copy-outline', 'copiar duplicar fotocopias'),
 ];
 
 /** Sin tildes y en minúsculas, para que "cámara" encuentre "camara". */
@@ -234,7 +313,7 @@ function normalize(text: string): string {
 }
 
 type Props = {
-  /** Nombre del icono elegido ('' = sin icono). */
+  /** Nombre del icono elegido (string vacío = sin icono). */
   value: string;
   onChange: (icon: string) => void;
   /** Icono ya guardado que podría no estar en la lista (se antepone). */
@@ -251,17 +330,18 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
 
   const entries = useMemo(() => {
     // Icono guardado a mano en la DB que no está en la lista: se antepone.
-    if (
-      savedIcon &&
-      savedIcon in Ionicons.glyphMap &&
-      !ICON_ENTRIES.some((e) => e.name === savedIcon)
-    ) {
-      return [
-        { name: savedIcon as IconName, keywords: '' },
-        ...ICON_ENTRIES,
-      ];
-    }
-    return ICON_ENTRIES;
+    if (!savedIcon) return ICON_ENTRIES;
+    const alreadyListed = ICON_ENTRIES.some(
+      (e) => toCatalogIconValue(e.ref) === savedIcon,
+    );
+    if (alreadyListed) return ICON_ENTRIES;
+
+    const isMci = savedIcon.startsWith('mci:');
+    const rawName = isMci ? savedIcon.slice(4) : savedIcon;
+    const ref: CatalogIconRef = isMci
+      ? { family: 'mci', name: rawName as MciName }
+      : { family: 'ionicons', name: rawName as IoniconsName };
+    return [{ ref, keywords: '' }, ...ICON_ENTRIES];
   }, [savedIcon]);
 
   const filtered = useMemo(() => {
@@ -269,10 +349,10 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
     if (!query) return entries;
     return entries.filter(
       (entry) =>
-        entry.name.includes(query) ||
+        entry.ref.name.includes(query) ||
         normalize(entry.keywords).includes(query) ||
         // El elegido siempre visible para poder deseleccionarlo.
-        entry.name === value,
+        toCatalogIconValue(entry.ref) === value,
     );
   }, [entries, search, value]);
 
@@ -282,7 +362,7 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
         <SearchBar
           value={search}
           onChangeText={setSearch}
-          placeholder="Buscar icono (ej: comida, carro, tijeras…)"
+          placeholder="Buscar icono (ej: taco, hamburguesa, tijeras…)"
         />
       </View>
 
@@ -301,24 +381,25 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
         >
           <View className="flex-row flex-wrap justify-center gap-2 px-2">
             {filtered.map((entry) => {
-            const selected = value === entry.name;
-            return (
-              <Pressable
-                key={entry.name}
-                onPress={() => onChange(selected ? '' : entry.name)}
-                className={`h-12 w-12 items-center justify-center rounded-xl border ${
-                  selected
-                    ? 'border-primary bg-primary-tint'
-                    : 'border-border bg-card'
-                }`}
-              >
-                <Ionicons
-                  name={entry.name}
-                  size={22}
-                  color={selected ? getAppColors().primaryColor : getAppColors().mutedColor}
-                />
-              </Pressable>
-            );
+              const entryValue = toCatalogIconValue(entry.ref);
+              const selected = value === entryValue;
+              return (
+                <Pressable
+                  key={entryValue}
+                  onPress={() => onChange(selected ? '' : entryValue)}
+                  className={`h-12 w-12 items-center justify-center rounded-xl border ${
+                    selected
+                      ? 'border-primary bg-primary-tint'
+                      : 'border-border bg-card'
+                  }`}
+                >
+                  <CatalogIconView
+                    icon={entry.ref}
+                    size={22}
+                    color={selected ? getAppColors().primaryColor : getAppColors().mutedColor}
+                  />
+                </Pressable>
+              );
             })}
           </View>
         </ScrollView>

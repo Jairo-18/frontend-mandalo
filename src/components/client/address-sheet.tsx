@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,6 +21,15 @@ type Props = {
 export function AddressSheet({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
+  // Mientras el formulario interno (y su mapa) está abierto, esta hoja se
+  // oculta: con los 2 modales anidados de acá + los del formulario + el
+  // mapa + el aviso de ubicación quedan 4 modales de React Native apilados,
+  // y Android no siempre saca a la vista el más nuevo (el aviso de ubicación
+  // quedaba invisible). Ocultar esta hoja de por medio baja la pila a la
+  // misma profundidad que desde "Mis direcciones" (sin esta hoja), donde sí
+  // funciona. El estado del formulario no se pierde: sigue montado, solo se
+  // deja de ver la ventana nativa de ESTE modal.
+  const [formOpen, setFormOpen] = useState(false);
 
   useEffect(() => {
     // Al abrir revalida si el TTL venció (normalmente no toca la red).
@@ -29,7 +38,7 @@ export function AddressSheet({ visible, onClose }: Props) {
 
   return (
     <Modal
-      visible={visible}
+      visible={visible && !formOpen}
       transparent
       animationType="slide"
       onRequestClose={onClose}
@@ -51,7 +60,7 @@ export function AddressSheet({ visible, onClose }: Props) {
           </Pressable>
         </View>
 
-        <AddressManager />
+        <AddressManager onFormVisibleChange={setFormOpen} />
       </View>
     </Modal>
   );

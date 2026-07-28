@@ -285,7 +285,11 @@ export function OrderDetailView({
                     !!org?.bancolombiaAccount && (
                       <PayRow
                         label="Cuenta Bancolombia"
-                        value={org.bancolombiaAccount}
+                        value={
+                          org.bancolombiaAccountType
+                            ? `${org.bancolombiaAccount} (${org.bancolombiaAccountType === 'AHORROS' ? 'Ahorros' : 'Corriente'})`
+                            : org.bancolombiaAccount
+                        }
                       />
                     )}
                   {order.paidType?.code === 'TRAN' && !!org?.bancolombiaQrUrl && (

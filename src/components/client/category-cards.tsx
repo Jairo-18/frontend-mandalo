@@ -1,6 +1,7 @@
 import { ScrollView } from 'react-native';
 
-import { catalogIcon, SquareCard } from '@/components/client/square-card';
+import { SquareCard } from '@/components/client/square-card';
+import { catalogIcon } from '@/lib/catalog-icon';
 import { ExploreFilterItem } from '@/services/explore';
 
 type Props = {

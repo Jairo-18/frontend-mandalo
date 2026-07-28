@@ -153,6 +153,11 @@ export default function BusinessDashboardScreen() {
           onPress={() => router.navigate('/business/earnings')}
         />
         <QuickAction
+          icon="cube-outline"
+          label="Mis productos"
+          onPress={() => router.navigate('/business/products')}
+        />
+        <QuickAction
           icon="storefront-outline"
           label="Mi negocio"
           onPress={() => router.navigate('/business/profile')}

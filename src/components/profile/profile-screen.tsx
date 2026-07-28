@@ -31,13 +31,14 @@ import {
 } from '@/lib/location';
 import { getSession, setSession } from '@/lib/session';
 import { signOutEverywhere } from '@/lib/sign-out';
-import { formatText, normalizePhone } from '@/lib/text-format';
+import { formatText, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
 import { MyProfile, profileService } from '@/services/profile';
 import { getAppColors } from '@/lib/app-colors';
 
 /** Campos editables cuyo valor inicial se recuerda para detectar cambios. */
 type FormSnapshot = {
   fullName: string;
+  username: string;
   phone: string;
   address: string;
   identificationNumber: string;
@@ -72,6 +73,10 @@ export function ProfileScreen({
   resendDocumentsHref,
 }: Props) {
   const router = useRouter();
+  // "Mis direcciones" es un concepto solo del cliente (a dónde le llegan los
+  // pedidos); el repartidor no lo tiene, así que la nota de más abajo no
+  // aplica para él.
+  const isClient = changePasswordHref === '/change-password';
   const { departments, identificationTypes } = useAppData();
   const muni = useMunicipalities();
   const { errors, clearError, bind, validate } = useFormErrors();
@@ -81,6 +86,7 @@ export function ProfileScreen({
 
   // Datos personales
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [identificationNumber, setIdentificationNumber] = useState('');
@@ -121,8 +127,9 @@ export function ProfileScreen({
         const p = res.data;
         setProfile(p);
         setFullName(p.fullName ?? '');
+        setUsername(p.username ?? '');
         // El backend guarda "+573102103660"; acá se muestra legible.
-        setPhone(formatText('phone', p.phone ?? ''));
+        setPhone(p.phone ? formatText('phone', p.phone) : PHONE_PREFIX);
         setAddress(p.address ?? '');
         setIdentificationNumber(p.identificationNumber ?? '');
         setIdentificationTypeId(p.identificationTypeId ?? undefined);
@@ -132,7 +139,8 @@ export function ProfileScreen({
         );
         setInitial({
           fullName: p.fullName ?? '',
-          phone: formatText('phone', p.phone ?? ''),
+          username: p.username ?? '',
+          phone: p.phone ? formatText('phone', p.phone) : PHONE_PREFIX,
           address: p.address ?? '',
           identificationNumber: p.identificationNumber ?? '',
           identificationTypeId: p.identificationTypeId ?? undefined,
@@ -167,6 +175,7 @@ export function ProfileScreen({
     !!coords ||
     (!!initial &&
       (fullName !== initial.fullName ||
+        username !== initial.username ||
         phone !== initial.phone ||
         address !== initial.address ||
         identificationNumber !== initial.identificationNumber ||
@@ -229,6 +238,7 @@ export function ProfileScreen({
       setSaving(true);
       await profileService.updateMe({
         fullName: fullName.trim(),
+        username: username.trim() || undefined,
         phone: normalizePhone(phone) || undefined,
         address: address.trim() || undefined,
         departmentId: muni.departmentId,
@@ -266,6 +276,7 @@ export function ProfileScreen({
       }
       setInitial({
         fullName,
+        username,
         phone,
         address,
         identificationNumber,
@@ -383,6 +394,15 @@ export function ProfileScreen({
               placeholder="Juan Pérez"
             />
             <TextField
+              label="Nombre de usuario"
+              icon="at-outline"
+              format="username"
+              value={username}
+              onChangeText={bind('username', setUsername)}
+              error={errors.username}
+              placeholder="juanp"
+            />
+            <TextField
               label="Celular"
               icon="call-outline"
               format="phone"
@@ -416,6 +436,14 @@ export function ProfileScreen({
               error={errors.identificationNumber}
               placeholder="1090123456"
             />
+
+            {isClient && (
+              <Text className="mb-3 -mt-1 text-xs leading-4 text-muted">
+                Esta es la ubicación donde vives siempre (tu perfil). Para
+                mandar tus pedidos SIEMPRE se usa la dirección que elijas en
+                &quot;Mis direcciones&quot;, no esta.
+              </Text>
+            )}
 
             <Select
               label="Departamento"
