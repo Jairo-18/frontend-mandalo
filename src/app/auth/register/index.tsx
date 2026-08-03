@@ -1,49 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthHeader } from '@/components/auth/auth-header';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { useAppTheme } from '@/context/app-theme';
-import { toast } from '@/lib/toast';
 import { getAppColors } from '@/lib/app-colors';
-
-const BUSINESS_CONTACT_EMAIL = 'mandaloputumayo@gmail.com';
-
-/**
- * Los negocios no se auto-registran: abre el correo del dispositivo con un
- * mensaje pre-armado hacia el equipo de Mándalo, con los datos mínimos que
- * necesitan para dar de alta la cuenta (el usuario completa los espacios).
- */
-async function contactAboutBusiness() {
-  const subject = 'Solicitud de registro de negocio en Mándalo';
-  const body = [
-    'Hola equipo de Mándalo,',
-    '',
-    'Quiero registrar mi negocio en la app. Estos son mis datos:',
-    '',
-    'Nombre del negocio: ',
-    'Nombre del titular / representante: ',
-    'Número de identificación (NIT o cédula): ',
-    'Teléfono de contacto: ',
-    'Correo de contacto: ',
-    'Tipo de negocio (comida rápida, tienda, etc.): ',
-    'Municipio y dirección: ',
-    '',
-    'Quedo atento(a). Gracias.',
-  ].join('\n');
-
-  const url = `mailto:${BUSINESS_CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  try {
-    await Linking.openURL(url);
-  } catch {
-    toast.error(
-      `No se pudo abrir tu app de correo. Escríbenos a ${BUSINESS_CONTACT_EMAIL}`,
-    );
-  }
-}
 
 type RoleCardProps = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -126,7 +90,7 @@ export default function RegisterChooser() {
             Mismo lenguaje visual que RoleCard (icono en caja + chevron) para
             que las 3 tarjetas se vean consistentes en esta pantalla. */}
         <Pressable
-          onPress={contactAboutBusiness}
+          onPress={() => router.push('/auth/register/business')}
           className="mt-1 flex-row items-center gap-3 rounded-2xl bg-surface p-4 active:opacity-70"
         >
           <View className="h-11 w-11 items-center justify-center rounded-xl bg-card">
@@ -134,7 +98,7 @@ export default function RegisterChooser() {
           </View>
           <Text className="flex-1 text-xs leading-4 text-muted">
             ¿Tienes un negocio? El equipo de Mándalo crea tu cuenta — toca
-            para escribirnos y contarnos de tu negocio.
+            para contarnos de tu negocio.
           </Text>
           <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
         </Pressable>

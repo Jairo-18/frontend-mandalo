@@ -177,6 +177,26 @@ export const authService = {
       toastSuccess: true,
     }),
 
+  /**
+   * Formulario "¿Tienes un negocio?" del registro: manda los datos directo
+   * al equipo de Mándalo por correo (antes abría el correo del dispositivo
+   * con un `mailto:`). Sin cuenta todavía — los negocios no se auto-registran.
+   */
+  businessLead: (payload: {
+    businessName: string;
+    ownerName: string;
+    phone: string;
+    contactEmail?: string;
+    identificationNumber?: string;
+    businessType: string;
+    municipalityAddress: string;
+  }) =>
+    http<{ message?: string }>('/user/business-lead', {
+      method: 'POST',
+      body: payload,
+      toastSuccess: true,
+    }),
+
   /** Reenvía el correo de verificación (botón del login tras el 401). */
   resendVerification: (email: string) =>
     http<{ message?: string }>('/user/resend-verification', {

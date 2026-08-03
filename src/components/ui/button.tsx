@@ -23,7 +23,7 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
-      className={`h-[54px] items-center justify-center rounded-[30px] active:opacity-80 ${
+      className={`h-[54px] items-center justify-center rounded-[30px] px-6 active:opacity-80 ${
         isPrimary
           ? 'bg-primary shadow-md'
           : 'border-[1.5px] border-primary bg-card'

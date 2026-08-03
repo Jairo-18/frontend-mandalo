@@ -106,6 +106,9 @@ export function ProfileScreen({
   // Cuenta: eliminar cuenta (self-service, exigido por Google Play)
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Cuenta: cerrar sesión (antes vivía en el pie del drawer, ver NOTAS).
+  const [signingOut, setSigningOut] = useState(false);
+
   const departmentOptions = useMemo(
     () => departments.map((d) => ({ label: d.name, value: d.id })),
     [departments],
@@ -333,6 +336,13 @@ export function ProfileScreen({
       // El interceptor HTTP ya mostró el toast.
       setConfirmDelete(false);
     }
+  }
+
+  async function handleLogout() {
+    setSigningOut(true);
+    // Navega al login por dentro, con el overlay "Cerrando sesión…".
+    await signOutEverywhere();
+    setSigningOut(false);
   }
 
   if (loading) {
@@ -602,6 +612,23 @@ export function ProfileScreen({
                 Cambiar contraseña
               </Text>
               <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
+            </Pressable>
+
+            {/* Cerrar sesión: antes vivía en el pie del drawer — al pasar a
+                menú inferior (NOTAS) quedó sin lugar, así que va acá. */}
+            <Pressable
+              onPress={handleLogout}
+              disabled={signingOut}
+              className="mt-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+            >
+              {signingOut ? (
+                <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+              ) : (
+                <Ionicons name="log-out-outline" size={20} color={getAppColors().primaryColor} />
+              )}
+              <Text className="flex-1 text-[14px] font-bold text-primary">
+                Cerrar sesión
+              </Text>
             </Pressable>
 
             {/* Política de privacidad: antes solo se veía en el registro; se
