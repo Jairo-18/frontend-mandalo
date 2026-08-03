@@ -52,7 +52,7 @@ const DEV_API_URL =
 const PROD_API_URL = pick(
   RUNTIME_ENV.EXPO_PUBLIC_PROD_API_URL,
   process.env.EXPO_PUBLIC_PROD_API_URL,
-  'https://apimandaloprod.ecohotelsamawe.com',
+  'https://apiprod.somosmandalo.com',
 );
 
 const RAW_API_URL = (

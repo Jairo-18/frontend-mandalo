@@ -6,6 +6,7 @@ export type OrderStateCode =
   | 'ACEP'
   | 'PREP'
   | 'RUTA'
+  | 'FALL'
   | 'ENTR'
   | 'CANC';
 
@@ -22,6 +23,7 @@ export const ORDER_STATE: Record<OrderStateCode, StateMeta> = {
   ACEP: { label: 'Aceptado', tone: 'primary', icon: 'checkmark-circle-outline' },
   PREP: { label: 'En preparación', tone: 'primary', icon: 'restaurant-outline' },
   RUTA: { label: 'En camino', tone: 'primary', icon: 'bicycle-outline' },
+  FALL: { label: 'Entrega fallida', tone: 'amber', icon: 'alert-circle-outline' },
   ENTR: { label: 'Entregado', tone: 'green', icon: 'checkmark-done-outline' },
   CANC: { label: 'Cancelado', tone: 'red', icon: 'close-circle-outline' },
 };

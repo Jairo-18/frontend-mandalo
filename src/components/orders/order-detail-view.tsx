@@ -30,6 +30,8 @@ type Props = {
   perspective: Perspective;
   /** El cliente subió/cambió el soporte de pago (para recargar el pedido). */
   onPaymentProofChanged?: () => void;
+  /** El cliente decidió algo tras una entrega fallida (reintentar/cancelar). */
+  onOrderChanged?: () => void;
 };
 
 /**
@@ -41,11 +43,13 @@ export function OrderDetailView({
   order,
   perspective,
   onPaymentProofChanged,
+  onOrderChanged,
 }: Props) {
   const router = useRouter();
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofViewerOpen, setProofViewerOpen] = useState(false);
   const [proofMenuVisible, setProofMenuVisible] = useState(false);
+  const [decidingFailure, setDecidingFailure] = useState(false);
 
   const businessName = order.organizational
     ? businessDisplayName(order.organizational)
@@ -91,6 +95,37 @@ export function OrderDetailView({
   // (queda de solo lectura al finalizar; la pantalla del chat lo maneja).
   const chatAvailable = perspective !== 'business' && !!order.deliveryUser;
 
+  // Entrega fallida (Anexo I / Art. 31-32 TYC, NOTAS §59): solo el CLIENTE
+  // decide, y solo si no se ha usado ya el único reintento permitido.
+  const awaitingFailureDecision =
+    perspective === 'client' && state === 'FALL' && order.retryCount < 1;
+
+  async function retryDelivery() {
+    setDecidingFailure(true);
+    try {
+      await ordersService.changeState(order.id, 'RUTA');
+      onOrderChanged?.();
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setDecidingFailure(false);
+    }
+  }
+
+  async function cancelAfterFailure() {
+    setDecidingFailure(true);
+    try {
+      await ordersService.changeState(order.id, 'CANC', {
+        cancellationReason: 'El cliente decidió no reintentar la entrega.',
+      });
+      onOrderChanged?.();
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setDecidingFailure(false);
+    }
+  }
+
   return (
     <View className="p-5">
       {/* Progreso + estimado vigente */}
@@ -125,6 +160,51 @@ export function OrderDetailView({
             caption="Díctaselo al domiciliario cuando recibas tu pedido."
           />
         )}
+
+      {/* Entrega fallida: el cliente decide reintentar (cargo del Anexo I) o
+          cancelar. Si ya se usó el único reintento, solo queda cancelar —
+          el motivo se muestra igual, sin botones. */}
+      {state === 'FALL' && (
+        <View className="mb-5 rounded-2xl bg-amber-50 p-3.5">
+          <View className="flex-row gap-2">
+            <Ionicons name="alert-circle-outline" size={18} color="#B45309" />
+            <Text className="flex-1 text-[13px] text-amber-700">
+              No se pudo entregar tu pedido
+              {order.deliveryFailReason ? `: ${order.deliveryFailReason}` : '.'}
+            </Text>
+          </View>
+          {awaitingFailureDecision ? (
+            <View className="mt-3 flex-row gap-2.5">
+              <Pressable
+                onPress={retryDelivery}
+                disabled={decidingFailure}
+                className={`h-11 flex-1 items-center justify-center rounded-xl bg-primary active:opacity-80 ${decidingFailure ? 'opacity-60' : ''}`}
+              >
+                {decidingFailure ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text className="text-[13px] font-bold text-white">
+                    Reintentar (+$6.000)
+                  </Text>
+                )}
+              </Pressable>
+              <Pressable
+                onPress={cancelAfterFailure}
+                disabled={decidingFailure}
+                className={`h-11 flex-1 items-center justify-center rounded-xl border border-red-300 active:opacity-70 ${decidingFailure ? 'opacity-60' : ''}`}
+              >
+                <Text className="text-[13px] font-bold text-red-600">
+                  Cancelar pedido
+                </Text>
+              </Pressable>
+            </View>
+          ) : perspective === 'client' ? (
+            <Text className="mt-2 text-[12px] text-amber-700">
+              Ya se usó el reintento disponible para este pedido.
+            </Text>
+          ) : null}
+        </View>
+      )}
 
       {!!order.cancellationReason && (
         <View className="mb-5 flex-row gap-2 rounded-2xl bg-red-50 p-3.5">
@@ -394,6 +474,9 @@ export function OrderDetailView({
       <View className="rounded-2xl bg-card p-4">
         <TotalRow label="Subtotal" value={formatPrice(order.subtotal)} />
         <TotalRow label="Domicilio" value={formatPrice(order.deliveryFee)} />
+        {order.deliverySurcharge > 0 && (
+          <TotalRow label="Recargo" value={formatPrice(order.deliverySurcharge)} />
+        )}
         <TotalRow label="Servicio" value={formatPrice(order.serviceFee)} />
         <View className="my-2 h-px bg-border" />
         <TotalRow label="Total" value={formatPrice(order.total)} bold />

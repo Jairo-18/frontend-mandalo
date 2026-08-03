@@ -32,11 +32,20 @@ export type Order = {
   deliveryLongitude: number | null;
   subtotal: number;
   deliveryFee: number;
-  /** Tarifa de servicio: % del subtotal (sin domicilio), topada en un máximo. */
+  /** Recargos del Anexo I (nocturno/clima/demanda + segundo intento) — 100% repartidor. */
+  deliverySurcharge: number;
+  /** Tarifa de servicio: % del subtotal (sin domicilio). */
   serviceFee: number;
   total: number;
   notes: string | null;
   cancellationReason: string | null;
+  /** Motivo por el que el repartidor no pudo entregar (estado FALL). */
+  deliveryFailReason: string | null;
+  deliveryFailedAt: string | null;
+  /** 0 = nunca se reintentó; 1 = ya se usó el único reintento permitido. */
+  retryCount: number;
+  /** Cuánto se cobró por el reintento (0 si nunca se reintentó). */
+  retryFeeCharged: number;
   /** Soporte del pago (foto/pantallazo) cuando el método no es efectivo. */
   paymentProofUrl: string | null;
   /** Si el negocio rechazó el comprobante: el motivo (el cliente re-sube). */
@@ -141,8 +150,10 @@ export const ordersService = {
    * Tarifa del domicilio EN VIVO por distancia (checkout): negocio +
    * coordenadas de la dirección elegida. Sin coordenadas cae a la tarifa fija
    * de respaldo (el backend decide) y `distanceKm` sale `null`. De paso trae
-   * la tarifa de servicio (si se manda `subtotal`) — mismo cálculo que hace
-   * el backend al crear el pedido, así el checkout no duplica el % ni el tope.
+   * la tarifa de servicio (si se manda `subtotal`) y los recargos del Anexo I
+   * (`deliverySurcharge`, con `surchargeReasons` para mostrarlos) — mismo
+   * cálculo que hace el backend al crear el pedido, así el checkout no
+   * duplica el % ni el tope.
    */
   deliveryFee: (params: {
     organizationalId: number;
@@ -159,7 +170,13 @@ export const ordersService = {
     }
     if (params.subtotal != null) query.set('subtotal', String(params.subtotal));
     return http<{
-      data: { deliveryFee: number; distanceKm: number | null; serviceFee: number };
+      data: {
+        deliveryFee: number;
+        deliverySurcharge: number;
+        surchargeReasons: string[];
+        distanceKm: number | null;
+        serviceFee: number;
+      };
     }>(`/invoice/delivery-fee?${query.toString()}`, { auth: true });
   },
 
@@ -246,8 +263,11 @@ export const ordersService = {
     }),
 
   /**
-   * Cambia el estado (aceptar/preparar/en ruta/entregar/cancelar). Al ACEPTAR
-   * el backend exige `prepEstimatedMinutes`; al CANCELAR, el motivo.
+   * Cambia el estado (aceptar/preparar/en ruta/entregar/cancelar/reportar
+   * entrega fallida). Al ACEPTAR el backend exige `prepEstimatedMinutes`; al
+   * CANCELAR, el motivo; al pasar a FALL, `failureReason`. Reintentar tras
+   * una entrega fallida es este mismo método con `stateCode: 'RUTA'` estando
+   * en FALL — el backend cobra el cargo del Anexo I solo.
    */
   changeState: (
     id: number,
@@ -258,6 +278,8 @@ export const ordersService = {
       /** RUTA: código de recogida (lo dicta el repartidor al negocio);
        *  ENTR: código de entrega (lo dicta el cliente al repartidor). */
       verificationCode?: string;
+      /** Obligatorio al pasar a FALL: por qué no se pudo entregar. */
+      failureReason?: string;
     },
   ) =>
     http<{ message?: string }>(`/invoice/${id}/state`, {
@@ -272,6 +294,9 @@ export const ordersService = {
           : {}),
         ...(extra?.verificationCode
           ? { verificationCode: extra.verificationCode }
+          : {}),
+        ...(extra?.failureReason
+          ? { failureReason: extra.failureReason }
           : {}),
       },
       auth: true,

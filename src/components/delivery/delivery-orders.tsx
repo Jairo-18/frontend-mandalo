@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActionButton } from '@/components/orders/action-button';
 import { OrderCard } from '@/components/orders/order-card';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
+import { ReportDeliveryFailureDialog } from '@/components/orders/report-delivery-failure-dialog';
 import { VerificationCodeDialog } from '@/components/orders/verification-code-dialog';
 import { useDeliveryPositionBroadcast } from '@/lib/delivery-tracker';
 import {
@@ -122,6 +123,11 @@ export function DeliveryOrders() {
 
   // Entrega verificada: pide el código que el CLIENTE ve en su app.
   const [deliverTarget, setDeliverTarget] = useState<{ id: number } | null>(
+    null,
+  );
+  // Entrega fallida (Art. 31-32 TYC, NOTAS §59): pide el motivo, después el
+  // pedido queda esperando que el CLIENTE decida reintentar o cancelar.
+  const [failureTarget, setFailureTarget] = useState<{ id: number } | null>(
     null,
   );
 
@@ -264,14 +270,22 @@ export function DeliveryOrders() {
               />
             );
           }
-          // Pedido mío ya despachado por el negocio: se puede entregar.
+          // Pedido mío ya despachado por el negocio: se puede entregar o,
+          // si no se pudo, reportarlo (queda esperando al cliente).
           if (order.deliveryUserId === myId && code === 'RUTA') {
             return (
-              <ActionButton
-                label="Marcar entregado"
-                variant="success"
-                onPress={() => setDeliverTarget({ id: order.id })}
-              />
+              <View className="flex-row gap-3">
+                <ActionButton
+                  label="No se pudo entregar"
+                  variant="danger-outline"
+                  onPress={() => setFailureTarget({ id: order.id })}
+                />
+                <ActionButton
+                  label="Marcar entregado"
+                  variant="success"
+                  onPress={() => setDeliverTarget({ id: order.id })}
+                />
+              </View>
             );
           }
           return null;
@@ -294,6 +308,21 @@ export function DeliveryOrders() {
           setDeliverTarget(null);
         }}
         onCancel={() => setDeliverTarget(null)}
+      />
+
+      {/* Reporte de entrega fallida: solo "Mis entregas" cambia (el pedido
+          queda esperando al cliente, no vuelve a "Disponibles"). */}
+      <ReportDeliveryFailureDialog
+        visible={failureTarget != null}
+        onConfirm={async (failureReason) => {
+          if (!failureTarget) return;
+          await ordersService.changeState(failureTarget.id, 'FALL', {
+            failureReason,
+          });
+          mine.fetchPage(1, 'refresh');
+          setFailureTarget(null);
+        }}
+        onCancel={() => setFailureTarget(null)}
       />
 
       {/*

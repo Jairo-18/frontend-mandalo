@@ -49,6 +49,8 @@ export default function CheckoutScreen() {
   // dato global cacheable como antes, cambia con cada negocio/dirección. La
   // tarifa de servicio viaja en la misma respuesta (depende del subtotal).
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [deliverySurcharge, setDeliverySurcharge] = useState(0);
+  const [surchargeReasons, setSurchargeReasons] = useState<string[]>([]);
   const [serviceFee, setServiceFee] = useState(0);
   const [loadingFee, setLoadingFee] = useState(false);
   useEffect(() => {
@@ -63,6 +65,8 @@ export default function CheckoutScreen() {
       })
       .then((res) => {
         setDeliveryFee(res.data.deliveryFee);
+        setDeliverySurcharge(res.data.deliverySurcharge);
+        setSurchargeReasons(res.data.surchargeReasons);
         setServiceFee(res.data.serviceFee);
       })
       .catch(() => {
@@ -121,7 +125,7 @@ export default function CheckoutScreen() {
     }
   }, [paymentOptions, payment]);
 
-  const total = cart.subtotal + deliveryFee + serviceFee;
+  const total = cart.subtotal + deliveryFee + deliverySurcharge + serviceFee;
 
   // Carrito vacío (p. ej. tras confirmar): no hay nada que pagar.
   if (cart.count === 0) {
@@ -409,6 +413,12 @@ export default function CheckoutScreen() {
             label="Domicilio"
             value={loadingFee ? 'Calculando…' : formatPrice(deliveryFee)}
           />
+          {!loadingFee && deliverySurcharge > 0 && (
+            <Row
+              label={`Recargo${surchargeReasons.length ? ` (${surchargeReasons.join(', ')})` : ''}`}
+              value={formatPrice(deliverySurcharge)}
+            />
+          )}
           <Row
             label="Servicio"
             value={loadingFee ? 'Calculando…' : formatPrice(serviceFee)}

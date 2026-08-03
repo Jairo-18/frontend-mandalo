@@ -1,4 +1,4 @@
-# Versión WEB de Mándalo (mandalofront.ecohotelsamawe.com, Dokploy).
+# Versión WEB de Mándalo (app.somosmandalo.com, Dokploy).
 # Etapa "build": compila el SPA con expo export · etapa "production": nginx
 # sirve dist/ (Docker Build Stage en Dokploy: "production", o vacío = última).
 #
@@ -7,8 +7,8 @@
 #                               al que pegue esta web (dev o prod).
 #   EXPO_PUBLIC_PROD_API_URL    (opcional) = URL del API. Sin él, el default
 #                               de constants/api.ts es el PROD
-#                               (https://apimandaloprod.ecohotelsamawe.com).
-#                               Para la web DEV: https://apimandalo.ecohotelsamawe.com
+#                               (https://apiprod.somosmandalo.com).
+#                               Para la web DEV: https://apidev.somosmandalo.com
 #                               (+ la key de dev en el arg de arriba).
 
 FROM node:22-alpine AS build
@@ -27,7 +27,7 @@ COPY . .
 ARG EXPO_PUBLIC_CLIENT_API_KEY
 # Sin el arg (o vacío) quedaría "" horneado y el `??` de constants/api.ts no
 # caería al default → el default vive acá.
-ARG EXPO_PUBLIC_PROD_API_URL=https://apimandaloprod.ecohotelsamawe.com
+ARG EXPO_PUBLIC_PROD_API_URL=https://apiprod.somosmandalo.com
 ENV EXPO_PUBLIC_CLIENT_API_KEY=$EXPO_PUBLIC_CLIENT_API_KEY
 ENV EXPO_PUBLIC_PROD_API_URL=$EXPO_PUBLIC_PROD_API_URL
 ENV EXPO_NO_TELEMETRY=1

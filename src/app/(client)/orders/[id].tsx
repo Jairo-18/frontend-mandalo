@@ -124,6 +124,7 @@ export default function ClientOrderDetailScreen() {
               order={order}
               perspective="client"
               onPaymentProofChanged={() => load('refresh')}
+              onOrderChanged={() => load('refresh')}
             />
           </ScrollView>
 

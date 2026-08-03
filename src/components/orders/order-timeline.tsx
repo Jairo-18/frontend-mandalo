@@ -15,6 +15,7 @@ function stepTime(order: Order, code: OrderStateCode): string | null {
     ACEP: order.acceptedAt,
     PREP: order.preparingAt,
     RUTA: order.onRouteAt,
+    FALL: order.deliveryFailedAt,
     ENTR: order.deliveredAt,
     CANC: order.cancelledAt,
   }[code];
@@ -43,7 +44,12 @@ export function OrderTimeline({ order }: Props) {
     );
   }
 
-  const currentIndex = ORDER_FLOW.indexOf(stateCode as never);
+  // FALL no es parte del flujo feliz (es un desvío temporal que se resuelve
+  // de vuelta a RUTA o a CANC) — para el progreso visual, cuenta como si
+  // siguiera en RUTA (ahí es a donde en verdad llegó el pedido).
+  const currentIndex = ORDER_FLOW.indexOf(
+    (stateCode === 'FALL' ? 'RUTA' : stateCode) as never,
+  );
 
   return (
     <View className="flex-row items-start justify-between">

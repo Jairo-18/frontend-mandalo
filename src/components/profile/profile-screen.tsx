@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Platform,
   Pressable,
   Text,
@@ -607,9 +608,10 @@ export function ProfileScreen({
 
             {/* Política de privacidad: antes solo se veía en el registro; se
                 referencia desde el aviso de ubicación en segundo plano del
-                repartidor, así que debe poder leerse también ya logueado. */}
+                repartidor, así que debe poder leerse también ya logueado.
+                Abre la web (documento legal oficial) en vez de una pantalla interna. */}
             <Pressable
-              onPress={() => router.push('/auth/privacy')}
+              onPress={() => Linking.openURL('https://somosmandalo.com/politicas-de-privacidad')}
               className="mt-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
               <Ionicons name="shield-outline" size={20} color={getAppColors().mutedColor} />
