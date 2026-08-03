@@ -90,7 +90,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
         className="bg-dark px-5 pb-5"
         style={{ paddingTop: insets.top + 20 }}
       >
-        <Text className="text-2xl font-extrabold text-primary">Mándalo</Text>
+        <Text className="text-2xl font-extrabold text-primary">Mandalo</Text>
         <Text className="mt-0.5 text-[11px] font-bold uppercase tracking-widest text-white/60">
           Panel del negocio
         </Text>

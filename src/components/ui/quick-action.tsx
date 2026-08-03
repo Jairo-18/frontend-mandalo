@@ -22,10 +22,10 @@ export function QuickAction({
   return (
     <Pressable
       onPress={onPress}
-      className="w-[31%] flex-grow items-center gap-1.5 rounded-2xl bg-card p-3 active:opacity-80"
+      className="w-[31%] flex-grow items-center gap-1.5 rounded-2xl border border-border bg-card p-3 active:opacity-80"
     >
-      <View className="h-9 w-9 items-center justify-center rounded-full bg-primary-tint">
-        <Ionicons name={icon} size={18} color={getAppColors().primaryColor} />
+      <View className="h-9 w-9 items-center justify-center">
+        <Ionicons name={icon} size={22} color={getAppColors().primaryColor} />
       </View>
       <Text numberOfLines={1} className="text-center text-xs font-semibold text-ink">
         {label}

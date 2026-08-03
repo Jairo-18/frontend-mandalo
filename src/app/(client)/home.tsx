@@ -2,7 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -23,7 +30,7 @@ import { useCart } from '@/context/cart';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useExploreFilters, useUserAddresses } from '@/hooks/use-user-data';
 import { useSession } from '@/hooks/use-session';
-import { gridItemStyle } from '@/lib/grid-style';
+import { columnsForWidth, gridItemStyle } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
 import { getAppColors } from '@/lib/app-colors';
 import {
@@ -50,6 +57,9 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const cart = useCart();
+  // Grid responsivo: 2 columnas en celular, hasta 6 en web ancho/tablet
+  // (mismo cálculo que store/[id].tsx, ver lib/grid-style.ts).
+  const numColumns = columnsForWidth(useWindowDimensions().width);
   // Botón "ver filtros" del buscador: abre la hoja de filtros (select), los
   // sliders "Negocios"/"Categorías" del layout siguen ahí, es otra forma de
   // elegir lo mismo.
@@ -307,12 +317,15 @@ export default function HomeScreen() {
       <View className="flex-1 bg-surface">
       {businessMode ? (
         <FlatList
+          key={numColumns}
           data={businessList.items}
           keyExtractor={(item) => `b-${item.id}`}
-          numColumns={2}
+          numColumns={numColumns}
           columnWrapperStyle={{ paddingHorizontal: 16, gap: 12 }}
           renderItem={({ item, index }) => (
-            <View style={gridItemStyle(index, businessList.items.length)}>
+            <View
+              style={gridItemStyle(index, businessList.items.length, numColumns)}
+            >
               <BusinessGridCard
                 business={item}
                 onPress={() => openStore(item.id)}
@@ -344,12 +357,15 @@ export default function HomeScreen() {
         />
       ) : (
         <FlatList
+          key={numColumns}
           data={productList.items}
           keyExtractor={(item) => `p-${item.id}`}
-          numColumns={2}
+          numColumns={numColumns}
           columnWrapperStyle={{ paddingHorizontal: 16, gap: 12 }}
           renderItem={({ item, index }) => (
-            <View style={gridItemStyle(index, productList.items.length)}>
+            <View
+              style={gridItemStyle(index, productList.items.length, numColumns)}
+            >
               <ProductGridCard
                 product={item}
                 onPress={

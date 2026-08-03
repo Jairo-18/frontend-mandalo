@@ -36,7 +36,7 @@ export function ProductGridCard({
   return (
     <Pressable
       onPress={onPress}
-      className="mb-3 overflow-hidden rounded-2xl bg-card active:opacity-80"
+      className="mb-3 overflow-hidden rounded-2xl border border-border bg-card active:opacity-80"
     >
       <View className="w-full bg-surface" style={{ aspectRatio: 1 }}>
         <Image

@@ -336,7 +336,7 @@ export function DeliveryOrders() {
         visible={needsBackgroundDisclosure}
         icon="navigate-outline"
         title="Ubicación en segundo plano"
-        message="Para que el cliente vea en vivo dónde va su pedido —incluso con la pantalla bloqueada o Mándalo en segundo plano— necesitamos tu ubicación exacta mientras tengas una entrega EN CAMINO. Se activa solo con pedidos asignados a ti y se apaga sola al entregar. Puedes revisar cómo tratamos tus datos en Política de Privacidad, dentro de Mi perfil."
+        message="Para que el cliente vea en vivo dónde va su pedido —incluso con la pantalla bloqueada o Mandalo en segundo plano— necesitamos tu ubicación exacta mientras tengas una entrega EN CAMINO. Se activa solo con pedidos asignados a ti y se apaga sola al entregar. Puedes revisar cómo tratamos tus datos en Política de Privacidad, dentro de Mi perfil."
         confirmLabel="Activar ubicación"
         cancelLabel="Ahora no"
         onConfirm={grantBackgroundConsent}

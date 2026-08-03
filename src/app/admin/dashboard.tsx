@@ -92,7 +92,7 @@ export default function AdminDashboardScreen() {
             </Text>
             <Text className="mt-0.5 text-xs text-white/70">
               Así va{' '}
-              <Text className="font-extrabold text-primary-soft">Mándalo</Text> hoy.
+              <Text className="font-extrabold text-primary-soft">Mandalo</Text> hoy.
             </Text>
           </View>
           <ThemeToggle

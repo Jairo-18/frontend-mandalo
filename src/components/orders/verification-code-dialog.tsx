@@ -68,7 +68,7 @@ export function VerificationCodeDialog({
           onPress={working ? undefined : onCancel}
         >
           <Pressable
-            className="w-full rounded-3xl bg-card p-6"
+            className="w-full rounded-3xl border border-border bg-card p-6"
             onPress={() => {}}
           >
             <View className="mb-4 h-14 w-14 items-center justify-center self-center rounded-full bg-primary-tint">

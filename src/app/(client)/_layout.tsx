@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs, useRouter } from 'expo-router';
+import { PlatformPressable } from 'expo-router/react-navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { useSession } from '@/hooks/use-session';
@@ -70,16 +71,20 @@ export default function ClientLayout() {
 
   const isGuest = !user;
 
-  /** Invitado tocando una pestaña con cuenta → lo manda a iniciar sesión. */
-  function guardedTabBarButton({ children, style, onPress, ...rest }: any) {
+  /**
+   * Invitado tocando una pestaña con cuenta → lo manda a iniciar sesión.
+   * OJO: tiene que ser PlatformPressable (no un Pressable a secas) — en web
+   * es quien hace `e.preventDefault()` en el click antes de navegar; con un
+   * Pressable normal, el `href` que expo-router le pasa a cada pestaña
+   * termina disparando la navegación NATIVA del navegador (recarga completa
+   * de página, se veía como "Cargando Mandalo" en cada tap del menú).
+   */
+  function guardedTabBarButton({ onPress, ...rest }: any) {
     return (
-      <Pressable
+      <PlatformPressable
         {...rest}
-        style={style}
         onPress={isGuest ? () => router.push('/auth/login') : onPress}
-      >
-        {children}
-      </Pressable>
+      />
     );
   }
 

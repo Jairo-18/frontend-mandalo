@@ -45,7 +45,7 @@ export function ProductCard({
   return (
     <Wrapper
       onPress={onPress}
-      className="mb-3 flex-row items-center gap-3 rounded-2xl bg-card p-3.5 active:opacity-80"
+      className="mb-3 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5 active:opacity-80"
     >
       {/* Tocar la foto abre la preview (el Pressable anidado gana el toque,
           así no navega al negocio ni agrega al carrito). */}

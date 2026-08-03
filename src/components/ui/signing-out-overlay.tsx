@@ -18,7 +18,7 @@ export function SigningOutOverlay() {
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent>
       <View className="flex-1 items-center justify-center bg-dark">
-        <Text className="text-2xl font-extrabold text-primary">Mándalo</Text>
+        <Text className="text-2xl font-extrabold text-white">Mandalo</Text>
         <ActivityIndicator
           size="large"
           color={getAppColors().primaryColor}

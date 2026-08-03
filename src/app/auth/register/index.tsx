@@ -22,8 +22,8 @@ function RoleCard({ icon, title, desc, onPress }: RoleCardProps) {
       onPress={onPress}
       className="mb-4 flex-row items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary active:bg-primary-tint"
     >
-      <View className="h-14 w-14 items-center justify-center rounded-2xl bg-primary-tint">
-        <Ionicons name={icon} size={28} color={getAppColors().primaryColor} />
+      <View className="h-14 w-14 items-center justify-center">
+        <Ionicons name={icon} size={32} color={getAppColors().primaryColor} />
       </View>
       <View className="flex-1">
         <Text className="text-[17px] font-extrabold text-ink">{title}</Text>
@@ -46,7 +46,7 @@ export default function RegisterChooser() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <AuthHeader
         compact
-        subtitle="Únete a Mándalo"
+        subtitle="Únete a Mandalo"
         onBack={() =>
           router.canGoBack() ? router.back() : router.replace('/auth/login')
         }
@@ -97,7 +97,7 @@ export default function RegisterChooser() {
             <Ionicons name="storefront-outline" size={20} color={getAppColors().primaryColor} />
           </View>
           <Text className="flex-1 text-xs leading-4 text-muted">
-            ¿Tienes un negocio? El equipo de Mándalo crea tu cuenta — toca
+            ¿Tienes un negocio? El equipo de Mandalo crea tu cuenta — toca
             para contarnos de tu negocio.
           </Text>
           <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />

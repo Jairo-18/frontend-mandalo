@@ -57,13 +57,15 @@ export function AuthHeader({
           <View className="mb-3 mt-2 h-[60px] w-[60px] items-center justify-center self-center rounded-full bg-card shadow-md">
             <Ionicons name="bag-handle" size={28} color={primaryColor} />
           </View>
-          {/* Sobre el degradado de marca (blanco→naranja) SIEMPRE fijo, no
-              sobre bg-surface/bg-card: el texto debe quedar navy fijo, no
-              aclararse en modo oscuro (se volvería invisible). */}
-          <Text className="text-[50px] font-extrabold tracking-tighter text-dark">
-            Mándalo.
+          {/* Sobre el degradado de marca (blanco→rojo) SIEMPRE fijo, no sobre
+              bg-surface/bg-card: blanco para que contraste contra el rojo del
+              degradado, sin importar el tema. Pedido del cliente: "Mandalo"
+              sin tilde acá (el nombre oficial con tilde sigue igual en el
+              resto de la app). */}
+          <Text className="text-[50px] font-extrabold tracking-tighter text-white">
+            Mandalo.
           </Text>
-          <Text className="mt-0.5 text-lg font-extrabold text-dark">{subtitle}</Text>
+          <Text className="mt-0.5 text-lg font-extrabold text-white">{subtitle}</Text>
         </View>
       </SafeAreaView>
     </LinearGradient>

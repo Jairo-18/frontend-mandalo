@@ -83,7 +83,7 @@ export function ChatThreadsScreen({ menu }: Props) {
               return (
                 <Pressable
                   onPress={() => router.push(`/chat/${item.invoiceId}`)}
-                  className="mb-3 flex-row items-center gap-3 rounded-2xl bg-card p-3.5 active:opacity-80"
+                  className="mb-3 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5 active:opacity-80"
                 >
                   <Avatar
                     uri={counterpart?.avatarUrl}

@@ -69,7 +69,7 @@ export function YesNoDialog({
         onPress={working ? undefined : onCancel}
       >
         <Pressable
-          className="w-full rounded-3xl bg-card p-6"
+          className="w-full rounded-3xl border border-border bg-card p-6"
           onPress={() => {}}
         >
           <View

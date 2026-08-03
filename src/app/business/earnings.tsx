@@ -45,7 +45,7 @@ export default function BusinessEarningsScreen() {
           <Text className="text-lg font-extrabold text-white">Mis pagos</Text>
           <Text className="text-xs text-white/70">
             {dd.level === 'year'
-              ? 'Lo que vendiste y lo que ya le pagaste a Mándalo, por año'
+              ? 'Lo que vendiste y lo que ya le pagaste a Mandalo, por año'
               : dd.level === 'month'
                 ? `${dd.year} · por mes`
                 : `${dd.month} · quincenas`}

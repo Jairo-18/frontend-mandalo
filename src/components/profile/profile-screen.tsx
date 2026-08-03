@@ -371,7 +371,7 @@ export function ProfileScreen({
       <KeyboardAwareScroll>
         <View className="px-5 pb-10">
           {/* ---- Datos personales ---- */}
-          <View className="mt-2 rounded-2xl bg-card p-4">
+          <View className="mt-2 rounded-2xl border border-border bg-card p-4">
             <View className="items-center">
               <PhotoField
                 label="Foto de perfil"
@@ -533,7 +533,7 @@ export function ProfileScreen({
           <Text className="mb-2 mt-6 text-base font-extrabold text-ink">
             Cuenta
           </Text>
-          <View className="rounded-2xl bg-card p-4">
+          <View className="rounded-2xl border border-border bg-card p-4">
             {/* Correo (solo lectura: cambiarlo requeriría re-verificación) */}
             <View className="mb-4 flex-row items-center gap-3">
               <Ionicons name="mail-outline" size={20} color={getAppColors().mutedColor} />

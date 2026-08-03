@@ -49,7 +49,7 @@ export function AcceptOrderDialog({ visible, onConfirm, onCancel }: Props) {
         className="flex-1 items-center justify-center bg-black/50 px-8"
         onPress={working ? undefined : onCancel}
       >
-        <Pressable className="w-full rounded-3xl bg-card p-6" onPress={() => {}}>
+        <Pressable className="w-full rounded-3xl border border-border bg-card p-6" onPress={() => {}}>
           <View className="mb-4 h-14 w-14 self-center items-center justify-center rounded-full bg-primary-tint">
             <Ionicons name="time-outline" size={26} color={getAppColors().primaryColor} />
           </View>

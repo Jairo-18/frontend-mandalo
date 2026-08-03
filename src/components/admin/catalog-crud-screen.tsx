@@ -83,10 +83,8 @@ export function CatalogCrudScreen({
     const icon = catalogIcon(item.icon, fallbackIcon);
 
     return (
-      <View className="mb-3 flex-row items-center gap-3 rounded-2xl bg-card p-4">
-        <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-tint">
-          <CatalogIconView icon={icon} size={20} color={getAppColors().primaryColor} />
-        </View>
+      <View className="mb-3 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-4">
+        <CatalogIconView icon={icon} size={22} color={getAppColors().primaryColor} />
 
         <View className="flex-1">
           <Text numberOfLines={1} className="text-[15px] font-bold text-ink">

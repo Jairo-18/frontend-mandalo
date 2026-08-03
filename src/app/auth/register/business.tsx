@@ -103,7 +103,7 @@ export default function BusinessLeadScreen() {
                   ¡Listo!
                 </Text>
                 <Text className="text-center text-sm leading-5 text-muted">
-                  Recibimos los datos de tu negocio. El equipo de Mándalo te
+                  Recibimos los datos de tu negocio. El equipo de Mandalo te
                   va a contactar pronto para crear tu cuenta.
                 </Text>
               </View>

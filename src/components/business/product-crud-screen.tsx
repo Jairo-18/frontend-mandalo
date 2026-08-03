@@ -82,7 +82,7 @@ export function ProductCrudScreen() {
     const img = item.images?.[0];
 
     return (
-      <View style={gridItemStyle(index, list.items.length)}>
+      <View style={gridItemStyle(index, list.items.length, 2)}>
         <Pressable
           onPress={() => openEdit(item)}
           className="mb-3 overflow-hidden rounded-2xl bg-card active:opacity-80"

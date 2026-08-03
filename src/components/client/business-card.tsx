@@ -20,7 +20,7 @@ export function BusinessCard({ business, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
-      className="mb-3 flex-row items-center gap-3 rounded-2xl bg-card p-3.5 active:opacity-80"
+      className="mb-3 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5 active:opacity-80"
     >
       <Avatar
         uri={business.logoUrl}

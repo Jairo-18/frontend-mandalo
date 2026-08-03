@@ -26,15 +26,11 @@ export function StatCard({
     <Pressable
       onPress={onPress}
       className={`w-[48%] flex-grow rounded-2xl p-4 active:opacity-80 ${
-        highlight ? 'bg-primary' : 'bg-card'
+        highlight ? 'bg-primary' : 'border border-border bg-card'
       }`}
     >
-      <View
-        className={`h-9 w-9 items-center justify-center rounded-full ${
-          highlight ? 'bg-white/20' : 'bg-primary-tint'
-        }`}
-      >
-        <Ionicons name={icon} size={18} color={highlight ? '#FFFFFF' : getAppColors().primaryColor} />
+      <View className="h-9 w-9 items-center justify-center">
+        <Ionicons name={icon} size={22} color={highlight ? '#FFFFFF' : getAppColors().primaryColor} />
       </View>
       <Text
         className={`mt-2 text-2xl font-extrabold ${

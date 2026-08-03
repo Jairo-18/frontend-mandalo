@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Mándalo",
+    "name": "Mandalo",
     "slug": "mandalo",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -23,7 +23,7 @@
         }
       },
       "adaptiveIcon": {
-        "backgroundColor": "#F75929",
+        "backgroundColor": "#FF5A3C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
@@ -40,8 +40,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Mándalo usa tu ubicación para marcar tu dirección de entrega.",
-          "locationAlwaysAndWhenInUsePermission": "Mándalo usa tu ubicación para que el cliente vea dónde va su pedido mientras lo llevas.",
+          "locationWhenInUsePermission": "Mandalo usa tu ubicación para marcar tu dirección de entrega.",
+          "locationAlwaysAndWhenInUsePermission": "Mandalo usa tu ubicación para que el cliente vea dónde va su pedido mientras lo llevas.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true,
           "isIosBackgroundLocationEnabled": true
@@ -57,8 +57,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Mándalo accede a tus fotos para que elijas tu imagen de perfil o el logo de tu negocio.",
-          "cameraPermission": "Mándalo usa la cámara para que tomes tu foto de perfil o la de tu negocio."
+          "photosPermission": "Mandalo accede a tus fotos para que elijas tu imagen de perfil o el logo de tu negocio.",
+          "cameraPermission": "Mandalo usa la cámara para que tomes tu foto de perfil o la de tu negocio."
         }
       ],
       [
@@ -66,7 +66,7 @@
         {
           "backgroundColor": "#FFFFFF",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 140
+          "imageWidth": 200
         }
       ],
       "expo-font",

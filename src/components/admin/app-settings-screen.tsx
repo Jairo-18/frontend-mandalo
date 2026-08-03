@@ -149,7 +149,7 @@ export function AppSettingsScreen() {
     >
       <Text className="mb-4 text-sm leading-5 text-muted">
         Estos son los colores base de toda la app. Los cambios los ven los
-        usuarios la próxima vez que abran Mándalo (no hace falta publicar una
+        usuarios la próxima vez que abran Mandalo (no hace falta publicar una
         actualización).
       </Text>
 

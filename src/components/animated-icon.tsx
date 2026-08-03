@@ -62,8 +62,8 @@ export function AnimatedSplashOverlay() {
 
 const styles = StyleSheet.create({
   image: {
-    width: 140,
-    height: 140,
+    width: 200,
+    height: 200,
   },
   splashOverlay: {
     ...StyleSheet.absoluteFill,

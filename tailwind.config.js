@@ -1,6 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
+  // 'class': requisito de NativeWind para poder forzar el tema con
+  // colorScheme.set() en WEB (context/app-theme.tsx) — con el default
+  // 'media' (solo prefers-color-scheme del SO), setColorScheme() truena en
+  // el navegador ("Cannot manually set color scheme, as dark mode is type
+  // 'media'"). En nativo no hacía falta (NativeWind resuelve los @media ahí
+  // con su propio runtime), por eso no se notó hasta probar en navegador.
+  darkMode: 'class',
   presets: [require('nativewind/preset')],
   theme: {
     extend: {

@@ -81,7 +81,7 @@ export default function EliminarCuentaScreen() {
               1. Desde la app (si tienes acceso)
             </Text>
             <Text className="mb-4 text-[13px] leading-5 text-muted">
-              Abre Mándalo → Mi perfil → Cuenta → &quot;Eliminar mi
+              Abre Mandalo → Mi perfil → Cuenta → &quot;Eliminar mi
               cuenta&quot;. Confirmas y listo, es inmediato.
             </Text>
 
@@ -134,7 +134,7 @@ export default function EliminarCuentaScreen() {
               Si tienes pedidos en tu historial, el registro de esos pedidos
               (montos, fechas, estados) se conserva de forma anónima, sin
               ningún dato que te identifique — es información compartida con
-              el negocio y/o el repartidor de ese pedido, y Mándalo debe
+              el negocio y/o el repartidor de ese pedido, y Mandalo debe
               conservarla por contabilidad. Si nunca hiciste ni recibiste un
               pedido, tu cuenta se borra por completo, sin dejar rastro.
             </Text>

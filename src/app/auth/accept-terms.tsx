@@ -77,7 +77,7 @@ export default function AcceptTermsScreen() {
             Un último paso
           </Text>
           <Text className="mb-6 mt-1.5 text-center text-sm leading-5 text-muted">
-            Para usar Mándalo necesitamos que leas y aceptes nuestros Términos y
+            Para usar Mandalo necesitamos que leas y aceptes nuestros Términos y
             Condiciones y la Política de Tratamiento de Datos.
           </Text>
 

@@ -2,7 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProductGridCard } from '@/components/client/product-grid-card';
@@ -17,7 +24,7 @@ import { useAppTheme } from '@/context/app-theme';
 import { useCart } from '@/context/cart';
 import { getAppColors } from '@/lib/app-colors';
 import { lightenHex } from '@/lib/color';
-import { gridItemStyle } from '@/lib/grid-style';
+import { columnsForWidth, gridItemStyle } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
 import { formatHour12 } from '@/lib/text-format';
 import { toast } from '@/lib/toast';
@@ -44,6 +51,8 @@ export default function StoreScreen() {
   const storeId = Number(id);
 
   const cart = useCart();
+  // Grid responsivo: 2 columnas en celular, hasta 6 en web ancho/tablet.
+  const numColumns = columnsForWidth(useWindowDimensions().width);
   const [business, setBusiness] = useState<ExploreBusiness | null>(null);
   const [categories, setCategories] = useState<ExploreFilterItem[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(true);
@@ -255,12 +264,13 @@ export default function StoreScreen() {
           </View>
         ) : (
           <FlatList
+            key={numColumns}
             data={list.items}
             keyExtractor={(item) => String(item.id)}
-            numColumns={2}
+            numColumns={numColumns}
             columnWrapperStyle={{ gap: 12 }}
             renderItem={({ item, index }) => (
-              <View style={gridItemStyle(index, list.items.length)}>
+              <View style={gridItemStyle(index, list.items.length, numColumns)}>
                 <ProductGridCard
                   product={item}
                   onPress={() => setDetail(item)}

@@ -154,7 +154,7 @@ export default function DeliveryScreen() {
         <Text className="mt-3 text-center text-sm leading-5 text-muted">
           Un administrador está verificando tus datos y las fotos de tu
           documento. Cuando tu cuenta esté activa podrás empezar a trabajar con
-          Mándalo.
+          Mandalo.
         </Text>
 
         {/* Nota del admin (p. ej. "la foto de la cédula está borrosa") */}

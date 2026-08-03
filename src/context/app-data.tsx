@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Text, View } from 'react-native';
 import { vars } from 'nativewind';
 
 import { Button } from '@/components/ui/button';
@@ -256,6 +256,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       '--color-border': hexToRgbTriplet(isDark ? c.borderDarkColor : c.borderLightColor),
     });
   }, [state.appColors, isDark]);
+
+  // En WEB, `<Modal>` (react-native-web) monta su contenido en un portal
+  // pegado directo a `document.body` — fuera del árbol de React, así que el
+  // `<View style={cssVars}>` de abajo no le llega por herencia normal de
+  // React. Sin esto, cualquier diálogo/hoja (Agregar al carrito, YesNoDialog,
+  // etc.) se queda pintado con el naranja default de global.css en vez del
+  // color que puso el admin. Escribir las variables directo en `:root` sí
+  // llega a los portales (herencia real de CSS, no de React).
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const root = document.documentElement;
+    Object.entries(cssVars).forEach(([key, value]) => {
+      root.style.setProperty(key, String(value));
+    });
+  }, [cssVars]);
 
   if (state.loading) {
     return (

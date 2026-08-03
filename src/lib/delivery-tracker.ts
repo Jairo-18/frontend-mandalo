@@ -90,7 +90,7 @@ async function startBackgroundTracking(): Promise<boolean> {
       distanceInterval: 25,
       // Notificación persistente del servicio (obligatoria en Android).
       foregroundService: {
-        notificationTitle: 'Mándalo — entrega en curso',
+        notificationTitle: 'Mandalo — entrega en curso',
         notificationBody:
           'Compartiendo tu ubicación con el cliente mientras llevas el pedido.',
         notificationColor: getAppColors().primaryColor,

@@ -60,7 +60,7 @@ export function SettlementPeriodCard({
   return (
     <Pressable
       onPress={onPress}
-      className="mb-3 rounded-2xl bg-card p-4 active:opacity-80"
+      className="mb-3 rounded-2xl border border-border bg-card p-4 active:opacity-80"
     >
       <View className="flex-row items-center justify-between">
         <Text className="text-[15px] font-extrabold text-ink">

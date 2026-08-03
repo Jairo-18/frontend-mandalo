@@ -284,7 +284,7 @@ export default function CompleteRegistrationScreen() {
           </Text>
           <Text className="mb-6 mt-1 text-sm leading-5 text-muted">
             Tu cuenta de Google quedó lista. Completa estos datos para empezar
-            a usar Mándalo.
+            a usar Mandalo.
           </Text>
 
           {/* Paso 1: elegir rol (solo si no vino fijo desde el registro). */}
