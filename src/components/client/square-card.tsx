@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 import { CatalogIconRef, CatalogIconView } from '@/lib/catalog-icon';
 import { getAppColors } from '@/lib/app-colors';
@@ -22,18 +22,11 @@ export function SquareCard({ label, icon, selected, onPress }: Props) {
         selected ? 'border-primary bg-primary' : 'border-border bg-card'
       } active:opacity-80`}
     >
-      {/* Icono en círculo de acento (blanco translúcido al seleccionar) */}
-      <View
-        className={`h-12 w-12 items-center justify-center rounded-full ${
-          selected ? 'bg-white/25' : 'bg-primary-tint'
-        }`}
-      >
-        <CatalogIconView
-          icon={icon}
-          size={26}
-          color={selected ? '#FFFFFF' : getAppColors().primaryColor}
-        />
-      </View>
+      <CatalogIconView
+        icon={icon}
+        size={30}
+        color={selected ? '#FFFFFF' : getAppColors().primaryColor}
+      />
       <Text
         numberOfLines={2}
         className={`mt-2 text-center text-[13px] font-bold ${

@@ -4,7 +4,6 @@ import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MenuButton } from '@/components/client/menu-button';
 import { SettlementPeriodCard } from '@/components/admin/settlement-period-card';
 import { InactiveAccountNotice } from '@/components/delivery/inactive-account-notice';
 import { ListEmpty } from '@/components/ui/list-empty';
@@ -44,12 +43,7 @@ export default function DeliveryEarningsScreen() {
   const dd = useSettlementDrillDown<DeliverySettlementPeriod>(fetcher);
 
   if (pending) {
-    return (
-      <InactiveAccountNotice
-        title="Mis cobros"
-        menu={<MenuButton parent="/delivery" />}
-      />
-    );
+    return <InactiveAccountNotice title="Mis cobros" />;
   }
 
   return (
@@ -66,9 +60,7 @@ export default function DeliveryEarningsScreen() {
                 : `${dd.month} · quincenas`
           }
           menu={
-            dd.level === 'year' ? (
-              <MenuButton parent="/delivery" />
-            ) : (
+            dd.level === 'year' ? undefined : (
               <Pressable
                 onPress={dd.goBack}
                 hitSlop={8}

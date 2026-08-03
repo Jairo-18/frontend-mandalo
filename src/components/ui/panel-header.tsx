@@ -7,16 +7,17 @@ type Props = {
   title: string;
   /** Línea pequeña bajo el título (p. ej. "Panel del repartidor"). */
   subtitle?: string;
-  /** Botón de la izquierda (hamburguesa del drawer del rol correspondiente). */
-  menu: ReactNode;
+  /** Botón de la izquierda (opcional: back de un drill-down, etc). */
+  menu?: ReactNode;
 };
 
 /**
- * Navbar oscura de marca de las pantallas con drawer (Mis pedidos, Mis
- * direcciones, Mi perfil…): hamburguesa + título en blanco, con el cierre
- * redondeado sobre el fondo surface — espejo del bloque oscuro del home.
- * Usarla con `SafeAreaView edges={['top']} className="bg-dark"` y
- * `StatusBar style="light"`.
+ * Navbar oscura de marca de las pantallas de los paneles con tabs abajo
+ * (Mis pedidos, Mis direcciones, Mi perfil…): título en blanco, con el
+ * cierre redondeado sobre el fondo surface — espejo del bloque oscuro del
+ * home. `menu` es opcional: solo lo usan los drill-down con botón de volver
+ * (p. ej. Mis cobros). Usarla con `SafeAreaView edges={['top']}
+ * className="bg-dark"` y `StatusBar style="light"`.
  */
 export function PanelHeader({ title, subtitle, menu }: Props) {
   return (

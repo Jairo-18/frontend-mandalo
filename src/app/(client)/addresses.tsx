@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddressManager } from '@/components/client/address-manager';
-import { MenuButton } from '@/components/client/menu-button';
 import { PanelHeader } from '@/components/ui/panel-header';
 
 /**
@@ -18,7 +17,7 @@ export default function AddressesScreen() {
       <StatusBar style="light" />
 
       <View className="flex-1 bg-surface">
-        <PanelHeader title="Mis direcciones" menu={<MenuButton />} />
+        <PanelHeader title="Mis direcciones" />
 
         {/* pb dinámico: el botón "Agregar dirección" de `AddressManager` va
             pegado al fondo (no dentro de un scroll) — sin sumar el inset de

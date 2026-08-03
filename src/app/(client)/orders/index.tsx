@@ -7,7 +7,6 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 
-import { MenuButton } from '@/components/client/menu-button';
 import { OrderCard } from '@/components/orders/order-card';
 import { PanelHeader } from '@/components/ui/panel-header';
 import {
@@ -74,7 +73,7 @@ export default function ClientOrdersScreen() {
       <StatusBar style="light" />
 
       <View className="flex-1 bg-surface">
-      <PanelHeader title="Mis pedidos" menu={<MenuButton />} />
+      <PanelHeader title="Mis pedidos" />
 
       <View className="px-5 pb-2 pt-3">
         <OrderFilters

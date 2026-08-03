@@ -16,8 +16,7 @@ import { ChatThreadItem, chatService } from '@/services/chat';
 import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
-  /** Hamburguesa del drawer del rol (cliente o repartidor). */
-  menu: ReactNode;
+  menu?: ReactNode;
 };
 
 /** Hora si el mensaje es de hoy; "12 jul" si es de otro día. */
@@ -32,7 +31,7 @@ function threadTime(iso: string): string {
 /**
  * "Mis chats": los hilos de pedidos del usuario (cliente o repartidor) con
  * la contraparte, el último mensaje y los no leídos. Compartida por los
- * paneles de USER y DELI (cambia solo la hamburguesa y la contraparte).
+ * paneles de USER y DELI (cambia solo la contraparte).
  */
 export function ChatThreadsScreen({ menu }: Props) {
   const router = useRouter();

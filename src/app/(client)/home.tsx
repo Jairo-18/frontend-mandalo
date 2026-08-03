@@ -11,7 +11,8 @@ import {
 import { AddressSheet } from '@/components/client/address-sheet';
 import { BusinessGridCard } from '@/components/client/business-grid-card';
 import { CategoryCards } from '@/components/client/category-cards';
-import { MenuButton } from '@/components/client/menu-button';
+import { FilterSheet } from '@/components/client/filter-sheet';
+import { HomeHeroCard } from '@/components/client/home-hero-card';
 import { ProductGridCard } from '@/components/client/product-grid-card';
 import { TagCards } from '@/components/client/tag-cards';
 import { ListEmpty } from '@/components/ui/list-empty';
@@ -49,6 +50,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const cart = useCart();
+  // Botón "ver filtros" del buscador: abre la hoja de filtros (select), los
+  // sliders "Negocios"/"Categorías" del layout siguen ahí, es otra forma de
+  // elegir lo mismo.
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
 
   // Caché compartida (lib/user-data): nada de refetch en cada montada.
   const { defaultAddress, loading: loadingAddress } = useUserAddresses();
@@ -152,6 +157,12 @@ export default function HomeScreen() {
     }
   }
 
+  function clearFilters() {
+    setSelectedTagIds([]);
+    setAllBusinesses(false);
+    setSelectedCategoryId(null);
+  }
+
   function openStore(organizationalId: number) {
     router.push({
       pathname: '/store/[id]',
@@ -165,28 +176,41 @@ export default function HomeScreen() {
       ? 'Resultados'
       : 'Todos los productos';
 
-  /** Cabecera scrolleable del feed (saludo, búsqueda y las 2 secciones). */
+  const hasFilters = tags.length > 0 || categories.length > 0;
+  const hasActiveFilters =
+    allBusinesses || selectedTagIds.length > 0 || selectedCategoryId != null;
+
+  /** Cabecera scrolleable del feed (búsqueda, card de marca y las 2 secciones). */
   const listHeader = (
     <View>
-      {/* Cierre del bloque oscuro de marca: saludo + buscador */}
+      {/* Cierre del bloque oscuro de marca: buscador + botón de filtros */}
       <View className="rounded-b-[28px] bg-dark px-5 pb-6 pt-1">
-        <Text className="text-2xl font-extrabold text-white">
-          ¡Hola{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}!
-        </Text>
-        <Text className="mb-4 mt-0.5 text-sm text-white/70">
-          ¿Qué necesitas hoy?{' '}
-          <Text className="font-extrabold text-primary">
-            LO PIDES, LO MÁNDAMOS.
-          </Text>
-        </Text>
-        <View className="rounded-2xl bg-card">
-          <SearchBar
-            value={productList.search}
-            onChangeText={handleSearchChange}
-            placeholder="Busca productos, ej: hamburguesa…"
-          />
+        <View className="flex-row items-center gap-2">
+          <View className="flex-1 rounded-2xl bg-card">
+            <SearchBar
+              value={productList.search}
+              onChangeText={handleSearchChange}
+              placeholder="Busca productos, ej: hamburguesa…"
+            />
+          </View>
+          {hasFilters && (
+            <Pressable
+              onPress={() => setFilterSheetVisible(true)}
+              className={`h-[46px] w-[46px] items-center justify-center rounded-2xl active:opacity-80 ${
+                hasActiveFilters ? 'bg-white' : 'bg-primary'
+              }`}
+            >
+              <Ionicons
+                name="options-outline"
+                size={20}
+                color={hasActiveFilters ? getAppColors().primaryColor : '#FFFFFF'}
+              />
+            </Pressable>
+          )}
         </View>
       </View>
+
+      <HomeHeroCard name={user?.fullName?.split(' ')[0]} />
 
       {tags.length > 0 && (
         <View className="pb-3 pt-4">
@@ -232,7 +256,6 @@ export default function HomeScreen() {
 
       {/* Navbar fija sobre el bloque oscuro de marca */}
       <View className="flex-row items-center gap-3 bg-dark px-5 pb-3 pt-2">
-        <MenuButton />
         <Pressable
           onPress={() =>
             isGuest ? router.push('/auth/login') : setSheetVisible(true)
@@ -392,6 +415,20 @@ export default function HomeScreen() {
       <AddressSheet
         visible={sheetVisible}
         onClose={() => setSheetVisible(false)}
+      />
+
+      <FilterSheet
+        visible={filterSheetVisible}
+        onClose={() => setFilterSheetVisible(false)}
+        tags={tags}
+        categories={categories}
+        selectedTagIds={selectedTagIds}
+        allSelected={allBusinesses}
+        selectedCategoryId={selectedCategoryId}
+        onToggleTag={toggleTag}
+        onToggleAll={toggleAllBusinesses}
+        onSelectCategory={selectCategory}
+        onClear={clearFilters}
       />
     </SafeAreaView>
   );

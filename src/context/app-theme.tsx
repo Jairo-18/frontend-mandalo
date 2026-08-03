@@ -14,15 +14,17 @@ const AppThemeContext = createContext<AppThemeContextValue | null>(null);
 
 /**
  * Modo oscuro manual (independiente del sistema), persistido en disco.
- * El overlay de splash cubre el arranque, así que no hace falta bloquear
- * el render mientras se lee la preferencia guardada.
+ * Default de fábrica (sin preferencia guardada todavía): OSCURO — decisión
+ * de marca, no sigue el tema del sistema como antes. El overlay de splash
+ * cubre el arranque, así que no hace falta bloquear el render mientras se
+ * lee la preferencia guardada.
  */
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const { colorScheme, setColorScheme } = useColorScheme();
 
   useEffect(() => {
     deviceStoreGet(STORAGE_KEY).then((saved) => {
-      if (saved === 'dark' || saved === 'light') setColorScheme(saved);
+      setColorScheme(saved === 'dark' || saved === 'light' ? saved : 'dark');
     });
     // Solo al montar: lee la preferencia guardada una vez.
     // eslint-disable-next-line react-hooks/exhaustive-deps

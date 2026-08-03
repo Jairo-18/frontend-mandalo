@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, Text, View } from 'react-native';
 
 type Props = {
   checked: boolean;
@@ -16,11 +17,14 @@ type Props = {
  * enorme con links adentro genera toques accidentales). Tocar el texto plano
  * también marca/desmarca; solo los 2 nombres subrayados navegan.
  *
- * Los enlaces abren la web (somosmandalo.com) en vez de una pantalla interna:
- * son los documentos legales oficiales (registrados en Cámara de Comercio),
- * una sola fuente de verdad en vez de una copia duplicada dentro de la app.
+ * Los enlaces navegan a las pantallas de `/terminos-y-condiciones-de-uso` y
+ * `/politicas-de-privacidad`, fusionadas dentro de esta misma app (NOTAS
+ * §62) — antes abrían el navegador externo hacia web-mandalo (proyecto
+ * Astro separado, ya retirado).
  */
 export function TermsCheckbox({ checked, onChange, error }: Props) {
+  const router = useRouter();
+
   return (
     <View className="mb-4">
       <View className="flex-row items-start gap-2.5">
@@ -42,7 +46,7 @@ export function TermsCheckbox({ checked, onChange, error }: Props) {
           <Text
             className="font-bold text-primary"
             suppressHighlighting
-            onPress={() => Linking.openURL('https://somosmandalo.com/terminos-y-condiciones-de-uso')}
+            onPress={() => router.push('/terminos-y-condiciones-de-uso')}
           >
             Términos y Condiciones
           </Text>{' '}
@@ -50,7 +54,7 @@ export function TermsCheckbox({ checked, onChange, error }: Props) {
           <Text
             className="font-bold text-primary"
             suppressHighlighting
-            onPress={() => Linking.openURL('https://somosmandalo.com/politicas-de-privacidad')}
+            onPress={() => router.push('/politicas-de-privacidad')}
           >
             Política de Tratamiento de Datos
           </Text>

@@ -9,7 +9,7 @@ import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
   title: string;
-  menu: ReactNode;
+  menu?: ReactNode;
 };
 
 /**

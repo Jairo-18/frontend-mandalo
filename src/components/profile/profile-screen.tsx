@@ -4,7 +4,6 @@ import { StatusBar } from 'expo-status-bar';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Linking,
   Platform,
   Pressable,
   Text,
@@ -49,8 +48,7 @@ type FormSnapshot = {
 };
 
 type Props = {
-  /** Botón de la navbar (hamburguesa del drawer del rol correspondiente). */
-  menu: ReactNode;
+  menu?: ReactNode;
   /** Ruta de la pantalla "Cambiar contraseña" del panel correspondiente. */
   changePasswordHref: '/change-password' | '/delivery/change-password';
   /**
@@ -62,11 +60,11 @@ type Props = {
 };
 
 /**
- * Pantalla "Mi perfil" COMPARTIDA entre los paneles con drawer (cliente y
- * repartidor): editar datos personales (nombre, teléfono, foto), completar
+ * Pantalla "Mi perfil" COMPARTIDA entre los paneles del cliente y el
+ * repartidor: editar datos personales (nombre, teléfono, foto), completar
  * la identificación, vincular la cuenta con Google y entrar a cambiar la
- * contraseña. Los datos de la cabecera del drawer (nombre/foto) se refrescan
- * en la sesión al guardar. Cada rol la monta desde su propia ruta.
+ * contraseña. Los datos de sesión (nombre/foto) se refrescan al guardar.
+ * Cada rol la monta desde su propia ruta.
  */
 export function ProfileScreen({
   menu,
@@ -609,9 +607,9 @@ export function ProfileScreen({
             {/* Política de privacidad: antes solo se veía en el registro; se
                 referencia desde el aviso de ubicación en segundo plano del
                 repartidor, así que debe poder leerse también ya logueado.
-                Abre la web (documento legal oficial) en vez de una pantalla interna. */}
+                Fusionada dentro de esta misma app (NOTAS §62). */}
             <Pressable
-              onPress={() => Linking.openURL('https://somosmandalo.com/politicas-de-privacidad')}
+              onPress={() => router.push('/politicas-de-privacidad')}
               className="mt-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
               <Ionicons name="shield-outline" size={20} color={getAppColors().mutedColor} />

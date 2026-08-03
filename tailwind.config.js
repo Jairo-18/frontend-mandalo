@@ -4,6 +4,12 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
+      // Roboto (Google Fonts): cargada en nativo con esos mismos alias en
+      // app/_layout.tsx (useFonts) y en web vía el <link> de app/+html.tsx —
+      // el nombre de familia coincide en los dos lados, sin Platform.select.
+      fontFamily: {
+        sans: ['Roboto', 'system-ui', 'sans-serif'],
+      },
       colors: {
         // Paleta de marca Mándalo — editable por el admin en runtime desde
         // "Aplicación" (§50, backend GET/PATCH /app-settings). El default acá

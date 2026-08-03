@@ -165,6 +165,18 @@ export const authService = {
       toastSuccess: true,
     }),
 
+  /**
+   * Eliminar cuenta SIN tener la app instalada / sin sesión (`/eliminar-cuenta`,
+   * pantalla pública): envía un enlace de confirmación al correo. Mismo
+   * backend que usa el self-service de "Mi perfil" ya logueado.
+   */
+  requestDeletion: (email: string) =>
+    http<{ message?: string }>('/user/request-deletion', {
+      method: 'POST',
+      body: { email },
+      toastSuccess: true,
+    }),
+
   /** Reenvía el correo de verificación (botón del login tras el 401). */
   resendVerification: (email: string) =>
     http<{ message?: string }>('/user/resend-verification', {

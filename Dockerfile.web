@@ -1,4 +1,6 @@
-# Versión WEB de Mándalo (app.somosmandalo.com, Dokploy).
+# Versión WEB de Mándalo (somosmandalo.com, Dokploy) — app + landing +
+# páginas legales, todo fusionado en este mismo proyecto (NOTAS §62; antes
+# la landing/legal vivían aparte en web-mandalo/Astro, en app.somosmandalo.com).
 # Etapa "build": compila el SPA con expo export · etapa "production": nginx
 # sirve dist/ (Docker Build Stage en Dokploy: "production", o vacío = última).
 #

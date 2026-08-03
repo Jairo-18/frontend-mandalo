@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { MenuButton } from '@/components/client/menu-button';
 import { DeliveryOrders } from '@/components/delivery/delivery-orders';
 import { Button } from '@/components/ui/button';
 import { PanelHeader } from '@/components/ui/panel-header';
@@ -114,11 +113,7 @@ export default function DeliveryScreen() {
       <SafeAreaView className="flex-1 bg-dark" edges={['top']}>
         <StatusBar style="light" />
         <View className="flex-1 bg-surface">
-          <PanelHeader
-            title="Repartir"
-            subtitle="Panel del domiciliario"
-            menu={<MenuButton parent="/delivery" />}
-          />
+          <PanelHeader title="Repartir" subtitle="Panel del domiciliario" />
           <View className="flex-row flex-wrap gap-3 px-4 pb-1 pt-3">
             <QuickAction
               icon="cash-outline"
@@ -148,11 +143,7 @@ export default function DeliveryScreen() {
     <SafeAreaView edges={['top']} className="flex-1 bg-dark">
       <StatusBar style="light" />
       <View className="flex-1 bg-card">
-      <PanelHeader
-        title="Repartir"
-        subtitle="Panel del domiciliario"
-        menu={<MenuButton parent="/delivery" />}
-      />
+      <PanelHeader title="Repartir" subtitle="Panel del domiciliario" />
       <View className="flex-1 items-center justify-center px-8">
         <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-tint">
           <Ionicons name="hourglass-outline" size={40} color={getAppColors().primaryColor} />

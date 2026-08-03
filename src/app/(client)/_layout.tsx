@@ -1,11 +1,11 @@
-import { Redirect } from 'expo-router';
-import { Drawer } from 'expo-router/drawer';
+import { Ionicons } from '@expo/vector-icons';
+import { Redirect, Tabs, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
-import { ClientDrawerContent } from '@/components/client/drawer-content';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
+import { useSession } from '@/hooks/use-session';
+import { useUnreadChats } from '@/hooks/use-unread-chats';
 import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
 import { toast } from '@/lib/toast';
 import {
@@ -28,12 +28,14 @@ function PaymentRequestedListener() {
 }
 
 /**
- * Panel del cliente (rol USER): drawer con sidebar a la izquierda (Explorar,
- * Mis pedidos, Mi perfil). El grupo `(client)` no cambia las URLs: /home,
- * /orders y /profile siguen igual. Los flujos full-screen (store, checkout)
- * viven FUERA del grupo y se abren empujados encima.
+ * Panel del cliente (rol USER): menú inferior (Inicio, Pedidos, Chats,
+ * Direcciones, Perfil) — antes era un drawer lateral. El grupo `(client)` no
+ * cambia las URLs: /home, /orders y /profile siguen igual. Los flujos
+ * full-screen (store, checkout) viven FUERA del grupo y se abren empujados
+ * encima.
  */
 export default function ClientLayout() {
+  const router = useRouter();
   // Reactivo de verdad (no el singleton `getAppColors()`), ver
   // hooks/use-resolved-app-colors.ts.
   const colors = useResolvedAppColors();
@@ -45,6 +47,11 @@ export default function ClientLayout() {
   useEffect(() => {
     if (!session) loadSession().then(setSession);
   }, [session]);
+
+  // Reactivo (regla React Compiler §23): el badge de "Mis chats" no se
+  // quedaría pegado en 0 sin este hook en vez de leer el singleton suelto.
+  const user = useSession()?.user;
+  const unreadChats = useUnreadChats();
 
   if (session === undefined) {
     return (
@@ -61,29 +68,113 @@ export default function ClientLayout() {
     return <Redirect href={homePathFor(session!.user)} />;
   }
 
+  const isGuest = !user;
+
+  /** Invitado tocando una pestaña con cuenta → lo manda a iniciar sesión. */
+  function guardedTabBarButton({ children, style, onPress, ...rest }: any) {
+    return (
+      <Pressable
+        {...rest}
+        style={style}
+        onPress={isGuest ? () => router.push('/auth/login') : onPress}
+      >
+        {children}
+      </Pressable>
+    );
+  }
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <>
       <PaymentRequestedListener />
-      <Drawer
-        drawerContent={(props) => <ClientDrawerContent {...props} />}
+      <Tabs
         screenOptions={{
-          // Cada pantalla dibuja su propia navbar (con el botón hamburguesa).
+          // Cada pantalla dibuja su propia navbar.
           headerShown: false,
-          drawerStyle: { width: 300 },
           sceneStyle: { backgroundColor: colors.surfaceColor },
+          tabBarActiveTintColor: colors.primaryColor,
+          tabBarInactiveTintColor: colors.mutedColor,
+          tabBarStyle: {
+            backgroundColor: colors.cardColor,
+            borderTopColor: colors.borderColor,
+          },
         }}
       >
-        <Drawer.Screen name="home" options={{ title: 'Explorar' }} />
-        <Drawer.Screen name="orders" options={{ title: 'Mis pedidos' }} />
-        <Drawer.Screen name="chats" options={{ title: 'Mis chats' }} />
-        <Drawer.Screen name="addresses" options={{ title: 'Mis direcciones' }} />
-        <Drawer.Screen name="profile" options={{ title: 'Mi perfil' }} />
-        {/* Ruta propia, sin item en el sidebar: se llega desde Mi perfil. */}
-        <Drawer.Screen
-          name="change-password"
-          options={{ title: 'Cambiar contraseña' }}
+        <Tabs.Screen
+          name="home"
+          options={{
+            title: 'Inicio',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons
+                name={focused ? 'home' : 'home-outline'}
+                size={size}
+                color={color}
+              />
+            ),
+          }}
         />
-      </Drawer>
-    </GestureHandlerRootView>
+        <Tabs.Screen
+          name="orders"
+          options={{
+            title: 'Pedidos',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons
+                name={focused ? 'receipt' : 'receipt-outline'}
+                size={size}
+                color={color}
+              />
+            ),
+            tabBarButton: guardedTabBarButton,
+          }}
+        />
+        <Tabs.Screen
+          name="chats"
+          options={{
+            title: 'Chats',
+            tabBarBadge: unreadChats > 0 ? unreadChats : undefined,
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons
+                name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
+                size={size}
+                color={color}
+              />
+            ),
+            tabBarButton: guardedTabBarButton,
+          }}
+        />
+        <Tabs.Screen
+          name="addresses"
+          options={{
+            title: 'Direcciones',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons
+                name={focused ? 'location' : 'location-outline'}
+                size={size}
+                color={color}
+              />
+            ),
+            tabBarButton: guardedTabBarButton,
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Perfil',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons
+                name={focused ? 'person' : 'person-outline'}
+                size={size}
+                color={color}
+              />
+            ),
+            tabBarButton: guardedTabBarButton,
+          }}
+        />
+        {/* Ruta propia, sin item en la barra: se llega desde Mi perfil. */}
+        <Tabs.Screen
+          name="change-password"
+          options={{ href: null, title: 'Cambiar contraseña' }}
+        />
+      </Tabs>
+    </>
   );
 }

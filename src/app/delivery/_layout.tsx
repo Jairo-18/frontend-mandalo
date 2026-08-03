@@ -1,18 +1,17 @@
-import { Redirect } from 'expo-router';
-import { Drawer } from 'expo-router/drawer';
+import { Ionicons } from '@expo/vector-icons';
+import { Redirect, Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { DeliveryDrawerContent } from '@/components/delivery/drawer-content';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
+import { useUnreadChats } from '@/hooks/use-unread-chats';
 import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
 
 /**
- * Panel del repartidor (rol DELI): drawer con sidebar (Pedidos, Mi perfil).
- * La cuenta pendiente de habilitación también entra (el index muestra la
- * pantalla de "en proceso" y el perfil sigue editable). Otros roles rebotan
- * a SU panel.
+ * Panel del repartidor (rol DELI): menú inferior (Pedidos, Cobros, Chats,
+ * Perfil) — antes era un drawer lateral. La cuenta pendiente de habilitación
+ * también entra (el index muestra la pantalla de "en proceso" y el perfil
+ * sigue editable). Otros roles rebotan a SU panel.
  */
 export default function DeliveryLayout() {
   // Reactivo de verdad (no el singleton `getAppColors()`), ver
@@ -27,6 +26,10 @@ export default function DeliveryLayout() {
     if (!session) loadSession().then(setSession);
   }, [session]);
 
+  // Reactivo (regla React Compiler §23): el badge de "Chats" no se quedaría
+  // pegado en 0 sin este hook.
+  const unreadChats = useUnreadChats();
+
   if (session === undefined) {
     return (
       <View className="flex-1 items-center justify-center bg-card">
@@ -40,31 +43,82 @@ export default function DeliveryLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Drawer
-        drawerContent={(props) => <DeliveryDrawerContent {...props} />}
-        screenOptions={{
-          // Cada pantalla dibuja su propia navbar (con el botón hamburguesa).
-          headerShown: false,
-          drawerStyle: { width: 300 },
-          sceneStyle: { backgroundColor: colors.surfaceColor },
+    <Tabs
+      screenOptions={{
+        // Cada pantalla dibuja su propia navbar.
+        headerShown: false,
+        sceneStyle: { backgroundColor: colors.surfaceColor },
+        tabBarActiveTintColor: colors.primaryColor,
+        tabBarInactiveTintColor: colors.mutedColor,
+        tabBarStyle: {
+          backgroundColor: colors.cardColor,
+          borderTopColor: colors.borderColor,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Pedidos',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'bicycle' : 'bicycle-outline'}
+              size={size}
+              color={color}
+            />
+          ),
         }}
-      >
-        <Drawer.Screen name="index" options={{ title: 'Pedidos' }} />
-        <Drawer.Screen name="earnings" options={{ title: 'Mis cobros' }} />
-        <Drawer.Screen name="chats" options={{ title: 'Mis chats' }} />
-        <Drawer.Screen name="profile" options={{ title: 'Mi perfil' }} />
-        {/* Rutas propias, sin item en el sidebar: se llega desde Mi perfil o
-            desde la pantalla de "Cuenta en proceso de habilitación". */}
-        <Drawer.Screen
-          name="change-password"
-          options={{ title: 'Cambiar contraseña' }}
-        />
-        <Drawer.Screen
-          name="resend-documents"
-          options={{ title: 'Reenviar documentos' }}
-        />
-      </Drawer>
-    </GestureHandlerRootView>
+      />
+      <Tabs.Screen
+        name="earnings"
+        options={{
+          title: 'Cobros',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'cash' : 'cash-outline'}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="chats"
+        options={{
+          title: 'Chats',
+          tabBarBadge: unreadChats > 0 ? unreadChats : undefined,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'person' : 'person-outline'}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      {/* Rutas propias, sin item en la barra: se llega desde Mi perfil o
+          desde la pantalla de "Cuenta en proceso de habilitación". */}
+      <Tabs.Screen
+        name="change-password"
+        options={{ href: null, title: 'Cambiar contraseña' }}
+      />
+      <Tabs.Screen
+        name="resend-documents"
+        options={{ href: null, title: 'Reenviar documentos' }}
+      />
+    </Tabs>
   );
 }
