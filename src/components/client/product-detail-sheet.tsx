@@ -172,7 +172,7 @@ export function ProductDetailSheet({
               >
                 <Ionicons name="remove" size={20} color={getAppColors().primaryColor} />
               </Pressable>
-              <Text className="text-base font-extrabold text-ink">
+              <Text className="text-base font-extrabold text-primary">
                 {quantity} en el carrito
               </Text>
               <Pressable

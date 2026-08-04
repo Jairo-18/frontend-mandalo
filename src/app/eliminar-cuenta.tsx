@@ -96,7 +96,7 @@ export default function EliminarCuentaScreen() {
             {sent ? (
               <View className="mb-5 flex-row gap-2 rounded-2xl bg-primary-tint p-4">
                 <Ionicons name="mail-outline" size={18} color={getAppColors().primaryColor} />
-                <Text className="flex-1 text-[13px] leading-5 text-ink">
+                <Text className="flex-1 text-[13px] leading-5 text-primary">
                   Te enviamos un correo para confirmar la eliminación de tu
                   cuenta.
                 </Text>

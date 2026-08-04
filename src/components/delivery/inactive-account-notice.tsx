@@ -2,9 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { ReactNode } from 'react';
 import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PanelHeader } from '@/components/ui/panel-header';
+import { PanelHeader, PanelSafeArea } from '@/components/ui/panel-header';
 import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
@@ -22,7 +21,7 @@ type Props = {
  */
 export function InactiveAccountNotice({ title, menu }: Props) {
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+    <PanelSafeArea>
       <StatusBar style="light" />
       <View className="flex-1 bg-surface">
         <PanelHeader title={title} menu={menu} />
@@ -43,6 +42,6 @@ export function InactiveAccountNotice({ title, menu }: Props) {
           </Text>
         </View>
       </View>
-    </SafeAreaView>
+    </PanelSafeArea>
   );
 }

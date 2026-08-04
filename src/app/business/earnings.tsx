@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { SettlementPeriodCard } from '@/components/admin/settlement-period-card';
 import { ListEmpty } from '@/components/ui/list-empty';
@@ -30,8 +31,14 @@ export default function BusinessEarningsScreen() {
 
   return (
     <View className="flex-1 bg-surface">
-      {/* Continúa el header oscuro del drawer (mismo patrón que dashboard/products). */}
-      <View className="flex-row items-center gap-3 rounded-b-[28px] bg-dark px-5 pb-5 pt-1">
+      {/* Continúa el header de degradado del drawer (mismo patrón que dashboard/products). */}
+      <LinearGradient
+        colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
+      >
+      <View className="flex-row items-center gap-3 px-5 pb-5 pt-1">
         {dd.level !== 'year' && (
           <Pressable
             onPress={dd.goBack}
@@ -56,6 +63,7 @@ export default function BusinessEarningsScreen() {
           iconColor="#FFFFFF"
         />
       </View>
+      </LinearGradient>
 
       {dd.loading ? (
         <View className="flex-1 items-center justify-center">

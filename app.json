@@ -35,6 +35,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withCmakeShortPath.js",
       "expo-router",
       "@react-native-google-signin/google-signin",
       [
@@ -64,9 +65,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200
+          "backgroundColor": "#A3070B",
+          "image": "./assets/images/splash-mark.png",
+          "imageWidth": 180
         }
       ],
       "expo-font",

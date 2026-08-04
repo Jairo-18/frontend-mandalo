@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { BusinessFormModal } from '@/components/admin/business-form-modal';
 import { Avatar } from '@/components/ui/avatar';
@@ -114,7 +115,13 @@ export function BusinessProfileScreen() {
       }
     >
       {/* Cabecera con el logo y el nombre del negocio */}
-      <View className="items-center rounded-b-[28px] bg-dark px-5 pb-7 pt-2">
+      <LinearGradient
+        colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
+      >
+      <View className="items-center px-5 pb-7 pt-2">
         <View className="absolute right-4 top-2">
           <ThemeToggle
             className="h-10 w-10 items-center justify-center rounded-full bg-white/15 active:opacity-70"
@@ -152,6 +159,7 @@ export function BusinessProfileScreen() {
           )}
         </View>
       </View>
+      </LinearGradient>
 
       <View className="px-5">
         <View className="mt-5">

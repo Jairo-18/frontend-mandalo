@@ -1,5 +1,6 @@
 import { Redirect } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -50,7 +51,17 @@ export default function BusinessLayout() {
         screenOptions={{
           headerTintColor: '#FFFFFF',
           headerTitleStyle: { fontWeight: '800', color: '#FFFFFF' },
-          headerStyle: { backgroundColor: colors.darkColor },
+          // Degradado primary→dark (pedido del cliente) en vez de un
+          // `headerStyle.backgroundColor` plano — React Navigation permite
+          // reemplazar el fondo del header por cualquier componente.
+          headerBackground: () => (
+            <LinearGradient
+              colors={[colors.primaryColor, colors.darkColor]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ flex: 1 }}
+            />
+          ),
           headerShadowVisible: false,
           drawerStyle: { width: 300 },
           sceneStyle: { backgroundColor: colors.surfaceColor },

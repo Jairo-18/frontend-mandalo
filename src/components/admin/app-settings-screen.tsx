@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { FormSection } from '@/components/ui/form-section';
+import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
 import { AppColors, appSettingsService } from '@/services/app-settings';
@@ -115,7 +115,6 @@ function ColorField({
  * (auditoría de peticiones).
  */
 export function AppSettingsScreen() {
-  const insets = useSafeAreaInsets();
   const { appColors } = useAppData();
   const [saving, setSaving] = useState(false);
   const [values, setValues] = useState<AppColors>(appColors);
@@ -142,11 +141,9 @@ export function AppSettingsScreen() {
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-surface"
-      contentContainerClassName="p-5"
-      contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
-    >
+    <View className="flex-1 bg-surface">
+    <KeyboardAwareScroll extraBottom={40}>
+      <View className="p-5">
       <Text className="mb-4 text-sm leading-5 text-muted">
         Estos son los colores base de toda la app. Los cambios los ven los
         usuarios la próxima vez que abran Mandalo (no hace falta publicar una
@@ -191,6 +188,8 @@ export function AppSettingsScreen() {
           disabled={!allValid || !dirty}
         />
       </View>
-    </ScrollView>
+      </View>
+    </KeyboardAwareScroll>
+    </View>
   );
 }

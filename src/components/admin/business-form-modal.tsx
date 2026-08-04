@@ -491,7 +491,7 @@ export function BusinessFormModal({
       {selfBusiness && (
         <View className="mb-4 flex-row gap-2.5 rounded-xl bg-primary-tint px-3.5 py-3">
           <Ionicons name="lock-closed" size={18} color={getAppColors().primaryColor} />
-          <Text className="flex-1 text-[13px] text-ink">
+          <Text className="flex-1 text-[13px] text-primary">
             Los campos con candado (razón social, identificación, ubicación y
             etiquetas) los asigna el administrador y no se pueden editar aquí.
             Puedes cambiar el resto.

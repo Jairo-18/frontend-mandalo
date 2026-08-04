@@ -9,12 +9,10 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { GoogleButton } from '@/components/auth/google-button';
 import { Button } from '@/components/ui/button';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
-import { PanelHeader } from '@/components/ui/panel-header';
+import { PanelHeader, PanelSafeArea } from '@/components/ui/panel-header';
 import { PhotoField } from '@/components/ui/photo-field';
 import { Select } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
@@ -347,7 +345,7 @@ export function ProfileScreen({
 
   if (loading) {
     return (
-      <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+      <PanelSafeArea>
         <StatusBar style="light" />
         <View className="flex-1 bg-surface">
           <PanelHeader title="Mi perfil" menu={menu} />
@@ -357,12 +355,12 @@ export function ProfileScreen({
             style={{ paddingTop: 48 }}
           />
         </View>
-      </SafeAreaView>
+      </PanelSafeArea>
     );
   }
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+    <PanelSafeArea>
       <StatusBar style="light" />
 
       <View className="flex-1 bg-surface">
@@ -684,6 +682,6 @@ export function ProfileScreen({
         onConfirm={handleDeleteAccount}
         onCancel={() => setConfirmDelete(false)}
       />
-    </SafeAreaView>
+    </PanelSafeArea>
   );
 }

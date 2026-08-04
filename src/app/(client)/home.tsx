@@ -10,10 +10,8 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { AddressSheet } from '@/components/client/address-sheet';
 import { BusinessGridCard } from '@/components/client/business-grid-card';
@@ -23,6 +21,7 @@ import { HomeHeroCard } from '@/components/client/home-hero-card';
 import { ProductGridCard } from '@/components/client/product-grid-card';
 import { TagCards } from '@/components/client/tag-cards';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { PanelSafeArea } from '@/components/ui/panel-header';
 import { SearchBar } from '@/components/ui/search-bar';
 import { SectionTitle } from '@/components/ui/section-title';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -193,9 +192,14 @@ export default function HomeScreen() {
   /** Cabecera scrolleable del feed (búsqueda, card de marca y las 2 secciones). */
   const listHeader = (
     <View>
-      {/* Cierre del bloque oscuro de marca: buscador + botón de filtros */}
-      <View className="rounded-b-[28px] bg-dark px-5 pb-6 pt-1">
-        <View className="flex-row items-center gap-2">
+      {/* Cierre del bloque de marca: buscador + botón de filtros */}
+      <LinearGradient
+        colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
+      >
+        <View className="flex-row items-center gap-2 px-5 pb-6 pt-1">
           <View className="flex-1 rounded-2xl bg-card">
             <SearchBar
               value={productList.search}
@@ -218,7 +222,7 @@ export default function HomeScreen() {
             </Pressable>
           )}
         </View>
-      </View>
+      </LinearGradient>
 
       <HomeHeroCard name={user?.fullName?.split(' ')[0]} />
 
@@ -261,11 +265,16 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+    <PanelSafeArea>
       <StatusBar style="light" />
 
-      {/* Navbar fija sobre el bloque oscuro de marca */}
-      <View className="flex-row items-center gap-3 bg-dark px-5 pb-3 pt-2">
+      {/* Navbar fija sobre el bloque de marca */}
+      <LinearGradient
+        colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+      >
+      <View className="flex-row items-center gap-3 px-5 pb-3 pt-2">
         <Pressable
           onPress={() =>
             isGuest ? router.push('/auth/login') : setSheetVisible(true)
@@ -313,6 +322,7 @@ export default function HomeScreen() {
           iconColor="#FFFFFF"
         />
       </View>
+      </LinearGradient>
 
       <View className="flex-1 bg-surface">
       {businessMode ? (
@@ -446,6 +456,6 @@ export default function HomeScreen() {
         onSelectCategory={selectCategory}
         onClear={clearFilters}
       />
-    </SafeAreaView>
+    </PanelSafeArea>
   );
 }

@@ -12,13 +12,12 @@ import {
   View,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Avatar } from '@/components/ui/avatar';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { PanelSafeArea } from '@/components/ui/panel-header';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useSession } from '@/hooks/use-session';
 import { refreshUnreadChats } from '@/hooks/use-unread-chats';
@@ -174,11 +173,17 @@ export default function ChatScreen() {
   const quickReplies = roleCode === 'DELI' ? DELIVERY_REPLIES : CLIENT_REPLIES;
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+    <PanelSafeArea>
       <StatusBar style="light" />
       <View className="flex-1 bg-surface">
         {/* Cabecera de marca: contraparte + pedido */}
-        <View className="flex-row items-center gap-3 rounded-b-[28px] bg-dark px-4 pb-4 pt-2">
+        <LinearGradient
+          colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
+        >
+        <View className="flex-row items-center gap-3 px-4 pb-4 pt-2">
           <Pressable
             onPress={() => router.back()}
             hitSlop={8}
@@ -207,6 +212,7 @@ export default function ChatScreen() {
             iconColor="#FFFFFF"
           />
         </View>
+        </LinearGradient>
 
         {/* El de keyboard-controller sí funciona con el edge-to-edge de
             Android (el de RN dejaba el composer tapado por el teclado). */}
@@ -258,7 +264,7 @@ export default function ChatScreen() {
                         size={15}
                         color={getAppColors().primaryColor}
                       />
-                      <Text className="flex-1 text-xs text-ink">
+                      <Text className="flex-1 text-xs text-primary">
                         Nunca compartas tu{' '}
                         <Text className="font-bold">código de entrega</Text> por
                         chat: díctalo solo en la puerta al recibir tu pedido.
@@ -349,7 +355,7 @@ export default function ChatScreen() {
             ))}
         </KeyboardAvoidingView>
       </View>
-    </SafeAreaView>
+    </PanelSafeArea>
   );
 }
 

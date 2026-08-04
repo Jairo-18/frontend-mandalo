@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { QuickAction } from '@/components/ui/quick-action';
 import { SectionTitle } from '@/components/ui/section-title';
@@ -81,9 +82,14 @@ export default function BusinessDashboardScreen() {
         />
       }
     >
-      {/* Héroe de marca: continúa el header oscuro del drawer */}
-      <View className="rounded-b-[28px] bg-dark px-5 pb-6 pt-1">
-        <View className="flex-row items-start justify-between">
+      {/* Héroe de marca: continúa el header de degradado del drawer */}
+      <LinearGradient
+        colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
+      >
+        <View className="flex-row items-start justify-between px-5 pb-6 pt-1">
           <View className="flex-1">
             <Text className="text-2xl font-extrabold text-white">
               ¡Hola{firstName ? `, ${firstName}` : ''}!
@@ -99,7 +105,7 @@ export default function BusinessDashboardScreen() {
             iconColor="#FFFFFF"
           />
         </View>
-      </View>
+      </LinearGradient>
 
       {loading && (
         <ActivityIndicator

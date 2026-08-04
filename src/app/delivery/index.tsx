@@ -3,11 +3,10 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DeliveryOrders } from '@/components/delivery/delivery-orders';
 import { Button } from '@/components/ui/button';
-import { PanelHeader } from '@/components/ui/panel-header';
+import { PanelHeader, PanelSafeArea } from '@/components/ui/panel-header';
 import { QuickAction } from '@/components/ui/quick-action';
 import { useSession } from '@/hooks/use-session';
 import { deviceStoreGet, deviceStoreSet } from '@/lib/device-store';
@@ -110,7 +109,7 @@ export default function DeliveryScreen() {
   // Cuenta activa: panel de pedidos (disponibles + mis entregas).
   if (!pending) {
     return (
-      <SafeAreaView className="flex-1 bg-dark" edges={['top']}>
+      <PanelSafeArea>
         <StatusBar style="light" />
         <View className="flex-1 bg-surface">
           <PanelHeader title="Repartir" subtitle="Panel del domiciliario" />
@@ -133,14 +132,14 @@ export default function DeliveryScreen() {
           </View>
           <DeliveryOrders />
         </View>
-      </SafeAreaView>
+      </PanelSafeArea>
     );
   }
 
   // Cuenta en proceso de habilitación (el drawer sigue disponible: el perfil
   // se puede editar mientras el admin revisa).
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+    <PanelSafeArea>
       <StatusBar style="light" />
       <View className="flex-1 bg-card">
       <PanelHeader title="Repartir" subtitle="Panel del domiciliario" />
@@ -165,7 +164,7 @@ export default function DeliveryScreen() {
               size={20}
               color={getAppColors().primaryColor}
             />
-            <Text className="flex-1 text-[13px] leading-5 text-ink">
+            <Text className="flex-1 text-[13px] leading-5 text-primary">
               {user.observations}
             </Text>
           </View>
@@ -206,6 +205,6 @@ export default function DeliveryScreen() {
         </View>
       </View>
       </View>
-    </SafeAreaView>
+    </PanelSafeArea>
   );
 }

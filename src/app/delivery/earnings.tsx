@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SettlementPeriodCard } from '@/components/admin/settlement-period-card';
 import { InactiveAccountNotice } from '@/components/delivery/inactive-account-notice';
 import { ListEmpty } from '@/components/ui/list-empty';
-import { PanelHeader } from '@/components/ui/panel-header';
+import { PanelHeader, PanelSafeArea } from '@/components/ui/panel-header';
 import { useSettlementDrillDown } from '@/hooks/use-settlement-drilldown';
 import { useSession } from '@/hooks/use-session';
 import { formatPrice } from '@/lib/price';
@@ -47,7 +47,7 @@ export default function DeliveryEarningsScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+    <PanelSafeArea>
       <StatusBar style="light" />
       <View className="flex-1 bg-surface">
         <PanelHeader
@@ -106,6 +106,6 @@ export default function DeliveryEarningsScreen() {
           />
         )}
       </View>
-    </SafeAreaView>
+    </PanelSafeArea>
   );
 }

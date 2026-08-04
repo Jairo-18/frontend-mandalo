@@ -3,11 +3,11 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ReactNode, useCallback } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
 import { ListEmpty } from '@/components/ui/list-empty';
-import { PanelHeader } from '@/components/ui/panel-header';
+import { PanelHeader, PanelSafeArea } from '@/components/ui/panel-header';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useSession } from '@/hooks/use-session';
 import { formatTime } from '@/lib/order-eta';
@@ -47,7 +47,7 @@ export function ChatThreadsScreen({ menu }: Props) {
   useChatMessages(useCallback(() => reload(), [reload]));
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+    <PanelSafeArea>
       <StatusBar style="light" />
       <View className="flex-1 bg-surface">
         <PanelHeader title="Mis chats" menu={menu} />
@@ -160,6 +160,6 @@ export function ChatThreadsScreen({ menu }: Props) {
           />
         )}
       </View>
-    </SafeAreaView>
+    </PanelSafeArea>
   );
 }

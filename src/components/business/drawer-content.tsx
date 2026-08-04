@@ -3,6 +3,7 @@ import { usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Avatar } from '@/components/ui/avatar';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
@@ -86,11 +87,17 @@ export function BusinessDrawerContent({ navigation }: Props) {
   return (
     <View className="flex-1 bg-card">
       {/* Cabecera de marca */}
-      <View
-        className="bg-dark px-5 pb-5"
+      <LinearGradient
+        colors={[colors.primaryColor, colors.darkColor]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
         style={{ paddingTop: insets.top + 20 }}
       >
-        <Text className="text-2xl font-extrabold text-primary">Mandalo</Text>
+      <View className="px-5 pb-5">
+        {/* Blanco (no text-primary): con el degradado primary→dark de fondo,
+            el rojo de marca se perdía justo al inicio del texto, donde el
+            fondo también es primary. */}
+        <Text className="text-2xl font-extrabold text-white">Mandalo</Text>
         <Text className="mt-0.5 text-[11px] font-bold uppercase tracking-widest text-white/60">
           Panel del negocio
         </Text>
@@ -118,6 +125,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
           <Ionicons name="create-outline" size={18} color="#FFFFFF" />
         </Pressable>
       </View>
+      </LinearGradient>
 
       {/* Navegación */}
       <View className="flex-1 px-3 pt-4">

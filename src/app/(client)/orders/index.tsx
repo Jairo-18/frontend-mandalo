@@ -2,13 +2,10 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, View } from 'react-native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OrderCard } from '@/components/orders/order-card';
-import { PanelHeader } from '@/components/ui/panel-header';
+import { PanelHeader, PanelSafeArea } from '@/components/ui/panel-header';
 import {
   ORDER_FILTER_CODES,
   OrderFilter,
@@ -69,7 +66,7 @@ export default function ClientOrdersScreen() {
   );
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-dark">
+    <PanelSafeArea>
       <StatusBar style="light" />
 
       <View className="flex-1 bg-surface">
@@ -127,6 +124,6 @@ export default function ClientOrdersScreen() {
         }
       />
       </View>
-    </SafeAreaView>
+    </PanelSafeArea>
   );
 }

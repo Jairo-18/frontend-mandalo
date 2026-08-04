@@ -382,7 +382,7 @@ export default function CheckoutScreen() {
         {payment !== 'EFEC' && (
           <View className="-mt-1 mb-4 flex-row gap-2.5 rounded-2xl bg-primary-tint px-4 py-3">
             <Ionicons name="information-circle-outline" size={18} color={getAppColors().primaryColor} />
-            <Text className="flex-1 text-[13px] text-ink">
+            <Text className="flex-1 text-[13px] text-primary">
               Primero mandamos tu pedido al negocio. Cuando lo acepte, te
               pediremos el comprobante y verás los datos para pagar desde el
               detalle del pedido.
