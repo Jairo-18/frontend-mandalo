@@ -24,6 +24,12 @@ export type DeliverySettlementPeriod = {
   mandaloCut: number;
   /** Parte que le corresponde al repartidor (lo que se le paga). */
   riderCut: number;
+  /** Desglose de `riderCut` (reunión con el cliente 2026-08-04, "control estricto"). */
+  tripTotal: number;
+  nightTotal: number;
+  weatherTotal: number;
+  demandTotal: number;
+  retryTotal: number;
   /** Solo quincena: el pago real (se marca/desmarca). Null en mes/año. */
   settlement: DeliverySettlementSnapshot | null;
   /** Solo mes/año: cuántas de sus quincenas/meses ya están pagados. */

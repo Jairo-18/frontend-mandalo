@@ -107,7 +107,7 @@ export default function StoreScreen() {
       <SafeAreaView className="flex-1 bg-card">
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <View className="px-5 pt-2">
-          <BackButton onPress={() => router.back()} />
+          <BackButton onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
         </View>
         <ListEmpty
           icon="storefront-outline"
@@ -165,7 +165,7 @@ export default function StoreScreen() {
 
       {/* Cabecera: volver + negocio */}
       <View className="flex-row items-center gap-3 px-5 pb-3 pt-2">
-        <BackButton onPress={() => router.back()} />
+        <BackButton onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
         <Avatar
           uri={business.logoUrl}
           fallbackSource={DEFAULT_BUSINESS_LOGO}

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActionButton } from '@/components/orders/action-button';
 import { OrderCard } from '@/components/orders/order-card';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
+import { ReportAccidentDialog } from '@/components/orders/report-accident-dialog';
 import { ReportDeliveryFailureDialog } from '@/components/orders/report-delivery-failure-dialog';
 import { VerificationCodeDialog } from '@/components/orders/verification-code-dialog';
 import { useDeliveryPositionBroadcast } from '@/lib/delivery-tracker';
@@ -39,7 +40,12 @@ export function DeliveryOrders() {
   const [filter, setFilter] = useState<OrderFilter>('all');
   const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
   // Reactivo (regla React Compiler: no leer getSession() suelto en el render).
-  const myId = useSession()?.user.id;
+  const session = useSession();
+  const myId = session?.user.id;
+  // Sin ARL asignado por el admin, no puede ver pedidos disponibles aunque
+  // esté activo (reunión con el cliente 2026-08-04) — el backend ya lo
+  // bloquea igual, esto es solo para no mostrarle una lista vacía sin explicar.
+  const hasArl = !!session?.user.arlIndividualNumber;
 
   // Posición del repartidor: limita "Disponibles" al radio de cercanía y los
   // ordena por distancia al negocio. Si niega el permiso o no hay fix, la
@@ -121,6 +127,16 @@ export function DeliveryOrders() {
     }
   }
 
+  /** "En sitio": obligatorio antes de poder marcar entregado (reunión 2026-08-04). */
+  async function arrive(id: number) {
+    try {
+      await ordersService.arrive(id);
+      mine.fetchPage(1, 'refresh');
+    } catch {
+      // El interceptor ya mostró el error.
+    }
+  }
+
   // Entrega verificada: pide el código que el CLIENTE ve en su app.
   const [deliverTarget, setDeliverTarget] = useState<{ id: number } | null>(
     null,
@@ -128,6 +144,10 @@ export function DeliveryOrders() {
   // Entrega fallida (Art. 31-32 TYC, NOTAS §59): pide el motivo, después el
   // pedido queda esperando que el CLIENTE decida reintentar o cancelar.
   const [failureTarget, setFailureTarget] = useState<{ id: number } | null>(
+    null,
+  );
+  // Reporte de accidente (reunión 2026-08-04): seguridad, no toca el pedido.
+  const [accidentTarget, setAccidentTarget] = useState<{ id: number } | null>(
     null,
   );
 
@@ -145,6 +165,14 @@ export function DeliveryOrders() {
       };
     }
     if (order.stateType?.code === 'RUTA') {
+      if (!order.arrivedAt) {
+        return {
+          label: 'En sitio',
+          icon: 'location-outline' as const,
+          onPress: () => arrive(order.id),
+          tone: 'primary' as const,
+        };
+      }
       return {
         label: 'Marcar entregado',
         icon: 'checkmark-done-outline' as const,
@@ -162,6 +190,9 @@ export function DeliveryOrders() {
       return order.pickupCode
         ? `Ve por el pedido y dile al negocio tu código de recogida: ${order.pickupCode}`
         : 'Ve por el pedido. El negocio confirmará la salida cuando te lo entregue.';
+    }
+    if (tab === 'mine' && order.stateType?.code === 'RUTA' && !order.arrivedAt) {
+      return 'Cuando llegues a la dirección, marca "En sitio" para poder entregar.';
     }
     return undefined;
   }
@@ -197,6 +228,25 @@ export function DeliveryOrders() {
         </View>
       )}
 
+      {tab === 'available' && !hasArl ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-primary-tint">
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={32}
+              color={getAppColors().primaryColor}
+            />
+          </View>
+          <Text className="text-center text-lg font-extrabold text-ink">
+            Falta tu número de ARL
+          </Text>
+          <Text className="mt-2 text-center text-sm leading-5 text-muted">
+            Un administrador debe asignarte tu número de ARL antes de que
+            puedas ver pedidos disponibles. Contáctalo para que lo agregue a
+            tu cuenta.
+          </Text>
+        </View>
+      ) : (
       <FlatList
         data={list.items}
         keyExtractor={(item) => String(item.id)}
@@ -244,6 +294,7 @@ export function DeliveryOrders() {
           )
         }
       />
+      )}
 
       <OrderDetailModal
         orderId={selectedId}
@@ -251,6 +302,24 @@ export function DeliveryOrders() {
         onClose={() => setSelectedId(null)}
         actions={({ order, close }) => {
           const code = order.stateType?.code;
+          const isMine = order.deliveryUserId === myId;
+
+          // Botón de seguridad (reunión 2026-08-04): visible desde que el
+          // repartidor ACEPTÓ el pedido (lo tomó) hasta que lo entrega — no
+          // toca el estado del pedido, es un reporte aparte.
+          const accidentLink =
+            isMine && (code === 'PREP' || code === 'RUTA') ? (
+              <Pressable
+                onPress={() => setAccidentTarget({ id: order.id })}
+                className="mt-3 flex-row items-center justify-center gap-1.5 active:opacity-70"
+              >
+                <Ionicons name="warning-outline" size={15} color="#DC2626" />
+                <Text className="text-[13px] font-bold text-red-600">
+                  ¿Tuviste un accidente?
+                </Text>
+              </Pressable>
+            ) : null;
+
           // Pedido disponible (listo, sin repartidor): se puede tomar.
           if (!order.deliveryUserId && code === 'PREP') {
             return (
@@ -270,21 +339,42 @@ export function DeliveryOrders() {
               />
             );
           }
-          // Pedido mío ya despachado por el negocio: se puede entregar o,
-          // si no se pudo, reportarlo (queda esperando al cliente).
-          if (order.deliveryUserId === myId && code === 'RUTA') {
+          // Pedido mío, aún no despachado: solo el link de accidente.
+          if (isMine && code === 'PREP') {
+            return accidentLink;
+          }
+          // Pedido mío ya despachado por el negocio: primero marcar "En
+          // sitio" (obligatorio) — después se puede entregar o, si no se
+          // pudo, reportarlo (queda esperando al cliente).
+          if (isMine && code === 'RUTA') {
+            if (!order.arrivedAt) {
+              return (
+                <View>
+                  <ActionButton
+                    label="En sitio (llegué a la dirección)"
+                    onPress={async () => {
+                      await arrive(order.id);
+                    }}
+                  />
+                  {accidentLink}
+                </View>
+              );
+            }
             return (
-              <View className="flex-row gap-3">
-                <ActionButton
-                  label="No se pudo entregar"
-                  variant="danger-outline"
-                  onPress={() => setFailureTarget({ id: order.id })}
-                />
-                <ActionButton
-                  label="Marcar entregado"
-                  variant="success"
-                  onPress={() => setDeliverTarget({ id: order.id })}
-                />
+              <View>
+                <View className="flex-row gap-3">
+                  <ActionButton
+                    label="No se pudo entregar"
+                    variant="danger-outline"
+                    onPress={() => setFailureTarget({ id: order.id })}
+                  />
+                  <ActionButton
+                    label="Marcar entregado"
+                    variant="success"
+                    onPress={() => setDeliverTarget({ id: order.id })}
+                  />
+                </View>
+                {accidentLink}
               </View>
             );
           }
@@ -314,15 +404,20 @@ export function DeliveryOrders() {
           queda esperando al cliente, no vuelve a "Disponibles"). */}
       <ReportDeliveryFailureDialog
         visible={failureTarget != null}
-        onConfirm={async (failureReason) => {
+        onConfirm={async (failureReason, photoUri) => {
           if (!failureTarget) return;
-          await ordersService.changeState(failureTarget.id, 'FALL', {
-            failureReason,
-          });
+          await ordersService.reportFailure(failureTarget.id, photoUri, failureReason);
           mine.fetchPage(1, 'refresh');
           setFailureTarget(null);
         }}
         onCancel={() => setFailureTarget(null)}
+      />
+
+      {/* Reporte de accidente (reunión 2026-08-04): seguridad, no toca el pedido. */}
+      <ReportAccidentDialog
+        visible={accidentTarget != null}
+        invoiceId={accidentTarget?.id ?? null}
+        onClose={() => setAccidentTarget(null)}
       />
 
       {/*

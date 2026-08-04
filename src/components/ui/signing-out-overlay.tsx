@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { ActivityIndicator, Modal, Text, View } from 'react-native';
 
 import { isSigningOut, subscribeSigningOut } from '@/lib/sign-out';
-import { getAppColors } from '@/lib/app-colors';
+import { useAppTheme } from '@/context/app-theme';
 
 /**
  * Pantalla completa "Cerrando sesión…" mientras corre `signOutEverywhere`:
@@ -12,6 +12,7 @@ import { getAppColors } from '@/lib/app-colors';
  */
 export function SigningOutOverlay() {
   const visible = useSyncExternalStore(subscribeSigningOut, isSigningOut);
+  const { isDark } = useAppTheme();
 
   if (!visible) return null;
 
@@ -21,7 +22,7 @@ export function SigningOutOverlay() {
         <Text className="text-2xl font-extrabold text-white">Mandalo</Text>
         <ActivityIndicator
           size="large"
-          color={getAppColors().primaryColor}
+          color={isDark ? '#FFFFFF' : '#000000'}
           style={{ marginTop: 24 }}
         />
         <Text className="mt-4 text-sm text-white/70">Cerrando sesión…</Text>

@@ -81,6 +81,7 @@ export default function AdminLayout() {
           name="delivery-billing"
           options={{ title: 'Pagos al domiciliario' }}
         />
+        <Drawer.Screen name="accidents" options={{ title: 'Accidentes' }} />
         <Drawer.Screen name="tags" options={{ title: 'Etiquetas' }} />
         <Drawer.Screen name="categories" options={{ title: 'Categorías' }} />
         <Drawer.Screen name="app-settings" options={{ title: 'Aplicación' }} />

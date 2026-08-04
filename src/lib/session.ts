@@ -26,6 +26,8 @@ export type Session = {
     isActive?: boolean;
     /** Nota del admin para el usuario (por qué no se activa su cuenta, etc.). */
     observations?: string | null;
+    /** Solo DELI: sin esto no puede ver pedidos disponibles aunque esté activo. */
+    arlIndividualNumber?: string | null;
     /**
      * Cuándo aceptó Términos/Tratamiento de Datos (ISO) o null si nunca. Si es
      * null, la app lo lleva al gate `/auth/accept-terms` antes de entrar (§41).

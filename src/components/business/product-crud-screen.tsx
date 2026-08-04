@@ -6,6 +6,7 @@ import {
   Image,
   Pressable,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +20,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
-import { gridItemStyle } from '@/lib/grid-style';
+import { columnsForWidth, gridItemStyle } from '@/lib/grid-style';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { BusinessProduct, businessService } from '@/services/business';
 import { getAppColors } from '@/lib/app-colors';
@@ -34,6 +35,7 @@ import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
 export function ProductCrudScreen() {
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
+  const numColumns = columnsForWidth(useWindowDimensions().width);
 
   const list = usePaginatedList<BusinessProduct>(
     useCallback((params) => businessService.products.paginated(params), []),
@@ -82,7 +84,7 @@ export function ProductCrudScreen() {
     const img = item.images?.[0];
 
     return (
-      <View style={gridItemStyle(index, list.items.length, 2)}>
+      <View style={gridItemStyle(index, list.items.length, numColumns)}>
         <Pressable
           onPress={() => openEdit(item)}
           className="mb-3 overflow-hidden rounded-2xl bg-card active:opacity-80"
@@ -182,9 +184,10 @@ export function ProductCrudScreen() {
         </View>
       ) : (
         <FlatList
+          key={numColumns}
           data={list.items}
           keyExtractor={(item) => String(item.id)}
-          numColumns={2}
+          numColumns={numColumns}
           columnWrapperStyle={{ gap: 12 }}
           renderItem={renderItem}
           contentContainerStyle={{

@@ -75,6 +75,9 @@ export function UserFormModal({
   const [identificationNumber, setIdentificationNumber] = useState('');
   const [identificationTypeId, setIdentificationTypeId] = useState<number>();
   const [vehiclePlate, setVehiclePlate] = useState('');
+  // Solo el admin lo asigna (nunca el registro público) — sin esto el
+  // repartidor no ve pedidos disponibles aunque esté activo.
+  const [arlIndividualNumber, setArlIndividualNumber] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [isBanned, setIsBanned] = useState(false);
   // Nota del admin PARA el usuario (p. ej. por qué su cuenta DELI no se activa).
@@ -114,6 +117,7 @@ export function UserFormModal({
       editing?.identificationType ? Number(editing.identificationType.id) : undefined,
     );
     setVehiclePlate(editing?.vehiclePlate ?? '');
+    setArlIndividualNumber(editing?.arlIndividualNumber ?? '');
     setIsActive(editing?.isActive ?? true);
     setIsBanned(editing?.isBanned ?? false);
     setObservations(editing?.observations ?? '');
@@ -156,6 +160,7 @@ export function UserFormModal({
         ? Number(editing.identificationType.id)
         : undefined) ||
     vehiclePlate !== (editing?.vehiclePlate ?? '') ||
+    arlIndividualNumber !== (editing?.arlIndividualNumber ?? '') ||
     muni.departmentId !==
       (editing?.department ? Number(editing.department.id) : undefined) ||
     muni.municipalityId !==
@@ -256,6 +261,7 @@ export function UserFormModal({
         coords && { latitude: coords.latitude, longitude: coords.longitude }),
       identificationNumber: identificationNumber.trim() || null,
       vehiclePlate: vehiclePlate.trim().toUpperCase() || null,
+      arlIndividualNumber: arlIndividualNumber.trim() || null,
       ...(muni.departmentId && { departmentId: muni.departmentId }),
       ...(muni.municipalityId && { municipalityId: muni.municipalityId }),
       ...(identificationTypeId && { identificationTypeId }),
@@ -491,6 +497,16 @@ export function UserFormModal({
           onChangeText={bind('vehiclePlate', setVehiclePlate)}
           error={errors.vehiclePlate}
           placeholder="ABC12D"
+        />
+      )}
+
+      {!selfProfile && roleCode === 'DELI' && (
+        <TextField
+          label="Número de ARL individual"
+          icon="shield-checkmark-outline"
+          value={arlIndividualNumber}
+          onChangeText={setArlIndividualNumber}
+          placeholder="Sin esto no verá pedidos disponibles"
         />
       )}
 

@@ -14,6 +14,7 @@ import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { AdminUser, adminUsersService } from '@/services/admin-users';
 import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
+import { useUnreviewedAccidentsCount } from '@/hooks/use-unreviewed-accidents-count';
 
 type AdminRoute =
   | '/admin/dashboard'
@@ -21,6 +22,7 @@ type AdminRoute =
   | '/admin/businesses'
   | '/admin/users'
   | '/admin/deliveries'
+  | '/admin/accidents'
   | '/admin/tags'
   | '/admin/categories'
   | '/admin/app-settings';
@@ -38,6 +40,7 @@ const ITEMS: Item[] = [
   { label: 'Negocios', icon: 'storefront-outline', href: '/admin/businesses' },
   { label: 'Usuarios', icon: 'people-outline', href: '/admin/users' },
   { label: 'Domiciliarios', icon: 'bicycle-outline', href: '/admin/deliveries' },
+  { label: 'Accidentes', icon: 'warning-outline', href: '/admin/accidents' },
   { label: 'Etiquetas', icon: 'pricetags-outline', href: '/admin/tags' },
   { label: 'Categorías', icon: 'grid-outline', href: '/admin/categories' },
   { label: 'Aplicación', icon: 'color-palette-outline', href: '/admin/app-settings' },
@@ -69,6 +72,7 @@ export function AdminDrawerContent({ navigation }: Props) {
   // Reactivo: leer getSession() suelto en el render deja JSX viejo con
   // React Compiler (regla de NOTAS §23).
   const user = useSession()?.user;
+  const unreviewedAccidents = useUnreviewedAccidentsCount();
   const displayName = headerName ?? user?.fullName ?? 'Administrador';
   const avatarUrl =
     headerAvatar !== undefined ? headerAvatar : (user?.avatarUrl ?? null);
@@ -175,6 +179,7 @@ export function AdminDrawerContent({ navigation }: Props) {
       <View className="flex-1 px-3 pt-4">
         {ITEMS.map((item) => {
           const active = pathname === item.href;
+          const badge = item.href === '/admin/accidents' ? unreviewedAccidents : 0;
           return (
             <Pressable
               key={item.href}
@@ -189,12 +194,19 @@ export function AdminDrawerContent({ navigation }: Props) {
                 color={active ? colors.primaryColor : colors.mutedColor}
               />
               <Text
-                className={`text-[15px] ${
+                className={`flex-1 text-[15px] ${
                   active ? 'font-extrabold text-primary' : 'font-medium text-ink'
                 }`}
               >
                 {item.label}
               </Text>
+              {badge > 0 && (
+                <View className="min-w-[22px] items-center rounded-full bg-primary px-1.5 py-0.5">
+                  <Text className="text-[11px] font-extrabold text-white">
+                    {badge > 99 ? '99+' : badge}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           );
         })}

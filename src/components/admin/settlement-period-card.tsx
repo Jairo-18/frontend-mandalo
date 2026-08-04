@@ -19,6 +19,8 @@ type Props = {
   /** Tercera cifra opcional, en su propia fila (p. ej. "Tarifa de servicio"). */
   tertiaryLabel?: string;
   tertiaryValue?: string;
+  /** Desglose por concepto (p. ej. recargo nocturno/clima/demanda) — solo se pintan los que traen valor. */
+  breakdown?: { label: string; value: string }[];
   /** Solo quincena: estado del cobro/pago. */
   isPaid?: boolean;
   paidLabel: string;
@@ -47,6 +49,7 @@ export function SettlementPeriodCard({
   secondaryValue,
   tertiaryLabel,
   tertiaryValue,
+  breakdown,
   isPaid,
   paidLabel,
   pendingLabel,
@@ -112,6 +115,17 @@ export function SettlementPeriodCard({
             {tertiaryLabel}
           </Text>
           <Text className="text-sm font-semibold text-ink">{tertiaryValue}</Text>
+        </View>
+      ) : null}
+
+      {breakdown && breakdown.length > 0 ? (
+        <View className="mt-2 gap-1 border-t border-border pt-2">
+          {breakdown.map((row) => (
+            <View key={row.label} className="flex-row items-center justify-between">
+              <Text className="text-xs text-muted">{row.label}</Text>
+              <Text className="text-xs font-semibold text-ink">{row.value}</Text>
+            </View>
+          ))}
         </View>
       ) : null}
     </Pressable>

@@ -90,6 +90,21 @@ export default function DeliveryEarningsScreen() {
                 primaryValue={formatPrice(item.riderCut)}
                 secondaryLabel="Domicilios"
                 secondaryValue={formatPrice(item.deliveryTotal)}
+                breakdown={[
+                  { label: 'Viaje (base + km)', value: formatPrice(item.tripTotal) },
+                  ...(item.nightTotal > 0
+                    ? [{ label: 'Recargo nocturno', value: formatPrice(item.nightTotal) }]
+                    : []),
+                  ...(item.weatherTotal > 0
+                    ? [{ label: 'Recargo por clima', value: formatPrice(item.weatherTotal) }]
+                    : []),
+                  ...(item.demandTotal > 0
+                    ? [{ label: 'Recargo por demanda', value: formatPrice(item.demandTotal) }]
+                    : []),
+                  ...(item.retryTotal > 0
+                    ? [{ label: 'Segundo intento', value: formatPrice(item.retryTotal) }]
+                    : []),
+                ]}
                 isPaid={item.settlement?.isPaid}
                 paidLabel="Cobrado"
                 pendingLabel="Pendiente"

@@ -14,6 +14,8 @@ export type AuthUser = {
   isActive?: boolean;
   /** Nota del admin para el usuario (p. ej. por qué no se activa su cuenta). */
   observations?: string | null;
+  /** Solo DELI: sin esto no puede ver pedidos disponibles aunque esté activo. */
+  arlIndividualNumber?: string | null;
   /** Cuándo aceptó Términos/Tratamiento de Datos (ISO) o null si nunca. */
   termsAcceptedAt?: string | null;
 };

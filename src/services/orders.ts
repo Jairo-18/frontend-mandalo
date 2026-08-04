@@ -41,6 +41,8 @@ export type Order = {
   cancellationReason: string | null;
   /** Motivo por el que el repartidor no pudo entregar (estado FALL). */
   deliveryFailReason: string | null;
+  /** Foto del sitio/paquete que subió el repartidor al reportar la falla. */
+  deliveryFailPhotoUrl: string | null;
   deliveryFailedAt: string | null;
   /** 0 = nunca se reintentó; 1 = ya se usó el único reintento permitido. */
   retryCount: number;
@@ -56,6 +58,8 @@ export type Order = {
   preparingAt: string | null;
   takenAt: string | null;
   onRouteAt: string | null;
+  /** El repartidor marcó "En sitio" — arranca la espera del segundo intento. */
+  arrivedAt: string | null;
   deliveredAt: string | null;
   cancelledAt: string | null;
   /** Minutos de preparación que prometió el negocio al aceptar. */
@@ -262,12 +266,49 @@ export const ordersService = {
       toastSuccess: true,
     }),
 
+  /** El repartidor marca que llegó a la dirección de entrega (obligatorio antes de "Marcar entregado"). */
+  arrive: (id: number) =>
+    http<{ message?: string }>(`/invoice/${id}/arrive`, {
+      method: 'POST',
+      auth: true,
+      toastSuccess: true,
+    }),
+
   /**
-   * Cambia el estado (aceptar/preparar/en ruta/entregar/cancelar/reportar
-   * entrega fallida). Al ACEPTAR el backend exige `prepEstimatedMinutes`; al
-   * CANCELAR, el motivo; al pasar a FALL, `failureReason`. Reintentar tras
-   * una entrega fallida es este mismo método con `stateCode: 'RUTA'` estando
-   * en FALL — el backend cobra el cargo del Anexo I solo.
+   * "¿Deseas esperar 5 minutos más?" — cliente o repartidor, cuando ya pasó
+   * la espera desde "En sitio" sin completar la entrega. Cobra el segundo
+   * intento (Anexo I) y reinicia el cronómetro.
+   */
+  retryAfterTimeout: (id: number) =>
+    http<{ message?: string }>(`/invoice/${id}/retry-after-timeout`, {
+      method: 'POST',
+      auth: true,
+      toastSuccess: true,
+    }),
+
+  /**
+   * El repartidor reporta que no pudo entregar: motivo + FOTO OBLIGATORIA
+   * del sitio/paquete (reunión 2026-08-04). Único camino a FALL.
+   */
+  reportFailure: async (id: number, photoUri: string, failureReason: string) => {
+    const form = new FormData();
+    form.append('photo', await filePart(photoUri), 'failure.jpg');
+    form.append('failureReason', failureReason);
+    return http<{ message?: string }>(`/invoice/${id}/report-failure`, {
+      method: 'POST',
+      body: form,
+      auth: true,
+      toastSuccess: true,
+    });
+  },
+
+  /**
+   * Cambia el estado (aceptar/preparar/en ruta/entregar/cancelar). Al
+   * ACEPTAR el backend exige `prepEstimatedMinutes`; al CANCELAR, el motivo.
+   * Reintentar tras una entrega fallida es este mismo método con
+   * `stateCode: 'RUTA'` estando en FALL — el backend cobra el cargo del
+   * Anexo I solo. (Reportar la entrega fallida en sí va por `reportFailure`,
+   * que exige la foto — no por acá.)
    */
   changeState: (
     id: number,
@@ -278,8 +319,6 @@ export const ordersService = {
       /** RUTA: código de recogida (lo dicta el repartidor al negocio);
        *  ENTR: código de entrega (lo dicta el cliente al repartidor). */
       verificationCode?: string;
-      /** Obligatorio al pasar a FALL: por qué no se pudo entregar. */
-      failureReason?: string;
     },
   ) =>
     http<{ message?: string }>(`/invoice/${id}/state`, {
@@ -294,9 +333,6 @@ export const ordersService = {
           : {}),
         ...(extra?.verificationCode
           ? { verificationCode: extra.verificationCode }
-          : {}),
-        ...(extra?.failureReason
-          ? { failureReason: extra.failureReason }
           : {}),
       },
       auth: true,

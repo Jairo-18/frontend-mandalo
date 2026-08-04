@@ -107,7 +107,7 @@ export function ResendDocumentsScreen() {
               : undefined,
         },
       );
-      router.back();
+      router.canGoBack() ? router.back() : router.replace('/');
     } catch {
       // El interceptor HTTP ya mostró el toast.
     } finally {
@@ -121,7 +121,7 @@ export function ResendDocumentsScreen() {
 
       <View className="flex-row items-center gap-3 bg-card px-5 pb-2 pt-2">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
@@ -146,7 +146,7 @@ export function ResendDocumentsScreen() {
             congelados. Si necesitas actualizar alguno, contacta al
             administrador.
           </Text>
-          <Pressable onPress={() => router.back()} className="mt-6">
+          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} className="mt-6">
             <Text className="text-[15px] font-bold text-primary">Volver</Text>
           </Pressable>
         </View>

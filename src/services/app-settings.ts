@@ -52,12 +52,27 @@ export function isValidAppColors(value: unknown): value is AppColors {
   );
 }
 
+/**
+ * ARL global de la plataforma (reunión con el cliente 2026-08-04): una sola
+ * póliza que cubre a TODOS los repartidores — se le muestra a cualquiera que
+ * reporte un accidente. Vive en la misma fila `appSettings`, pero separado
+ * de `AppColors` a propósito: `isValidAppColors` exige los 12 campos de
+ * color exactos y no debe romperse por estos dos opcionales.
+ */
+export type PlatformArl = {
+  arlCompanyName: string | null;
+  arlPolicyNumber: string | null;
+};
+
 export const appSettingsService = {
   /** Público (como /catalog): la app lo pide en el splash, antes de login. */
-  get: () => http<{ data: AppColors & { id: number; updatedAt: string | null } }>('/app-settings'),
+  get: () =>
+    http<{
+      data: AppColors & PlatformArl & { id: number; updatedAt: string | null };
+    }>('/app-settings'),
 
   /** Solo ADMIN. */
-  update: (payload: Partial<AppColors>) =>
+  update: (payload: Partial<AppColors> & Partial<PlatformArl>) =>
     http<{ message?: string }>('/app-settings', {
       method: 'PATCH',
       body: payload,

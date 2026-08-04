@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { ArrivalCountdown } from '@/components/orders/arrival-countdown';
 import { OrderEta } from '@/components/orders/order-eta';
 import { OrderMap } from '@/components/orders/order-map';
 import { OrderTimeline } from '@/components/orders/order-timeline';
@@ -50,6 +51,7 @@ export function OrderDetailView({
   const [proofViewerOpen, setProofViewerOpen] = useState(false);
   const [proofMenuVisible, setProofMenuVisible] = useState(false);
   const [decidingFailure, setDecidingFailure] = useState(false);
+  const [retryingTimeout, setRetryingTimeout] = useState(false);
 
   const businessName = order.organizational
     ? businessDisplayName(order.organizational)
@@ -126,6 +128,26 @@ export function OrderDetailView({
     }
   }
 
+  // "¿Deseas esperar 5 minutos más?" — cliente y repartidor lo ven (reunión
+  // 2026-08-04): se muestra mientras el pedido sigue EN RUTA con el
+  // repartidor "En sitio" — nunca pasa visiblemente por FALL.
+  const showArrivalCountdown =
+    (perspective === 'client' || perspective === 'delivery') &&
+    state === 'RUTA' &&
+    !!order.arrivedAt;
+
+  async function retryAfterTimeout() {
+    setRetryingTimeout(true);
+    try {
+      await ordersService.retryAfterTimeout(order.id);
+      onOrderChanged?.();
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setRetryingTimeout(false);
+    }
+  }
+
   return (
     <View className="p-5">
       {/* Progreso + estimado vigente */}
@@ -160,6 +182,19 @@ export function OrderDetailView({
             caption="Díctaselo al domiciliario cuando recibas tu pedido."
           />
         )}
+
+      {/* Cronómetro de espera "En sitio" + "¿esperar 5 min más?" (reunión
+          2026-08-04) — cliente y repartidor lo ven, nunca pasa por FALL. */}
+      {showArrivalCountdown && (
+        <View className="mb-5">
+          <ArrivalCountdown
+            arrivedAt={order.arrivedAt!}
+            retryCount={order.retryCount}
+            retrying={retryingTimeout}
+            onRetry={retryAfterTimeout}
+          />
+        </View>
+      )}
 
       {/* Entrega fallida: el cliente decide reintentar (cargo del Anexo I) o
           cancelar. Si ya se usó el único reintento, solo queda cancelar —

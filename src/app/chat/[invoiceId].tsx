@@ -185,7 +185,7 @@ export default function ChatScreen() {
         >
         <View className="flex-row items-center gap-3 px-4 pb-4 pt-2">
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             hitSlop={8}
             className="h-10 w-10 items-center justify-center rounded-full bg-white/10 active:opacity-70"
           >

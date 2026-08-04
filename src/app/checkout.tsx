@@ -153,7 +153,7 @@ export default function CheckoutScreen() {
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <View className="flex-row items-center gap-3 px-5 pb-2 pt-2">
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             hitSlop={8}
             className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
           >
@@ -237,7 +237,7 @@ export default function CheckoutScreen() {
       {/* Cabecera */}
       <View className="flex-row items-center gap-3 px-5 pb-2 pt-2">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >

@@ -31,6 +31,8 @@ export type AdminUser = {
   technicalInspectionUrl: string | null;
   /** Nota del admin para el usuario (por qué no se activa su cuenta, etc.). */
   observations: string | null;
+  /** Número de afiliado ARL del repartidor — sin esto no ve pedidos disponibles. */
+  arlIndividualNumber: string | null;
   isActive: boolean;
   isBanned: boolean;
   isEmailVerified: boolean;
@@ -77,6 +79,8 @@ export type AdminUserPayload = {
   isBanned?: boolean;
   /** Nota del admin para el usuario; `null` la limpia (solo al editar). */
   observations?: string | null;
+  /** Solo repartidores — lo asigna el admin (NUNCA el registro público). */
+  arlIndividualNumber?: string | null;
 };
 
 /** Campo por el que busca el admin ('search' = todos los campos a la vez). */

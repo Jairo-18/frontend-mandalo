@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { FormSection } from '@/components/ui/form-section';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
-import { AppColors, appSettingsService } from '@/services/app-settings';
+import { AppColors, appSettingsService, PlatformArl } from '@/services/app-settings';
 
 const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
 
@@ -102,6 +102,80 @@ function ColorField({
 }
 
 /**
+ * ARL global de la plataforma (reunión con el cliente 2026-08-04): compañía
+ * + número de póliza que cubre a TODOS los repartidores — se le muestra a
+ * cualquiera que reporte un accidente. Sección aparte de los colores: tiene
+ * su propio fetch/guardado (no viene en `useAppData().appColors`, que solo
+ * cachea los 12 campos de color en el splash).
+ */
+function ArlSection() {
+  const [values, setValues] = useState<PlatformArl>({
+    arlCompanyName: '',
+    arlPolicyNumber: '',
+  } as PlatformArl);
+  const [initial, setInitial] = useState<PlatformArl | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    appSettingsService
+      .get()
+      .then((res) => {
+        const arl: PlatformArl = {
+          arlCompanyName: res.data.arlCompanyName ?? '',
+          arlPolicyNumber: res.data.arlPolicyNumber ?? '',
+        } as PlatformArl;
+        setValues(arl);
+        setInitial(arl);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const dirty =
+    !!initial &&
+    (values.arlCompanyName !== initial.arlCompanyName ||
+      values.arlPolicyNumber !== initial.arlPolicyNumber);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await appSettingsService.update(values);
+      setInitial(values);
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return null;
+
+  return (
+    <View className="mt-4 rounded-2xl bg-card p-4">
+      <FormSection label="ARL de la plataforma" />
+      <Text className="-mt-2 mb-3 text-xs text-muted">
+        Póliza única que cubre a TODOS los repartidores — se le muestra a
+        cualquiera que reporte un accidente.
+      </Text>
+      <TextField
+        label="Compañía"
+        icon="shield-checkmark-outline"
+        value={values.arlCompanyName ?? ''}
+        onChangeText={(text) => setValues((v) => ({ ...v, arlCompanyName: text }))}
+      />
+      <TextField
+        label="Número de póliza"
+        icon="document-text-outline"
+        value={values.arlPolicyNumber ?? ''}
+        onChangeText={(text) => setValues((v) => ({ ...v, arlPolicyNumber: text }))}
+      />
+      <Button label="Guardar ARL" onPress={handleSave} loading={saving} disabled={!dirty} />
+    </View>
+  );
+}
+
+/**
  * Pantalla "Aplicación" del panel admin (§50/§51): edita los 12 colores base
  * de la marca — 2 fijos (identidad, no cambian con el tema) + 5 pares
  * claro/oscuro (cada uno EXPLÍCITO, nada se deriva solo). Se guardan en
@@ -188,6 +262,8 @@ export function AppSettingsScreen() {
           disabled={!allValid || !dirty}
         />
       </View>
+
+      <ArlSection />
       </View>
     </KeyboardAwareScroll>
     </View>
