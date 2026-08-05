@@ -14,6 +14,7 @@ import { formatTime } from '@/lib/order-eta';
 import { useChatMessages } from '@/lib/orders-socket';
 import { ChatThreadItem, chatService } from '@/services/chat';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   menu?: ReactNode;
@@ -34,6 +35,7 @@ function threadTime(iso: string): string {
  * paneles de USER y DELI (cambia solo la contraparte).
  */
 export function ChatThreadsScreen({ menu }: Props) {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const roleCode = useSession()?.user.role?.code;
@@ -54,7 +56,7 @@ export function ChatThreadsScreen({ menu }: Props) {
 
         {list.loading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={getAppColors().primaryColor} />
+            <ActivityIndicator size="large" color={colors.primaryColor} />
           </View>
         ) : (
           <FlatList
@@ -72,7 +74,7 @@ export function ChatThreadsScreen({ menu }: Props) {
               list.loadingMore ? (
                 <ActivityIndicator
                   size="small"
-                  color={getAppColors().primaryColor}
+                  color={colors.primaryColor}
                   style={{ paddingVertical: 12 }}
                 />
               ) : null
@@ -140,7 +142,7 @@ export function ChatThreadsScreen({ menu }: Props) {
                       <Ionicons
                         name="chevron-forward"
                         size={16}
-                        color={getAppColors().mutedColor}
+                        color={colors.mutedColor}
                       />
                     )}
                   </View>

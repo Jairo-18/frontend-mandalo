@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { toast } from '@/lib/toast';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** Lado máximo de la imagen final (el backend igual re-optimiza con sharp). */
 const MAX_OUTPUT = 1080;
@@ -34,6 +35,7 @@ type Props = {
  * mantiene rotar 90° y el mismo tamaño de salida que el nativo.
  */
 export function PhotoEditor({ visible, uri, width, height, onCancel, onDone }: Props) {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const frame = useMemo(() => Math.min(Dimensions.get('window').width - 48, 420), []);
 
@@ -103,7 +105,7 @@ export function PhotoEditor({ visible, uri, width, height, onCancel, onDone }: P
           <View className="mb-3 flex-row items-center justify-between">
             <Text className="text-lg font-extrabold text-ink">Editar foto</Text>
             <Pressable onPress={onCancel} hitSlop={10} disabled={saving}>
-              <Ionicons name="close" size={24} color={getAppColors().inkColor} />
+              <Ionicons name="close" size={24} color={colors.inkColor} />
             </Pressable>
           </View>
 
@@ -120,7 +122,7 @@ export function PhotoEditor({ visible, uri, width, height, onCancel, onDone }: P
             )}
             {rotating && (
               <View className="absolute inset-0 items-center justify-center bg-black/40">
-                <ActivityIndicator size="large" color={getAppColors().primaryColor} />
+                <ActivityIndicator size="large" color={colors.primaryColor} />
               </View>
             )}
           </View>
@@ -134,7 +136,7 @@ export function PhotoEditor({ visible, uri, width, height, onCancel, onDone }: P
               disabled={rotating || saving}
               className="h-[52px] w-[52px] items-center justify-center rounded-full bg-surface active:opacity-70"
             >
-              <Ionicons name="refresh-outline" size={22} color={getAppColors().inkColor} />
+              <Ionicons name="refresh-outline" size={22} color={colors.inkColor} />
             </Pressable>
             <Pressable
               onPress={confirm}

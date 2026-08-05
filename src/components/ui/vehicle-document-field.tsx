@@ -9,6 +9,7 @@ import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { toast } from '@/lib/toast';
 import { DocumentValue, resizeForUpload } from '@/lib/upload';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   label: string;
@@ -48,6 +49,7 @@ async function pickPdf(): Promise<{ uri: string } | null> {
  * impreso da peor calidad. El backend decide cómo guardarlo según el mimetype.
  */
 export function VehicleDocumentField({ label, value, onChange, error }: Props) {
+  const colors = useResolvedAppColors();
   const [preview, setPreview] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -123,14 +125,14 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
           />
         ) : value?.kind === 'pdf' ? (
           <View className="items-center justify-center">
-            <Ionicons name="document-text-outline" size={32} color={getAppColors().primaryColor} />
+            <Ionicons name="document-text-outline" size={32} color={colors.primaryColor} />
             <Text className="mt-1.5 text-xs font-bold text-ink">
               Documento PDF listo
             </Text>
           </View>
         ) : (
           <>
-            <Ionicons name="document-attach-outline" size={30} color={getAppColors().mutedColor} />
+            <Ionicons name="document-attach-outline" size={30} color={colors.mutedColor} />
             <Text className="mt-1.5 px-4 text-center text-xs font-medium text-muted">
               Toca para subir una foto o un PDF
             </Text>

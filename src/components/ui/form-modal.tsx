@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { useAppTheme } from '@/context/app-theme';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   visible: boolean;
@@ -37,6 +38,7 @@ export function FormModal({
   saveDisabled = false,
   children,
 }: Props) {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
 
@@ -52,7 +54,7 @@ export function FormModal({
         <View className="flex-row items-center justify-between border-b border-border px-5 py-4">
           <Text className="text-lg font-extrabold text-ink">{title}</Text>
           <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={26} color={getAppColors().inkColor} />
+            <Ionicons name="close" size={26} color={colors.inkColor} />
           </Pressable>
         </View>
 

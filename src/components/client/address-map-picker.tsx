@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { useAppTheme } from '@/context/app-theme';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
   DeviceCoords,
   getDeviceCoordsSilently,
@@ -41,6 +42,7 @@ type Props = {
  * keys ni costo extra de Google Places.
  */
 export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }: Props) {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   const mapRef = useRef<MapView>(null);
@@ -122,13 +124,13 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
           <View className="-mt-8 items-center">
             <View
               className="h-11 w-11 items-center justify-center rounded-full border-2 border-white"
-              style={{ backgroundColor: getAppColors().primaryColor, elevation: 4 }}
+              style={{ backgroundColor: colors.primaryColor, elevation: 4 }}
             >
               <Ionicons name="location" size={22} color="#FFFFFF" />
             </View>
             <View
               className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: getAppColors().darkColor, marginTop: -2 }}
+              style={{ backgroundColor: colors.darkColor, marginTop: -2 }}
             />
           </View>
         </View>
@@ -143,7 +145,7 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
             hitSlop={10}
             className="h-10 w-10 items-center justify-center rounded-full bg-card shadow-md"
           >
-            <Ionicons name="close" size={22} color={getAppColors().inkColor} />
+            <Ionicons name="close" size={22} color={colors.inkColor} />
           </Pressable>
           <Pressable
             onPress={handleUseMyLocation}
@@ -151,9 +153,9 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
             className="h-10 w-10 items-center justify-center rounded-full bg-card shadow-md"
           >
             {locating ? (
-              <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+              <ActivityIndicator size="small" color={colors.primaryColor} />
             ) : (
-              <Ionicons name="locate" size={20} color={getAppColors().primaryColor} />
+              <Ionicons name="locate" size={20} color={colors.primaryColor} />
             )}
           </Pressable>
         </View>
@@ -169,7 +171,7 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
           <View className="mb-4 min-h-[44px] flex-row items-center gap-2">
             {resolving ? (
               <>
-                <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+                <ActivityIndicator size="small" color={colors.primaryColor} />
                 <Text className="text-sm text-muted">Buscando dirección…</Text>
               </>
             ) : (

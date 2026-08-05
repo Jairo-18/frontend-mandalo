@@ -57,6 +57,17 @@ export function homePathFor(
 }
 
 /**
+ * Ruta de "Mi cuenta" según el rol — usada como fallback al volver desde
+ * pantallas hijas (cambiar contraseña, reenviar documentos) cuando no hay
+ * historial que recorrer (p. ej. entrada directa por URL en web).
+ */
+export function profilePathFor(
+  user?: Session['user'] | null,
+): '/delivery/profile' | '/profile' {
+  return user?.role?.code === 'DELI' ? '/delivery/profile' : '/profile';
+}
+
+/**
  * A dónde entra el usuario tras autenticarse: si aún no aceptó Términos y
  * Tratamiento de Datos, al gate bloqueante `/auth/accept-terms`; si ya aceptó,
  * a su panel/home según el rol. Se usa en el login, el sign-in con Google y el

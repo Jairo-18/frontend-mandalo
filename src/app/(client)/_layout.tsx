@@ -163,7 +163,7 @@ export default function ClientLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Perfil',
+            title: 'Mi cuenta',
             tabBarIcon: ({ color, size, focused }) => (
               <Ionicons
                 name={focused ? 'person' : 'person-outline'}

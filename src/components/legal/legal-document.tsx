@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAppTheme } from '@/context/app-theme';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { getAppColors } from '@/lib/app-colors';
 
 type Para = string | string[] | { table: { headers: string[]; rows: string[][] } };
@@ -29,6 +30,7 @@ type Props = {
 export function LegalDocument({ title, updatedAt, meta, blocks, pdfUrl }: Props) {
   const router = useRouter();
   const { isDark } = useAppTheme();
+  const colors = useResolvedAppColors();
 
   return (
     <SafeAreaView className="flex-1 bg-card">
@@ -40,7 +42,7 @@ export function LegalDocument({ title, updatedAt, meta, blocks, pdfUrl }: Props)
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
+          <Ionicons name="arrow-back" size={20} color={colors.inkColor} />
         </Pressable>
         <Text numberOfLines={1} className="flex-1 text-lg font-extrabold text-ink">
           {title}

@@ -15,6 +15,7 @@ import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { CatalogCrudService, CatalogItem } from '@/services/admin-catalogs';
 import { catalogIcon, CatalogIconView } from '@/lib/catalog-icon';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 
 type Props = {
@@ -38,6 +39,7 @@ export function CatalogCrudScreen({
   entityNamePlural,
   fallbackIcon,
 }: Props) {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
 
@@ -84,7 +86,7 @@ export function CatalogCrudScreen({
 
     return (
       <View className="mb-3 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-4">
-        <CatalogIconView icon={icon} size={22} color={getAppColors().primaryColor} />
+        <CatalogIconView icon={icon} size={22} color={colors.primaryColor} />
 
         <View className="flex-1">
           <Text numberOfLines={1} className="text-[15px] font-bold text-ink">
@@ -100,7 +102,7 @@ export function CatalogCrudScreen({
           hitSlop={8}
           className="h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="pencil-outline" size={17} color={getAppColors().inkColor} />
+          <Ionicons name="pencil-outline" size={17} color={colors.inkColor} />
         </Pressable>
         <Pressable
           onPress={() => setToDelete(item)}
@@ -137,7 +139,7 @@ export function CatalogCrudScreen({
 
       {list.loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
+          <ActivityIndicator size="large" color={colors.primaryColor} />
         </View>
       ) : (
         <FlatList

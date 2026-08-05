@@ -37,7 +37,7 @@ const REQUEST_TIMEOUT_MS = 15000;
 /** Las subidas de archivos (multipart) pueden tardar más que un JSON. */
 const UPLOAD_TIMEOUT_MS = 60000;
 
-function pickMessage(json: unknown, fallback: string): string {
+export function pickMessage(json: unknown, fallback: string): string {
   const raw =
     json && typeof json === 'object' && 'message' in json
       ? ((json as { message?: unknown }).message ?? fallback)
@@ -137,4 +137,94 @@ export async function http<T = unknown>(
   }
 
   return json as T;
+}
+
+type UploadOptions = {
+  method?: 'POST' | 'PATCH' | 'PUT';
+  auth?: boolean;
+  toastError?: boolean;
+  toastSuccess?: boolean;
+  /** Fracción 0–1 subida del body — para mostrar una barra de progreso real
+   * en vez de un spinner ciego (registros/subidas con varias fotos tardan
+   * bastante en conexión rural y sin esto se sienten "colgados"). */
+  onProgress?: (fraction: number) => void;
+};
+
+/**
+ * Como `http()` pero para `FormData` con progreso de subida real: `fetch` (RN
+ * y web) no expone el avance del body saliente, solo `XMLHttpRequest` lo
+ * hace (`upload.onprogress`) — por eso este helper es aparte en vez de una
+ * opción más de `http()`. Mismo contrato de errores (`HttpError`) y toasts.
+ */
+export function httpUpload<T = unknown>(
+  path: string,
+  form: FormData,
+  options: UploadOptions = {},
+): Promise<T> {
+  const {
+    method = 'POST',
+    auth = false,
+    toastError = true,
+    toastSuccess = false,
+    onProgress,
+  } = options;
+
+  const bearer = auth ? getSession()?.accessToken : undefined;
+  if (auth && !bearer) {
+    return Promise.reject(new HttpError('Sesión cerrada', 401, null));
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, apiUrl(path));
+    if (CLIENT_API_KEY) xhr.setRequestHeader('X-Client-Key', CLIENT_API_KEY);
+    if (bearer) xhr.setRequestHeader('Authorization', `Bearer ${bearer}`);
+    xhr.timeout = UPLOAD_TIMEOUT_MS;
+
+    xhr.upload.onprogress = (e) => {
+      if (onProgress && e.lengthComputable) onProgress(e.loaded / e.total);
+    };
+
+    xhr.onload = () => {
+      let json: unknown = null;
+      try {
+        json = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        json = null;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (
+          toastSuccess &&
+          json &&
+          typeof json === 'object' &&
+          'message' in json
+        ) {
+          toast.success(pickMessage(json, ''));
+        }
+        resolve(json as T);
+      } else {
+        const message = pickMessage(json, 'Ocurrió un error inesperado');
+        if (toastError) toast.error(message);
+        reject(new HttpError(message, xhr.status, json));
+      }
+    };
+
+    xhr.onerror = () => {
+      const message = 'No se pudo conectar con el servidor';
+      if (toastError) toast.error(message);
+      reject(new HttpError(message, 0, null));
+    };
+
+    xhr.ontimeout = () => {
+      const message = 'El servidor tardó demasiado en responder';
+      if (toastError) toast.error(message);
+      reject(
+        new HttpError(message, 0, {
+          cause: `timeout ${UPLOAD_TIMEOUT_MS / 1000}s`,
+        }),
+      );
+    };
+
+    xhr.send(form);
+  });
 }

@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Badge } from '@/components/ui/badge';
 import { settlementPeriodLabel } from '@/lib/settlement-period-label';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   periodType: 'quincena' | 'month' | 'year';
@@ -58,6 +59,7 @@ export function SettlementPeriodCard({
   subperiodsLabel,
   onPress,
 }: Props) {
+  const colors = useResolvedAppColors();
   const isQuincena = periodType === 'quincena';
 
   return (
@@ -79,7 +81,7 @@ export function SettlementPeriodCard({
             <Text className="text-xs font-bold text-muted">
               {paidSubperiods ?? 0}/{totalSubperiods ?? 0} {subperiodsLabel}
             </Text>
-            <Ionicons name="chevron-forward" size={16} color={getAppColors().mutedColor} />
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedColor} />
           </View>
         )}
       </View>

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/context/app-theme';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** La misma metadata que devuelve el backend en `pagination`. */
 export type PaginationMeta = {
@@ -38,6 +39,7 @@ export function Paginator({
   perPageOptions = [10, 20, 50],
   disabled = false,
 }: Props) {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   const [perPageOpen, setPerPageOpen] = useState(false);
@@ -58,7 +60,7 @@ export function Paginator({
           className="flex-row items-center gap-1 rounded-lg bg-surface px-2.5 py-1.5 active:opacity-70"
         >
           <Text className="text-xs font-bold text-ink">{perPage}</Text>
-          <Ionicons name="chevron-down" size={12} color={getAppColors().mutedColor} />
+          <Ionicons name="chevron-down" size={12} color={colors.mutedColor} />
           <Text className="text-xs text-muted">por pág.</Text>
         </Pressable>
       ) : (
@@ -78,7 +80,7 @@ export function Paginator({
             hasPreviousPage && !disabled ? 'bg-surface' : 'opacity-30'
           }`}
         >
-          <Ionicons name="chevron-back" size={18} color={getAppColors().inkColor} />
+          <Ionicons name="chevron-back" size={18} color={colors.inkColor} />
         </Pressable>
         <Pressable
           onPress={() => onPageChange(page + 1)}
@@ -88,7 +90,7 @@ export function Paginator({
             hasNextPage && !disabled ? 'bg-surface' : 'opacity-30'
           }`}
         >
-          <Ionicons name="chevron-forward" size={18} color={getAppColors().inkColor} />
+          <Ionicons name="chevron-forward" size={18} color={colors.inkColor} />
         </Pressable>
       </View>
 
@@ -131,7 +133,7 @@ export function Paginator({
                   {option}
                 </Text>
                 {option === perPage && (
-                  <Ionicons name="checkmark" size={18} color={getAppColors().primaryColor} />
+                  <Ionicons name="checkmark" size={18} color={colors.primaryColor} />
                 )}
               </Pressable>
             ))}

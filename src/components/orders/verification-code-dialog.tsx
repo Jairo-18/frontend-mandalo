@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   visible: boolean;
@@ -32,6 +33,7 @@ export function VerificationCodeDialog({
   onConfirm,
   onCancel,
 }: Props) {
+  const colors = useResolvedAppColors();
   const [code, setCode] = useState('');
   const [working, setWorking] = useState(false);
 
@@ -72,7 +74,7 @@ export function VerificationCodeDialog({
             onPress={() => {}}
           >
             <View className="mb-4 h-14 w-14 items-center justify-center self-center rounded-full bg-primary-tint">
-              <Ionicons name="keypad-outline" size={26} color={getAppColors().primaryColor} />
+              <Ionicons name="keypad-outline" size={26} color={colors.primaryColor} />
             </View>
 
             <Text className="text-center text-lg font-extrabold text-ink">
@@ -89,7 +91,7 @@ export function VerificationCodeDialog({
               maxLength={4}
               autoFocus
               placeholder="••••"
-              placeholderTextColor={getAppColors().mutedColor}
+              placeholderTextColor={colors.mutedColor}
               className="mt-4 self-center rounded-2xl border border-border bg-surface px-6 py-3 text-center text-2xl font-extrabold tracking-[12px] text-ink"
             />
 

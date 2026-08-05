@@ -11,8 +11,10 @@ import { TextField } from '@/components/ui/text-field';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAppTheme } from '@/context/app-theme';
 import { useFormErrors } from '@/hooks/use-form-errors';
+import { useSession } from '@/hooks/use-session';
 import { profileService } from '@/services/profile';
-import { getAppColors } from '@/lib/app-colors';
+import { profilePathFor } from '@/lib/session';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /**
  * Pantalla "Cambiar contraseña" COMPARTIDA (cliente y repartidor); cada rol
@@ -22,9 +24,15 @@ import { getAppColors } from '@/lib/app-colors';
  * "¿Olvidaste tu contraseña?" del login.
  */
 export function ChangePasswordScreen() {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   const { isDark } = useAppTheme();
+  const session = useSession();
   const { errors, bind, validate } = useFormErrors();
+  // "Cambiar contraseña" es un Tabs.Screen oculto (hermano de "profile"), no
+  // una pantalla apilada — cambiar de tab no arma historial real, así que
+  // `router.canGoBack()` no es confiable acá; se vuelve SIEMPRE a Mi cuenta.
+  const profileHref = profilePathFor(session?.user);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -53,7 +61,7 @@ export function ChangePasswordScreen() {
       setSaving(true);
       await profileService.changePassword(currentPassword, newPassword);
       // El interceptor ya mostró el toast de éxito del backend.
-      router.canGoBack() ? router.back() : router.replace('/');
+      router.replace(profileHref);
     } catch {
       // El interceptor HTTP ya mostró el toast ("La contraseña actual no es correcta").
     } finally {
@@ -67,11 +75,11 @@ export function ChangePasswordScreen() {
 
       <View className="flex-row items-center gap-3 bg-surface px-5 pb-2 pt-2">
         <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          onPress={() => router.replace(profileHref)}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-card active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
+          <Ionicons name="arrow-back" size={20} color={colors.inkColor} />
         </Pressable>
         <Text className="flex-1 text-lg font-extrabold text-ink">
           Cambiar contraseña

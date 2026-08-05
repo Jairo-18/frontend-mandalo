@@ -24,6 +24,7 @@ import { refreshUnreadChats } from '@/hooks/use-unread-chats';
 import { formatTime } from '@/lib/order-eta';
 import { ChatSocketEvent, useChatMessages } from '@/lib/orders-socket';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
   ChatMessage,
   ChatParticipant,
@@ -49,6 +50,7 @@ const CLIENT_REPLIES = [
  * optimista. Se abre desde el detalle del pedido, "Mis chats" o el push.
  */
 export default function ChatScreen() {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { invoiceId: raw } = useLocalSearchParams<{ invoiceId: string }>();
@@ -178,7 +180,7 @@ export default function ChatScreen() {
       <View className="flex-1 bg-surface">
         {/* Cabecera de marca: contraparte + pedido */}
         <LinearGradient
-          colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+          colors={[colors.primaryColor, colors.darkColor]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
@@ -219,7 +221,7 @@ export default function ChatScreen() {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
           {loading ? (
             <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" color={getAppColors().primaryColor} />
+              <ActivityIndicator size="large" color={colors.primaryColor} />
             </View>
           ) : !thread ? (
             <ListEmpty
@@ -253,7 +255,7 @@ export default function ChatScreen() {
                   {loadingMore && (
                     <ActivityIndicator
                       size="small"
-                      color={getAppColors().primaryColor}
+                      color={colors.primaryColor}
                       style={{ paddingVertical: 10 }}
                     />
                   )}
@@ -262,7 +264,7 @@ export default function ChatScreen() {
                       <Ionicons
                         name="lock-closed-outline"
                         size={15}
-                        color={getAppColors().primaryColor}
+                        color={colors.primaryColor}
                       />
                       <Text className="flex-1 text-xs text-primary">
                         Nunca compartas tu{' '}
@@ -319,7 +321,7 @@ export default function ChatScreen() {
                       value={text}
                       onChangeText={setText}
                       placeholder="Escribe un mensaje…"
-                      placeholderTextColor={getAppColors().mutedColor}
+                      placeholderTextColor={colors.mutedColor}
                       multiline
                       maxLength={500}
                       className="text-[15px] text-ink"

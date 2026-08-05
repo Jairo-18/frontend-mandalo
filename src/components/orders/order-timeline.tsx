@@ -5,6 +5,7 @@ import { getAppColors } from '@/lib/app-colors';
 import { formatTime } from '@/lib/order-eta';
 import { ORDER_FLOW, ORDER_STATE, OrderStateCode, stateMeta } from '@/lib/order-status';
 import { Order } from '@/services/orders';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = { order: Order };
 
@@ -28,6 +29,7 @@ function stepTime(order: Order, code: OrderStateCode): string | null {
  * franja roja en vez del flujo.
  */
 export function OrderTimeline({ order }: Props) {
+  const colors = useResolvedAppColors();
   const stateCode = order.stateType?.code ?? '';
 
   if (stateCode === 'CANC') {
@@ -74,7 +76,7 @@ export function OrderTimeline({ order }: Props) {
                 <Ionicons
                   name={meta.icon}
                   size={15}
-                  color={done ? '#FFFFFF' : getAppColors().mutedColor}
+                  color={done ? '#FFFFFF' : colors.mutedColor}
                 />
               </View>
               {/* Línea derecha */}

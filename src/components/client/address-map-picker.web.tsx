@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
   DeviceCoords,
   getDeviceCoordsSilently,
@@ -33,6 +34,7 @@ type Props = {
  * (que sigue disponible detrás de este modal).
  */
 export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }: Props) {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const [coords, setCoords] = useState<DeviceCoords | null>(initialCoords ?? null);
   const [address, setAddress] = useState<string | undefined>();
@@ -85,7 +87,7 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
             hitSlop={10}
             className="h-10 w-10 items-center justify-center rounded-full bg-surface"
           >
-            <Ionicons name="close" size={22} color={getAppColors().inkColor} />
+            <Ionicons name="close" size={22} color={colors.inkColor} />
           </Pressable>
           <Text className="text-[15px] font-extrabold text-ink">Ubicación</Text>
           <View className="h-10 w-10" />
@@ -93,7 +95,7 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
 
         <View className="flex-1 items-center justify-center px-8">
           <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary-tint">
-            <Ionicons name="location" size={30} color={getAppColors().primaryColor} />
+            <Ionicons name="location" size={30} color={colors.primaryColor} />
           </View>
           <Text className="mb-2 text-center text-[15px] font-bold text-ink">
             La versión web no tiene mapa interactivo
@@ -106,7 +108,7 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
           <View className="w-full min-h-[44px] flex-row items-center justify-center gap-2 rounded-xl bg-surface px-4 py-3">
             {locating ? (
               <>
-                <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+                <ActivityIndicator size="small" color={colors.primaryColor} />
                 <Text className="text-sm text-muted">Buscando tu ubicación…</Text>
               </>
             ) : (
@@ -126,7 +128,7 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
             disabled={locating}
             className="mb-3 h-12 flex-row items-center justify-center gap-2 rounded-xl border border-primary active:opacity-70"
           >
-            <Ionicons name="locate" size={18} color={getAppColors().primaryColor} />
+            <Ionicons name="locate" size={18} color={colors.primaryColor} />
             <Text className="text-[14px] font-bold text-primary">
               Usar mi ubicación actual
             </Text>

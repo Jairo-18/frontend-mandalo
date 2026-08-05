@@ -165,10 +165,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
       </View>
 
       {/* Cerrar sesión */}
-      <View
-        className="border-t border-border px-3 pt-3"
-        style={{ paddingBottom: insets.bottom + 12 }}
-      >
+      <View className="border-t border-border px-3 pt-3">
         <Pressable
           onPress={handleLogout}
           disabled={signingOut}
@@ -181,6 +178,50 @@ export function BusinessDrawerContent({ navigation }: Props) {
           )}
           <Text className="text-[15px] font-bold text-primary">
             Cerrar sesión
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* Ayuda y legal: separada de "Cerrar sesión" — nada que ver con la
+          sesión, así que va en su propio bloque debajo. */}
+      <View
+        className="border-t border-border px-3 pt-3"
+        style={{ paddingBottom: insets.bottom + 12 }}
+      >
+        <Pressable
+          onPress={() => {
+            navigation.closeDrawer();
+            router.push('/how-it-works');
+          }}
+          className="mb-1 flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
+        >
+          <Ionicons name="help-circle-outline" size={21} color={colors.mutedColor} />
+          <Text className="flex-1 text-[15px] font-medium text-ink">
+            ¿Cómo funciona Mandalo?
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            navigation.closeDrawer();
+            router.push('/terminos-y-condiciones-de-uso');
+          }}
+          className="mb-1 flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
+        >
+          <Ionicons name="document-text-outline" size={21} color={colors.mutedColor} />
+          <Text className="flex-1 text-[15px] font-medium text-ink">
+            Políticas de uso
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            navigation.closeDrawer();
+            router.push('/politicas-de-privacidad');
+          }}
+          className="flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
+        >
+          <Ionicons name="shield-outline" size={21} color={colors.mutedColor} />
+          <Text className="flex-1 text-[15px] font-medium text-ink">
+            Política de privacidad
           </Text>
         </Pressable>
         <DeveloperCredit />

@@ -14,6 +14,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { DocumentPhotoField } from '@/components/ui/document-photo-field';
 import { Select, SelectOption } from '@/components/ui/select';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   visible: boolean;
@@ -43,6 +44,7 @@ export function ReportDeliveryFailureDialog({
   onConfirm,
   onCancel,
 }: Props) {
+  const colors = useResolvedAppColors();
   const [reason, setReason] = useState<string | undefined>(undefined);
   const [notes, setNotes] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -123,7 +125,7 @@ export function ReportDeliveryFailureDialog({
                 <TextInput
                   className="min-h-[44px] text-[15px] text-ink"
                   placeholder="Observaciones (opcional)"
-                  placeholderTextColor={getAppColors().mutedColor}
+                  placeholderTextColor={colors.mutedColor}
                   value={notes}
                   onChangeText={setNotes}
                   multiline

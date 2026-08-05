@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 export type SelectOption<T extends string | number = number> = {
   label: string;
@@ -42,8 +42,9 @@ export function Select<T extends string | number = number>({
 }: Props<T>) {
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
+  const colors = useResolvedAppColors();
   const selected = options.find((o) => o.value === value);
-  const mutedColor = getAppColors().mutedColor;
+  const mutedColor = colors.mutedColor;
 
   return (
     <View className="mb-4">
@@ -118,7 +119,7 @@ export function Select<T extends string | number = number>({
                     {item.label}
                   </Text>
                   {item.value === value && (
-                    <Ionicons name="checkmark" size={18} color={getAppColors().primaryColor} />
+                    <Ionicons name="checkmark" size={18} color={colors.primaryColor} />
                   )}
                 </Pressable>
               )}

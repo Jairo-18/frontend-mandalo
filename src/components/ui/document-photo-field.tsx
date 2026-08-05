@@ -8,6 +8,7 @@ import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { resizeForUpload } from '@/lib/upload';
 import { toast } from '@/lib/toast';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   label: string;
@@ -36,6 +37,7 @@ export function DocumentPhotoField({
   error,
   placeholderIcon = 'card-outline',
 }: Props) {
+  const colors = useResolvedAppColors();
   const [preview, setPreview] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -98,7 +100,7 @@ export function DocumentPhotoField({
           </>
         ) : (
           <>
-            <Ionicons name={placeholderIcon} size={30} color={getAppColors().mutedColor} />
+            <Ionicons name={placeholderIcon} size={30} color={colors.mutedColor} />
             <Text className="mt-1.5 text-xs font-medium text-muted">
               Toca para subir la foto
             </Text>

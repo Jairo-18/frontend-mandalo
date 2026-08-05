@@ -33,6 +33,7 @@ import {
 import { adminTagsService, CatalogItem } from '@/services/admin-catalogs';
 import { businessService } from '@/services/business';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** Días de la semana para el horario (números JS: 0 = domingo). */
 const DAY_ITEMS = [
@@ -95,6 +96,7 @@ export function BusinessFormModal({
   onClose,
   onSaved,
 }: Props) {
+  const colors = useResolvedAppColors();
   const { departments, identificationTypes } = useAppData();
   const muni = useMunicipalities();
 
@@ -490,7 +492,7 @@ export function BusinessFormModal({
           etiquetas las asigna el admin/vendedor: se ven bloqueadas (🔒). */}
       {selfBusiness && (
         <View className="mb-4 flex-row gap-2.5 rounded-xl bg-primary-tint px-3.5 py-3">
-          <Ionicons name="lock-closed" size={18} color={getAppColors().primaryColor} />
+          <Ionicons name="lock-closed" size={18} color={colors.primaryColor} />
           <Text className="flex-1 text-[13px] text-primary">
             Los campos con candado (razón social, identificación, ubicación y
             etiquetas) los asigna el administrador y no se pueden editar aquí.
@@ -612,14 +614,14 @@ export function BusinessFormModal({
       {selfBusiness ? (
         /* Ubicación de solo lectura: la asigna el administrador. */
         <View className="mb-4 flex-row items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-3">
-          <Ionicons name="lock-closed" size={20} color={getAppColors().mutedColor} />
+          <Ionicons name="lock-closed" size={20} color={colors.mutedColor} />
           <Text className="flex-1 text-[15px] text-muted">
             {coords
               ? 'Ubicación exacta asignada por el administrador.'
               : 'El administrador aún no asignó la ubicación exacta.'}
           </Text>
           {coords && (
-            <Ionicons name="checkmark-circle" size={18} color={getAppColors().primaryColor} />
+            <Ionicons name="checkmark-circle" size={18} color={colors.primaryColor} />
           )}
         </View>
       ) : (
@@ -642,12 +644,12 @@ export function BusinessFormModal({
             className="-mt-2 mb-1 flex-row items-center gap-1.5 self-start"
           >
             {extracting ? (
-              <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+              <ActivityIndicator size="small" color={colors.primaryColor} />
             ) : (
               <Ionicons
                 name={coords ? 'checkmark-circle' : 'locate-outline'}
                 size={16}
-                color={getAppColors().primaryColor}
+                color={colors.primaryColor}
               />
             )}
             <Text className="text-[13px] font-bold text-primary">

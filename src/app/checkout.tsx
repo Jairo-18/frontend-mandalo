@@ -26,6 +26,7 @@ import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
 import { ExploreBusiness, exploreService } from '@/services/explore';
 import { ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /**
  * Checkout del cliente: revisa el carrito, elige a dónde enviar (dirección
@@ -34,6 +35,7 @@ import { getAppColors } from '@/lib/app-colors';
  * dos últimas las calcula el backend en vivo, ver `ordersService.deliveryFee`).
  */
 export default function CheckoutScreen() {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   const { isDark } = useAppTheme();
   const cart = useCart();
@@ -132,7 +134,7 @@ export default function CheckoutScreen() {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-card px-8">
         <StatusBar style={isDark ? 'light' : 'dark'} />
-        <Ionicons name="cart-outline" size={48} color={getAppColors().mutedColor} />
+        <Ionicons name="cart-outline" size={48} color={colors.mutedColor} />
         <Text className="mt-3 text-center text-sm text-muted">
           Tu carrito está vacío.
         </Text>
@@ -157,7 +159,7 @@ export default function CheckoutScreen() {
             hitSlop={8}
             className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
           >
-            <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
+            <Ionicons name="arrow-back" size={20} color={colors.inkColor} />
           </Pressable>
           <Text className="flex-1 text-lg font-extrabold text-ink">Casi listo</Text>
           <ThemeToggle />
@@ -165,7 +167,7 @@ export default function CheckoutScreen() {
 
         <View className="flex-1 items-center justify-center px-8">
           <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary-tint">
-            <Ionicons name="cart-outline" size={30} color={getAppColors().primaryColor} />
+            <Ionicons name="cart-outline" size={30} color={colors.primaryColor} />
           </View>
           <Text className="text-center text-[20px] font-extrabold text-ink">
             Crea tu cuenta para pedir
@@ -241,7 +243,7 @@ export default function CheckoutScreen() {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
+          <Ionicons name="arrow-back" size={20} color={colors.inkColor} />
         </Pressable>
         <Text className="flex-1 text-lg font-extrabold text-ink">
           Confirmar pedido
@@ -257,7 +259,7 @@ export default function CheckoutScreen() {
       >
         {/* Negocio */}
         <View className="mb-4 flex-row items-center gap-2">
-          <Ionicons name="storefront-outline" size={16} color={getAppColors().mutedColor} />
+          <Ionicons name="storefront-outline" size={16} color={colors.mutedColor} />
           <Text className="text-sm font-bold text-ink">
             {cart.businessName}
           </Text>
@@ -267,7 +269,7 @@ export default function CheckoutScreen() {
         <Text className="mb-2 text-sm font-bold text-ink">Enviar a</Text>
         {loadingAddr ? (
           <ActivityIndicator
-            color={getAppColors().primaryColor}
+            color={colors.primaryColor}
             style={{ alignSelf: 'flex-start' }}
           />
         ) : (
@@ -275,7 +277,7 @@ export default function CheckoutScreen() {
             onPress={() => setSheetVisible(true)}
             className="mb-5 flex-row items-center gap-3 rounded-2xl border border-border p-3.5 active:opacity-70"
           >
-            <Ionicons name="location" size={20} color={getAppColors().primaryColor} />
+            <Ionicons name="location" size={20} color={colors.primaryColor} />
             <View className="flex-1">
               {defaultAddress ? (
                 <>
@@ -295,7 +297,7 @@ export default function CheckoutScreen() {
                 </Text>
               )}
             </View>
-            <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
           </Pressable>
         )}
 
@@ -336,7 +338,7 @@ export default function CheckoutScreen() {
                     hitSlop={6}
                     className="h-7 w-7 items-center justify-center rounded-full bg-surface active:opacity-70"
                   >
-                    <Ionicons name="remove" size={16} color={getAppColors().inkColor} />
+                    <Ionicons name="remove" size={16} color={colors.inkColor} />
                   </Pressable>
                   <Text className="min-w-[18px] text-center text-[14px] font-extrabold text-ink">
                     {item.quantity}
@@ -381,7 +383,7 @@ export default function CheckoutScreen() {
             DESPUÉS de que el negocio acepte el pedido, desde su detalle. */}
         {payment !== 'EFEC' && (
           <View className="-mt-1 mb-4 flex-row gap-2.5 rounded-2xl bg-primary-tint px-4 py-3">
-            <Ionicons name="information-circle-outline" size={18} color={getAppColors().primaryColor} />
+            <Ionicons name="information-circle-outline" size={18} color={colors.primaryColor} />
             <Text className="flex-1 text-[13px] text-primary">
               Primero mandamos tu pedido al negocio. Cuando lo acepte, te
               pediremos el comprobante y verás los datos para pagar desde el
@@ -398,7 +400,7 @@ export default function CheckoutScreen() {
           <TextInput
             className="min-h-[44px] text-[15px] text-ink"
             placeholder="Ej: sin cebolla, timbre dañado — llamar."
-            placeholderTextColor={getAppColors().mutedColor}
+            placeholderTextColor={colors.mutedColor}
             value={notes}
             onChangeText={setNotes}
             multiline

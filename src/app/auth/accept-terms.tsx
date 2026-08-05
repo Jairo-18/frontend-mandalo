@@ -13,6 +13,7 @@ import { signOutEverywhere } from '@/lib/sign-out';
 import { getSession, homePathFor, setSession } from '@/lib/session';
 import { authService } from '@/services/auth';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /**
  * Gate BLOQUEANTE de Términos y Tratamiento de Datos: sale tras iniciar sesión
@@ -22,6 +23,7 @@ import { getAppColors } from '@/lib/app-colors';
  * del negocio (los dos aceptan a la vez).
  */
 export default function AcceptTermsScreen() {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   const { isDark } = useAppTheme();
   const [accepted, setAccepted] = useState(false);
@@ -71,7 +73,7 @@ export default function AcceptTermsScreen() {
 
         <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
           <View className="mb-4 h-14 w-14 items-center justify-center self-center rounded-full bg-primary-tint">
-            <Ionicons name="shield-checkmark-outline" size={28} color={getAppColors().primaryColor} />
+            <Ionicons name="shield-checkmark-outline" size={28} color={colors.primaryColor} />
           </View>
           <Text className="text-center text-[22px] font-extrabold text-ink">
             Un último paso
@@ -102,9 +104,9 @@ export default function AcceptTermsScreen() {
             className="mt-4 flex-row items-center justify-center gap-2 py-2 active:opacity-70"
           >
             {leaving ? (
-              <ActivityIndicator size="small" color={getAppColors().mutedColor} />
+              <ActivityIndicator size="small" color={colors.mutedColor} />
             ) : (
-              <Ionicons name="log-out-outline" size={16} color={getAppColors().mutedColor} />
+              <Ionicons name="log-out-outline" size={16} color={colors.mutedColor} />
             )}
             <Text className="text-[13px] font-bold text-muted">
               Cerrar sesión

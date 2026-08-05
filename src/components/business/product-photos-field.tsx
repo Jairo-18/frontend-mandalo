@@ -8,6 +8,7 @@ import { PhotoEditor } from '@/components/ui/photo-editor';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { toast } from '@/lib/toast';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 const TILE = 76;
 
@@ -34,6 +35,7 @@ export function ProductPhotosField({
   onRemovePending,
   onAdded,
 }: Props) {
+  const colors = useResolvedAppColors();
   // Editor de recorte para la foto recién elegida.
   const [picked, setPicked] = useState<{
     uri: string;
@@ -125,7 +127,7 @@ export function ProductPhotosField({
           className="items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-surface active:opacity-70"
           style={{ width: TILE, height: TILE }}
         >
-          <Ionicons name="camera-outline" size={22} color={getAppColors().mutedColor} />
+          <Ionicons name="camera-outline" size={22} color={colors.mutedColor} />
           <Text className="mt-0.5 text-[10px] font-medium text-muted">
             Agregar
           </Text>
@@ -152,6 +154,11 @@ export function ProductPhotosField({
           setEditorVisible(false);
           onAdded(uri);
         }}
+        // Fotos de producto: no necesitan tanto detalle como un avatar o un
+        // documento de identidad — un poco menos de peso que el default
+        // ayuda a que "Crear producto" no se sienta lento subiendo varias.
+        maxOutput={960}
+        quality={0.78}
       />
     </>
   );

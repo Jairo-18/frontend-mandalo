@@ -15,6 +15,7 @@ import { useUserAddresses } from '@/hooks/use-user-data';
 import { refreshAddresses } from '@/lib/user-data';
 import { UserAddress, userAddressesService } from '@/services/user-addresses';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 
 type Props = {
@@ -42,6 +43,7 @@ type Props = {
  * el refresh y el resto de pantallas se enteran solas.
  */
 export function AddressManager({ fullScreen = false, onFormVisibleChange }: Props) {
+  const colors = useResolvedAppColors();
   const { isDark } = useAppTheme();
   const { addresses, loading } = useUserAddresses();
   const [settingId, setSettingId] = useState<number | null>(null);
@@ -109,12 +111,12 @@ export function AddressManager({ fullScreen = false, onFormVisibleChange }: Prop
       >
         {/* Radio de selección */}
         {settingId === item.id ? (
-          <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+          <ActivityIndicator size="small" color={colors.primaryColor} />
         ) : (
           <Ionicons
             name={item.isDefault ? 'radio-button-on' : 'radio-button-off'}
             size={22}
-            color={item.isDefault ? getAppColors().primaryColor : getAppColors().mutedColor}
+            color={item.isDefault ? colors.primaryColor : colors.mutedColor}
           />
         )}
 
@@ -146,7 +148,7 @@ export function AddressManager({ fullScreen = false, onFormVisibleChange }: Prop
           hitSlop={8}
           className="h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="pencil-outline" size={16} color={getAppColors().inkColor} />
+          <Ionicons name="pencil-outline" size={16} color={colors.inkColor} />
         </Pressable>
         <Pressable
           onPress={() => setToDelete(item)}
@@ -163,7 +165,7 @@ export function AddressManager({ fullScreen = false, onFormVisibleChange }: Prop
     <>
       {loading ? (
         <View className="items-center py-10">
-          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
+          <ActivityIndicator size="large" color={colors.primaryColor} />
         </View>
       ) : (
         <FlatList
@@ -173,7 +175,7 @@ export function AddressManager({ fullScreen = false, onFormVisibleChange }: Prop
           renderItem={renderItem}
           ListEmptyComponent={
             <View className="items-center py-8">
-              <Ionicons name="location-outline" size={40} color={getAppColors().mutedColor} />
+              <Ionicons name="location-outline" size={40} color={colors.mutedColor} />
               <Text className="mt-2 text-center text-sm text-muted">
                 Aún no tienes direcciones guardadas.
               </Text>
@@ -187,7 +189,7 @@ export function AddressManager({ fullScreen = false, onFormVisibleChange }: Prop
         onPress={openCreate}
         className="mt-2 flex-row items-center justify-center gap-2 rounded-xl border border-dashed border-primary px-4 py-3 active:opacity-70"
       >
-        <Ionicons name="add-circle-outline" size={20} color={getAppColors().primaryColor} />
+        <Ionicons name="add-circle-outline" size={20} color={colors.primaryColor} />
         <Text className="text-[15px] font-bold text-primary">
           Agregar dirección
         </Text>

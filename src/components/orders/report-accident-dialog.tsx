@@ -16,6 +16,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Select, SelectOption } from '@/components/ui/select';
 import { toast } from '@/lib/toast';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
   ArlInfo,
   deliveryAccidentService,
@@ -44,6 +45,7 @@ type Props = {
  * SEGURIDAD independiente — no toca el pedido.
  */
 export function ReportAccidentDialog({ visible, invoiceId, onClose }: Props) {
+  const colors = useResolvedAppColors();
   const [step, setStep] = useState<'confirm' | 'form' | 'done'>('confirm');
   const [reasonCode, setReasonCode] = useState<string | undefined>(undefined);
   const [notes, setNotes] = useState('');
@@ -231,7 +233,7 @@ export function ReportAccidentDialog({ visible, invoiceId, onClose }: Props) {
                 <TextInput
                   className="min-h-[70px] text-[15px] text-ink"
                   placeholder="Describe qué pasó (opcional)"
-                  placeholderTextColor={getAppColors().mutedColor}
+                  placeholderTextColor={colors.mutedColor}
                   value={notes}
                   onChangeText={setNotes}
                   multiline
@@ -266,7 +268,7 @@ export function ReportAccidentDialog({ visible, invoiceId, onClose }: Props) {
                       className="items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-surface active:opacity-70"
                       style={{ width: TILE, height: TILE }}
                     >
-                      <Ionicons name="camera-outline" size={20} color={getAppColors().mutedColor} />
+                      <Ionicons name="camera-outline" size={20} color={colors.mutedColor} />
                       <Text className="mt-0.5 text-[10px] font-medium text-muted">Cámara</Text>
                     </Pressable>
                     <Pressable
@@ -274,7 +276,7 @@ export function ReportAccidentDialog({ visible, invoiceId, onClose }: Props) {
                       className="items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-surface active:opacity-70"
                       style={{ width: TILE, height: TILE }}
                     >
-                      <Ionicons name="image-outline" size={20} color={getAppColors().mutedColor} />
+                      <Ionicons name="image-outline" size={20} color={colors.mutedColor} />
                       <Text className="mt-0.5 text-[10px] font-medium text-muted">Galería</Text>
                     </Pressable>
                   </>

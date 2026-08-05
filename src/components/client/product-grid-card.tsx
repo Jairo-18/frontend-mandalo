@@ -5,6 +5,7 @@ import { finalPrice, formatPrice } from '@/lib/price';
 import { businessDisplayName, ExploreProduct } from '@/services/explore';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   product: ExploreProduct;
@@ -28,6 +29,7 @@ export function ProductGridCard({
   onAdd,
   onDecrement,
 }: Props) {
+  const colors = useResolvedAppColors();
   const hasDiscount = product.discount > 0;
   const price = finalPrice(product.priceSale, product.discount);
   const img = product.images?.[0];
@@ -68,7 +70,7 @@ export function ProductGridCard({
                   hitSlop={6}
                   className="h-6 w-6 items-center justify-center rounded-full bg-primary-tint active:opacity-70"
                 >
-                  <Ionicons name="remove" size={14} color={getAppColors().primaryColor} />
+                  <Ionicons name="remove" size={14} color={colors.primaryColor} />
                 </Pressable>
                 <Text className="min-w-[14px] text-center text-[13px] font-extrabold text-ink">
                   {quantity}
@@ -110,7 +112,7 @@ export function ProductGridCard({
         </View>
         {!!product.organizational && (
           <View className="mt-1 flex-row items-center gap-1">
-            <Ionicons name="storefront-outline" size={11} color={getAppColors().mutedColor} />
+            <Ionicons name="storefront-outline" size={11} color={colors.mutedColor} />
             <Text
               numberOfLines={1}
               className="shrink text-[11px] font-semibold text-muted"

@@ -24,8 +24,11 @@ import { toast } from '@/lib/toast';
 import { getAppColors } from '@/lib/app-colors';
 
 const MAX_ZOOM = 5;
-/** Lado máximo de la imagen final (el backend igual re-optimiza con sharp). */
-const MAX_OUTPUT = 1080;
+/** Lado máximo de la imagen final por defecto (el backend igual re-optimiza
+ * con sharp). Ajustable por caso de uso vía `maxOutput` (p. ej. las fotos de
+ * producto no necesitan tanto detalle como un avatar/documento). */
+const DEFAULT_MAX_OUTPUT = 1080;
+const DEFAULT_QUALITY = 0.85;
 
 type Props = {
   visible: boolean;
@@ -36,6 +39,10 @@ type Props = {
   onCancel: () => void;
   /** Devuelve la uri local de la imagen recortada (siempre cuadrada). */
   onDone: (uri: string) => void;
+  /** Lado máximo del recorte final en px (default 1080). */
+  maxOutput?: number;
+  /** Calidad JPEG 0–1 (default 0.85). */
+  quality?: number;
 };
 
 /**
@@ -51,6 +58,8 @@ export function PhotoEditor({
   height,
   onCancel,
   onDone,
+  maxOutput = DEFAULT_MAX_OUTPUT,
+  quality = DEFAULT_QUALITY,
 }: Props) {
   const insets = useSafeAreaInsets();
 
@@ -192,13 +201,13 @@ export function PhotoEditor({
         width: Math.floor(cropSize),
         height: Math.floor(cropSize),
       });
-      if (cropSize > MAX_OUTPUT) {
-        context.resize({ width: MAX_OUTPUT, height: MAX_OUTPUT });
+      if (cropSize > maxOutput) {
+        context.resize({ width: maxOutput, height: maxOutput });
       }
       const rendered = await context.renderAsync();
       const saved = await rendered.saveAsync({
         format: SaveFormat.JPEG,
-        compress: 0.85,
+        compress: quality,
       });
       onDone(saved.uri);
     } catch {

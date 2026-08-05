@@ -19,6 +19,7 @@ import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
   DeliveryAccident,
   deliveryAccidentService,
@@ -39,6 +40,7 @@ function fmtDate(iso: string): string {
  * accidente" (marca como atendido).
  */
 export function AccidentsScreen() {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<PendingFilter>('pending');
   const [selected, setSelected] = useState<DeliveryAccident | null>(null);
@@ -103,7 +105,7 @@ export function AccidentsScreen() {
 
       {list.loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
+          <ActivityIndicator size="large" color={colors.primaryColor} />
         </View>
       ) : (
         <FlatList
@@ -162,12 +164,12 @@ export function AccidentsScreen() {
             <View className="mb-3 flex-row items-center justify-between">
               <Text className="text-lg font-extrabold text-ink">Reporte de accidente</Text>
               <Pressable onPress={() => setSelected(null)} hitSlop={10}>
-                <Ionicons name="close" size={22} color={getAppColors().inkColor} />
+                <Ionicons name="close" size={22} color={colors.inkColor} />
               </Pressable>
             </View>
 
             {loadingDetail || !detail ? (
-              <ActivityIndicator size="large" color={getAppColors().primaryColor} style={{ marginTop: 24 }} />
+              <ActivityIndicator size="large" color={colors.primaryColor} style={{ marginTop: 24 }} />
             ) : (
               <ScrollView showsVerticalScrollIndicator={false}>
                 <Badge

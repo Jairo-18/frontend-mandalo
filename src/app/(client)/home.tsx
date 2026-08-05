@@ -32,6 +32,7 @@ import { useSession } from '@/hooks/use-session';
 import { columnsForWidth, gridItemStyle } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
   ExploreBusiness,
   ExploreProduct,
@@ -53,6 +54,7 @@ import {
  *   aparte: un modo de solo NAVEGAR negocios, limpia lo demás.
  */
 export default function HomeScreen() {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const cart = useCart();
@@ -194,7 +196,7 @@ export default function HomeScreen() {
     <View>
       {/* Cierre del bloque de marca: buscador + botón de filtros */}
       <LinearGradient
-        colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+        colors={[colors.primaryColor, colors.darkColor]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
@@ -217,7 +219,7 @@ export default function HomeScreen() {
               <Ionicons
                 name="options-outline"
                 size={20}
-                color={hasActiveFilters ? getAppColors().primaryColor : '#FFFFFF'}
+                color={hasActiveFilters ? colors.primaryColor : '#FFFFFF'}
               />
             </Pressable>
           )}
@@ -259,7 +261,7 @@ export default function HomeScreen() {
   const listFooter = (
     <ActivityIndicator
       size="small"
-      color={getAppColors().primaryColor}
+      color={colors.primaryColor}
       style={{ paddingVertical: 12 }}
     />
   );
@@ -270,7 +272,7 @@ export default function HomeScreen() {
 
       {/* Navbar fija sobre el bloque de marca */}
       <LinearGradient
-        colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+        colors={[colors.primaryColor, colors.darkColor]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
       >
@@ -281,7 +283,7 @@ export default function HomeScreen() {
           }
           className="flex-1 flex-row items-center gap-2 rounded-full bg-card px-3.5 py-2.5 active:opacity-70"
         >
-          <Ionicons name="location" size={18} color={getAppColors().primaryColor} />
+          <Ionicons name="location" size={18} color={colors.primaryColor} />
           <View className="flex-1">
             <Text className="text-[10px] font-bold uppercase tracking-wide text-muted">
               {isGuest ? 'Modo invitado' : 'Enviar a'}
@@ -289,7 +291,7 @@ export default function HomeScreen() {
             {loadingAddress ? (
               <ActivityIndicator
                 size="small"
-                color={getAppColors().primaryColor}
+                color={colors.primaryColor}
                 style={{ alignSelf: 'flex-start' }}
               />
             ) : (
@@ -305,7 +307,7 @@ export default function HomeScreen() {
           <Ionicons
             name={isGuest ? 'log-in-outline' : 'chevron-down'}
             size={16}
-            color={getAppColors().mutedColor}
+            color={colors.mutedColor}
           />
         </Pressable>
 
@@ -354,7 +356,7 @@ export default function HomeScreen() {
             businessList.loading ? (
               <ActivityIndicator
                 size="large"
-                color={getAppColors().primaryColor}
+                color={colors.primaryColor}
                 style={{ paddingTop: 48 }}
               />
             ) : (
@@ -398,7 +400,7 @@ export default function HomeScreen() {
             productList.loading ? (
               <ActivityIndicator
                 size="large"
-                color={getAppColors().primaryColor}
+                color={colors.primaryColor}
                 style={{ paddingTop: 48 }}
               />
             ) : (

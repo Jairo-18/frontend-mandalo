@@ -32,6 +32,7 @@ import { signOutEverywhere } from '@/lib/sign-out';
 import { formatText, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
 import { MyProfile, profileService } from '@/services/profile';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** Campos editables cuyo valor inicial se recuerda para detectar cambios. */
 type FormSnapshot = {
@@ -69,6 +70,7 @@ export function ProfileScreen({
   changePasswordHref,
   resendDocumentsHref,
 }: Props) {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   // "Mis direcciones" es un concepto solo del cliente (a dónde le llegan los
   // pedidos); el repartidor no lo tiene, así que la nota de más abajo no
@@ -348,10 +350,10 @@ export function ProfileScreen({
       <PanelSafeArea>
         <StatusBar style="light" />
         <View className="flex-1 bg-surface">
-          <PanelHeader title="Mi perfil" menu={menu} />
+          <PanelHeader title="Mi cuenta" menu={menu} />
           <ActivityIndicator
             size="large"
-            color={getAppColors().primaryColor}
+            color={colors.primaryColor}
             style={{ paddingTop: 48 }}
           />
         </View>
@@ -364,12 +366,12 @@ export function ProfileScreen({
       <StatusBar style="light" />
 
       <View className="flex-1 bg-surface">
-      <PanelHeader title="Mi perfil" menu={menu} />
+      <PanelHeader title="Mi cuenta" menu={menu} />
 
       <KeyboardAwareScroll>
         <View className="px-5 pb-10">
           {/* ---- Datos personales ---- */}
-          <View className="mt-2 rounded-2xl border border-border bg-card p-4">
+          <View className="mt-5 rounded-2xl border border-border bg-card p-4">
             <View className="items-center">
               <PhotoField
                 label="Foto de perfil"
@@ -500,12 +502,12 @@ export function ProfileScreen({
               className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
             >
               {locating ? (
-                <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+                <ActivityIndicator size="small" color={colors.primaryColor} />
               ) : (
                 <Ionicons
                   name={coords ? 'checkmark-circle' : 'locate-outline'}
                   size={16}
-                  color={getAppColors().primaryColor}
+                  color={colors.primaryColor}
                 />
               )}
               <Text className="text-[13px] font-bold text-primary">
@@ -534,7 +536,7 @@ export function ProfileScreen({
           <View className="rounded-2xl border border-border bg-card p-4">
             {/* Correo (solo lectura: cambiarlo requeriría re-verificación) */}
             <View className="mb-4 flex-row items-center gap-3">
-              <Ionicons name="mail-outline" size={20} color={getAppColors().mutedColor} />
+              <Ionicons name="mail-outline" size={20} color={colors.mutedColor} />
               <View className="flex-1">
                 <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
                   Correo
@@ -581,17 +583,17 @@ export function ProfileScreen({
             {resendDocumentsHref && profile && !profile.isActive && (
               <Pressable
                 onPress={() => router.push(resendDocumentsHref)}
-                className="mb-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+                className="mb-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
               >
-                <Ionicons name="document-attach-outline" size={20} color={getAppColors().primaryColor} />
+                <Ionicons name="document-attach-outline" size={20} color={colors.primaryColor} />
                 <Text className="flex-1 text-[14px] font-bold text-ink">
                   Reenviar documentos
                 </Text>
-                <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
+                <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
               </Pressable>
             )}
             {resendDocumentsHref && profile?.isActive && (
-              <View className="mb-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3">
+              <View className="mb-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3">
                 <Ionicons name="shield-checkmark-outline" size={20} color="#22C55E" />
                 <Text className="flex-1 text-[13px] text-muted">
                   Tus documentos están verificados. Para actualizar alguno,
@@ -605,11 +607,11 @@ export function ProfileScreen({
               onPress={() => router.push(changePasswordHref)}
               className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
-              <Ionicons name="key-outline" size={20} color={getAppColors().primaryColor} />
+              <Ionicons name="key-outline" size={20} color={colors.primaryColor} />
               <Text className="flex-1 text-[14px] font-bold text-ink">
                 Cambiar contraseña
               </Text>
-              <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
+              <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
             </Pressable>
 
             {/* Cerrar sesión: antes vivía en el pie del drawer — al pasar a
@@ -617,16 +619,63 @@ export function ProfileScreen({
             <Pressable
               onPress={handleLogout}
               disabled={signingOut}
-              className="mt-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+              className="mt-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
               {signingOut ? (
-                <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+                <ActivityIndicator size="small" color={colors.primaryColor} />
               ) : (
-                <Ionicons name="log-out-outline" size={20} color={getAppColors().primaryColor} />
+                <Ionicons name="log-out-outline" size={20} color={colors.primaryColor} />
               )}
               <Text className="flex-1 text-[14px] font-bold text-primary">
                 Cerrar sesión
               </Text>
+            </Pressable>
+
+            {/* Eliminar cuenta: self-service exigido por Google Play. Separada
+                con más espacio (y una línea divisoria) del resto de rutas: es
+                la única acción destructiva de la lista. */}
+            <View className="mt-5 border-t border-border pt-4">
+              <Pressable
+                onPress={() => setConfirmDelete(true)}
+                className="flex-row items-center gap-3 rounded-xl border border-red-200 px-3.5 py-3 active:opacity-70"
+              >
+                <Ionicons name="trash-outline" size={20} color="#DC2626" />
+                <Text className="flex-1 text-[14px] font-bold text-red-600">
+                  Eliminar mi cuenta
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* ---- Ayuda y legal ---- (separada de "Cuenta": guía de uso +
+              documentos legales, nada que ver con la sesión/los datos). */}
+          <Text className="mb-2 mt-6 text-base font-extrabold text-ink">
+            Ayuda y legal
+          </Text>
+          <View className="rounded-2xl border border-border bg-card p-4">
+            {/* Guía de uso: mismo contenido de la página que se comparte por
+                fuera, pero adaptada como pantalla nativa (pedido del cliente). */}
+            <Pressable
+              onPress={() => router.push('/how-it-works')}
+              className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+            >
+              <Ionicons name="help-circle-outline" size={20} color={colors.mutedColor} />
+              <Text className="flex-1 text-[14px] font-bold text-ink">
+                ¿Cómo funciona Mandalo?
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
+            </Pressable>
+
+            {/* Términos y Condiciones de Uso (TYC-001). */}
+            <Pressable
+              onPress={() => router.push('/terminos-y-condiciones-de-uso')}
+              className="mt-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+            >
+              <Ionicons name="document-text-outline" size={20} color={colors.mutedColor} />
+              <Text className="flex-1 text-[14px] font-bold text-ink">
+                Políticas de uso
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
             </Pressable>
 
             {/* Política de privacidad: antes solo se veía en el registro; se
@@ -635,24 +684,13 @@ export function ProfileScreen({
                 Fusionada dentro de esta misma app (NOTAS §62). */}
             <Pressable
               onPress={() => router.push('/politicas-de-privacidad')}
-              className="mt-3 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+              className="mt-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
-              <Ionicons name="shield-outline" size={20} color={getAppColors().mutedColor} />
+              <Ionicons name="shield-outline" size={20} color={colors.mutedColor} />
               <Text className="flex-1 text-[14px] font-bold text-ink">
                 Política de privacidad
               </Text>
-              <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
-            </Pressable>
-
-            {/* Eliminar cuenta: self-service exigido por Google Play. */}
-            <Pressable
-              onPress={() => setConfirmDelete(true)}
-              className="mt-3 flex-row items-center gap-3 rounded-xl border border-red-200 px-3.5 py-3 active:opacity-70"
-            >
-              <Ionicons name="trash-outline" size={20} color="#DC2626" />
-              <Text className="flex-1 text-[14px] font-bold text-red-600">
-                Eliminar mi cuenta
-              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
             </Pressable>
           </View>
         </View>

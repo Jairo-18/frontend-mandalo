@@ -24,6 +24,7 @@ import { useOrderEvents } from '@/lib/orders-socket';
 import { useSession } from '@/hooks/use-session';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Tab = 'available' | 'mine';
 
@@ -33,6 +34,7 @@ type Tab = 'available' | 'mine';
  * marcarlos en camino y entregados). Se actualiza en vivo.
  */
 export function DeliveryOrders() {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('available');
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -234,7 +236,7 @@ export function DeliveryOrders() {
             <Ionicons
               name="shield-checkmark-outline"
               size={32}
-              color={getAppColors().primaryColor}
+              color={colors.primaryColor}
             />
           </View>
           <Text className="text-center text-lg font-extrabold text-ink">
@@ -272,12 +274,12 @@ export function DeliveryOrders() {
         onEndReachedThreshold={0.4}
         ListFooterComponent={
           list.loadingMore ? (
-            <ActivityIndicator size="small" color={getAppColors().primaryColor} style={{ paddingVertical: 12 }} />
+            <ActivityIndicator size="small" color={colors.primaryColor} style={{ paddingVertical: 12 }} />
           ) : null
         }
         ListEmptyComponent={
           list.loading ? (
-            <ActivityIndicator size="large" color={getAppColors().primaryColor} style={{ paddingTop: 48 }} />
+            <ActivityIndicator size="large" color={colors.primaryColor} style={{ paddingTop: 48 }} />
           ) : (
             <ListEmpty
               icon={tab === 'available' ? 'bicycle-outline' : 'cube-outline'}
@@ -450,6 +452,7 @@ function TabButton({
   active: boolean;
   onPress: () => void;
 }) {
+  const colors = useResolvedAppColors();
   return (
     <Pressable
       onPress={onPress}
@@ -460,7 +463,7 @@ function TabButton({
       <Ionicons
         name={label === 'Disponibles' ? 'bicycle-outline' : 'checkbox-outline'}
         size={16}
-        color={active ? getAppColors().primaryColor : getAppColors().mutedColor}
+        color={active ? colors.primaryColor : colors.mutedColor}
       />
       <Text
         className={`text-[13px] font-bold ${active ? 'text-primary' : 'text-muted'}`}

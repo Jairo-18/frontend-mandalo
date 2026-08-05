@@ -8,6 +8,7 @@ import {
 } from '@/lib/orders-socket';
 import { Order } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type LatLng = { latitude: number; longitude: number };
 
@@ -25,6 +26,7 @@ type Props = {
  * llega por el mismo socket y actualiza su enlace.
  */
 export function OrderMap({ order }: Props) {
+  const colors = useResolvedAppColors();
   const business: LatLng | null =
     order.organizational?.latitude != null &&
     order.organizational?.longitude != null
@@ -66,7 +68,7 @@ export function OrderMap({ order }: Props) {
       {business && (
         <MapLink
           icon="storefront"
-          color={getAppColors().darkColor}
+          color={colors.darkColor}
           label="Negocio (punto de recogida)"
           coords={business}
         />
@@ -74,7 +76,7 @@ export function OrderMap({ order }: Props) {
       {destination && (
         <MapLink
           icon="home"
-          color={getAppColors().primaryColor}
+          color={colors.primaryColor}
           label="Dirección de entrega"
           coords={destination}
         />
@@ -106,6 +108,7 @@ function MapLink({
   label: string;
   coords: LatLng;
 }) {
+  const colors = useResolvedAppColors();
   const url = `https://www.google.com/maps/search/?api=1&query=${coords.latitude},${coords.longitude}`;
   return (
     <Pressable
@@ -122,7 +125,7 @@ function MapLink({
         <Text className="text-sm font-bold text-ink">{label}</Text>
         <Text className="text-xs text-primary">Ver en Google Maps</Text>
       </View>
-      <Ionicons name="open-outline" size={16} color={getAppColors().mutedColor} />
+      <Ionicons name="open-outline" size={16} color={colors.mutedColor} />
     </Pressable>
   );
 }

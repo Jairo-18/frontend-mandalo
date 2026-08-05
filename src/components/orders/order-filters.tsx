@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { FilterChips } from '@/components/ui/filter-chips';
 import { OrderStateCode } from '@/lib/order-status';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** Filtro rápido por estado de los listados de pedidos (cliente y repartidor). */
 export type OrderFilter = 'all' | 'active' | 'delivered' | 'cancelled';
@@ -40,6 +41,7 @@ type Props = {
  * (más nuevos ⇄ más antiguos).
  */
 export function OrderFilters({ filter, onFilter, order, onOrder }: Props) {
+  const colors = useResolvedAppColors();
   const newestFirst = order === 'DESC';
   return (
     <View className="flex-row items-center gap-2">
@@ -54,7 +56,7 @@ export function OrderFilters({ filter, onFilter, order, onOrder }: Props) {
         <Ionicons
           name={newestFirst ? 'arrow-down' : 'arrow-up'}
           size={12}
-          color={getAppColors().mutedColor}
+          color={colors.mutedColor}
         />
         <Text className="text-xs font-semibold text-ink">
           {newestFirst ? 'Nuevos' : 'Antiguos'}

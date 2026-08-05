@@ -1,5 +1,5 @@
-import { http } from '@/lib/http';
-import { filePart } from '@/lib/upload';
+import { http, httpUpload } from '@/lib/http';
+import { filePart, xhrFilePart } from '@/lib/upload';
 import { AdminBusiness, AdminBusinessPayload } from '@/services/admin-businesses';
 import { CatalogRef, Paginated } from '@/services/admin-users';
 
@@ -135,12 +135,25 @@ export const businessService = {
       }),
 
     /** Agrega una foto (uri local cuadrada que devuelve el PhotoEditor). */
-    uploadImage: async (id: number, uri: string) => {
+    uploadImage: async (
+      id: number,
+      uri: string,
+      onProgress?: (fraction: number) => void,
+    ) => {
+      // xhrFilePart (no filePart): este form viaja por `httpUpload`
+      // (XMLHttpRequest, para progreso real), que en nativo usa el puente
+      // clásico de RN — necesita `{uri,name,type}`, no el `File` de
+      // expo-file-system que exige el `fetch` nuevo.
       const form = new FormData();
-      form.append('file', await filePart(uri), 'product.jpg');
-      return http<{ data: { imageUrl: string; images: string[] } }>(
+      form.append(
+        'file',
+        await xhrFilePart(uri, 'product.jpg', 'image/jpeg'),
+        'product.jpg',
+      );
+      return httpUpload<{ data: { imageUrl: string; images: string[] } }>(
         `/product/${id}/image`,
-        { method: 'POST', body: form, auth: true },
+        form,
+        { auth: true, onProgress },
       );
     },
 

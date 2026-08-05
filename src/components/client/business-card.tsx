@@ -5,6 +5,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { businessDisplayName, ExploreBusiness } from '@/services/explore';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   business: ExploreBusiness;
@@ -13,6 +14,7 @@ type Props = {
 
 /** Tarjeta de negocio del home del cliente (toca → productos del negocio). */
 export function BusinessCard({ business, onPress }: Props) {
+  const colors = useResolvedAppColors();
   const location = [business.address, business.municipality?.name]
     .filter(Boolean)
     .join(' · ');
@@ -68,7 +70,7 @@ export function BusinessCard({ business, onPress }: Props) {
 
         {!!location && (
           <View className="mt-1 flex-row items-center gap-1">
-            <Ionicons name="location-outline" size={12} color={getAppColors().mutedColor} />
+            <Ionicons name="location-outline" size={12} color={colors.mutedColor} />
             <Text numberOfLines={1} className="flex-1 text-[11px] text-muted">
               {location}
             </Text>
@@ -76,7 +78,7 @@ export function BusinessCard({ business, onPress }: Props) {
         )}
       </View>
 
-      <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
+      <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
     </Pressable>
   );
 }

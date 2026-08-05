@@ -3,6 +3,7 @@ import { Pressable } from 'react-native';
 
 import { useAppTheme } from '@/context/app-theme';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   size?: number;
@@ -21,6 +22,7 @@ type Props = {
  * resto (bg-card, color adaptado).
  */
 export function ThemeToggle({ size = 18, className, iconColor }: Props) {
+  const colors = useResolvedAppColors();
   const { isDark, toggleTheme } = useAppTheme();
 
   return (
@@ -35,7 +37,7 @@ export function ThemeToggle({ size = 18, className, iconColor }: Props) {
       <Ionicons
         name={isDark ? 'sunny' : 'moon'}
         size={size}
-        color={iconColor ?? (getAppColors().inkColor)}
+        color={iconColor ?? (colors.inkColor)}
       />
     </Pressable>
   );

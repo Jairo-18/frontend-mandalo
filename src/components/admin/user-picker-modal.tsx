@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdminUser, adminUsersService } from '@/services/admin-users';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   visible: boolean;
@@ -28,6 +29,7 @@ type Props = {
  * cualquier rol) y muestra nombre + identificación para elegir.
  */
 export function UserPickerModal({ visible, title, onClose, onSelect }: Props) {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
 
   const [search, setSearch] = useState('');
@@ -84,18 +86,18 @@ export function UserPickerModal({ visible, title, onClose, onSelect }: Props) {
           </Text>
 
           <View className="mb-3 h-[46px] flex-row items-center gap-2.5 rounded-xl bg-surface px-3.5">
-            <Ionicons name="search-outline" size={19} color={getAppColors().mutedColor} />
+            <Ionicons name="search-outline" size={19} color={colors.mutedColor} />
             <TextInput
               className="h-full flex-1 text-[15px] text-ink"
               placeholder="Nombre, identificación, correo…"
-              placeholderTextColor={getAppColors().mutedColor}
+              placeholderTextColor={colors.mutedColor}
               autoCapitalize="none"
               autoCorrect={false}
               autoFocus
               value={search}
               onChangeText={setSearch}
             />
-            {loading && <ActivityIndicator size="small" color={getAppColors().primaryColor} />}
+            {loading && <ActivityIndicator size="small" color={colors.primaryColor} />}
           </View>
 
           <FlatList

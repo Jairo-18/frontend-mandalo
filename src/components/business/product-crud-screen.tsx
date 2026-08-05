@@ -25,6 +25,7 @@ import { finalPrice, formatPrice } from '@/lib/price';
 import { BusinessProduct, businessService } from '@/services/business';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 
 /**
@@ -33,6 +34,7 @@ import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
  * modal con fotos y eliminar con confirmación.
  */
 export function ProductCrudScreen() {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   const numColumns = columnsForWidth(useWindowDimensions().width);
@@ -118,7 +120,7 @@ export function ProductCrudScreen() {
                 hitSlop={6}
                 className="h-8 w-8 items-center justify-center rounded-full bg-card shadow active:opacity-70"
               >
-                <Ionicons name="pencil-outline" size={15} color={getAppColors().inkColor} />
+                <Ionicons name="pencil-outline" size={15} color={colors.inkColor} />
               </Pressable>
               <Pressable
                 onPress={() => setToDelete(item)}
@@ -180,7 +182,7 @@ export function ProductCrudScreen() {
 
       {list.loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
+          <ActivityIndicator size="large" color={colors.primaryColor} />
         </View>
       ) : (
         <FlatList

@@ -18,6 +18,7 @@ import { DocumentValue } from '@/lib/upload';
 import { profileService } from '@/services/profile';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** Una URL guardada (http…) no es un archivo nuevo por subir; una uri local sí. */
 function isLocal(uri: string | null): uri is string {
@@ -37,6 +38,7 @@ function docValueFromUrl(url: string | null): DocumentValue | null {
  * y solo se reenvía lo que el usuario vuelva a tocar.
  */
 export function ResendDocumentsScreen() {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   const { isDark } = useAppTheme();
   const [loading, setLoading] = useState(true);
@@ -107,7 +109,7 @@ export function ResendDocumentsScreen() {
               : undefined,
         },
       );
-      router.canGoBack() ? router.back() : router.replace('/');
+      router.replace('/delivery/profile');
     } catch {
       // El interceptor HTTP ya mostró el toast.
     } finally {
@@ -121,11 +123,11 @@ export function ResendDocumentsScreen() {
 
       <View className="flex-row items-center gap-3 bg-card px-5 pb-2 pt-2">
         <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          onPress={() => (router.replace('/delivery/profile'))}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
+          <Ionicons name="arrow-back" size={20} color={colors.inkColor} />
         </Pressable>
         <Text className="flex-1 text-lg font-extrabold text-ink">
           Reenviar documentos
@@ -134,7 +136,7 @@ export function ResendDocumentsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color={getAppColors().primaryColor} style={{ marginTop: 48 }} />
+        <ActivityIndicator size="large" color={colors.primaryColor} style={{ marginTop: 48 }} />
       ) : locked ? (
         <View className="flex-1 items-center justify-center px-8">
           <Ionicons name="shield-checkmark-outline" size={52} color="#22C55E" />
@@ -146,7 +148,7 @@ export function ResendDocumentsScreen() {
             congelados. Si necesitas actualizar alguno, contacta al
             administrador.
           </Text>
-          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} className="mt-6">
+          <Pressable onPress={() => (router.replace('/delivery/profile'))} className="mt-6">
             <Text className="text-[15px] font-bold text-primary">Volver</Text>
           </Pressable>
         </View>

@@ -4,6 +4,7 @@ import { Image, Pressable, Text, View } from 'react-native';
 
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   /** Título de la sección (identidad, licencia, etc.). */
@@ -23,6 +24,7 @@ export function UserDocuments({
   frontUrl,
   backUrl,
 }: Props) {
+  const colors = useResolvedAppColors();
   const [preview, setPreview] = useState<string | null>(null);
 
   if (!frontUrl && !backUrl) return null;
@@ -49,7 +51,7 @@ export function UserDocuments({
               </Pressable>
             ) : (
               <View className="h-[110px] items-center justify-center rounded-xl bg-surface">
-                <Ionicons name="card-outline" size={24} color={getAppColors().mutedColor} />
+                <Ionicons name="card-outline" size={24} color={colors.mutedColor} />
               </View>
             )}
             <Text className="mt-1 text-center text-xs text-muted">{label}</Text>

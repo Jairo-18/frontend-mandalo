@@ -1,5 +1,5 @@
-import { http } from '@/lib/http';
-import { appendDocument, DocumentValue, filePart } from '@/lib/upload';
+import { http, httpUpload } from '@/lib/http';
+import { DocumentValue, xhrAppendDocument, xhrFilePart } from '@/lib/upload';
 
 export type Tokens = { accessToken: string; refreshToken: string };
 export type AuthRole = { id: string; code: string; name: string };
@@ -103,32 +103,52 @@ export const authService = {
    * verificación (rostro, cédula, licencia, SOAT y tecnomecánica). La cuenta
    * nace inactiva hasta que un admin revise los documentos.
    */
-  registerDelivery: async (payload: RegisterPayload, photos: DeliveryPhotos) => {
+  registerDelivery: async (
+    payload: RegisterPayload,
+    photos: DeliveryPhotos,
+    onProgress?: (fraction: number) => void,
+  ) => {
     const form = new FormData();
     for (const [key, value] of Object.entries(payload)) {
       if (value !== undefined && value !== null) form.append(key, String(value));
     }
-    form.append('avatar', await filePart(photos.avatar), 'avatar.jpg');
-    form.append('idFront', await filePart(photos.idFront), 'id-front.jpg');
-    form.append('idBack', await filePart(photos.idBack), 'id-back.jpg');
+    // xhrFilePart/xhrAppendDocument (no filePart/appendDocument): este form
+    // viaja por `httpUpload` (XMLHttpRequest, para tener progreso real), que
+    // en nativo usa el puente clásico de RN — necesita `{uri,name,type}`, no
+    // el `File` de expo-file-system que exige el `fetch` nuevo.
+    form.append(
+      'avatar',
+      await xhrFilePart(photos.avatar, 'avatar.jpg', 'image/jpeg'),
+      'avatar.jpg',
+    );
+    form.append(
+      'idFront',
+      await xhrFilePart(photos.idFront, 'id-front.jpg', 'image/jpeg'),
+      'id-front.jpg',
+    );
+    form.append(
+      'idBack',
+      await xhrFilePart(photos.idBack, 'id-back.jpg', 'image/jpeg'),
+      'id-back.jpg',
+    );
     form.append(
       'licenseFront',
-      await filePart(photos.licenseFront),
+      await xhrFilePart(photos.licenseFront, 'license-front.jpg', 'image/jpeg'),
       'license-front.jpg',
     );
     form.append(
       'licenseBack',
-      await filePart(photos.licenseBack),
+      await xhrFilePart(photos.licenseBack, 'license-back.jpg', 'image/jpeg'),
       'license-back.jpg',
     );
-    await appendDocument(form, 'soat', photos.soat);
-    await appendDocument(form, 'technicalInspection', photos.technicalInspection);
+    await xhrAppendDocument(form, 'soat', photos.soat);
+    await xhrAppendDocument(form, 'technicalInspection', photos.technicalInspection);
 
-    return http<{ data: { rowId: string } }>('/user/register/delivery', {
-      method: 'POST',
-      body: form,
-      toastSuccess: true,
-    });
+    return httpUpload<{ data: { rowId: string } }>(
+      '/user/register/delivery',
+      form,
+      { toastSuccess: true, onProgress },
+    );
   },
 
   /**

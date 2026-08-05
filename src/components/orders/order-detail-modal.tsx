@@ -15,6 +15,7 @@ import { useAppTheme } from '@/context/app-theme';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** Contexto que reciben los botones de acción (según el rol). */
 export type OrderActionCtx = {
@@ -48,6 +49,7 @@ export function OrderDetailModal({
   onChanged,
   actions,
 }: Props) {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   const [order, setOrder] = useState<Order | null>(null);
@@ -102,7 +104,7 @@ export function OrderDetailModal({
       <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
         <View className="flex-row items-center gap-3 border-b border-border bg-card px-5 py-4">
           <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={26} color={getAppColors().inkColor} />
+            <Ionicons name="close" size={26} color={colors.inkColor} />
           </Pressable>
           <Text className="text-lg font-extrabold text-ink">
             Pedido #{orderId}
@@ -111,7 +113,7 @@ export function OrderDetailModal({
 
         {loading || !order ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={getAppColors().primaryColor} />
+            <ActivityIndicator size="large" color={colors.primaryColor} />
           </View>
         ) : (
           (() => {

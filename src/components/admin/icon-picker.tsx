@@ -10,6 +10,7 @@ import {
   toCatalogIconValue,
 } from '@/lib/catalog-icon';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type IconEntry = {
   ref: CatalogIconRef;
@@ -326,6 +327,7 @@ type Props = {
  * scroll del FormModal.
  */
 export function IconPicker({ value, onChange, savedIcon }: Props) {
+  const colors = useResolvedAppColors();
   const [search, setSearch] = useState('');
 
   const entries = useMemo(() => {
@@ -396,7 +398,7 @@ export function IconPicker({ value, onChange, savedIcon }: Props) {
                   <CatalogIconView
                     icon={entry.ref}
                     size={22}
-                    color={selected ? getAppColors().primaryColor : getAppColors().mutedColor}
+                    color={selected ? colors.primaryColor : colors.mutedColor}
                   />
                 </Pressable>
               );

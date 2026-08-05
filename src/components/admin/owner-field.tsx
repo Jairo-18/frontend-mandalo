@@ -6,6 +6,7 @@ import { UserPickerModal } from '@/components/admin/user-picker-modal';
 import { Avatar } from '@/components/ui/avatar';
 import { getAppColors } from '@/lib/app-colors';
 import { BusinessOwner } from '@/services/admin-businesses';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   owner: BusinessOwner | null;
@@ -17,6 +18,7 @@ type Props = {
  * X para desvincular) o buscador para elegir uno existente.
  */
 export function OwnerField({ owner, onChange }: Props) {
+  const colors = useResolvedAppColors();
   const [pickerVisible, setPickerVisible] = useState(false);
 
   return (
@@ -41,7 +43,7 @@ export function OwnerField({ owner, onChange }: Props) {
             </Text>
           </View>
           <Pressable onPress={() => onChange(null)} hitSlop={8}>
-            <Ionicons name="close-circle" size={22} color={getAppColors().mutedColor} />
+            <Ionicons name="close-circle" size={22} color={colors.mutedColor} />
           </Pressable>
         </View>
       ) : (
@@ -49,11 +51,11 @@ export function OwnerField({ owner, onChange }: Props) {
           onPress={() => setPickerVisible(true)}
           className="mb-4 h-[52px] flex-row items-center gap-2.5 rounded-xl border border-border px-3.5 active:opacity-70"
         >
-          <Ionicons name="person-outline" size={20} color={getAppColors().mutedColor} />
+          <Ionicons name="person-outline" size={20} color={colors.mutedColor} />
           <Text className="flex-1 text-[15px] text-muted">
             Buscar usuario para vincular…
           </Text>
-          <Ionicons name="search-outline" size={18} color={getAppColors().mutedColor} />
+          <Ionicons name="search-outline" size={18} color={colors.mutedColor} />
         </Pressable>
       )}
 

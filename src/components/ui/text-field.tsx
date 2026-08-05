@@ -4,6 +4,7 @@ import { Pressable, Text, TextInput, TextInputProps, View } from 'react-native';
 
 import { getAppColors } from '@/lib/app-colors';
 import { finishText, formatText, TextFormat } from '@/lib/text-format';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = TextInputProps & {
   label: string;
@@ -65,8 +66,9 @@ export function TextField({
   numberOfLines,
   ...inputProps
 }: Props) {
+  const colors = useResolvedAppColors();
   const [hidden, setHidden] = useState(true);
-  const placeholderColor = getAppColors().mutedColor;
+  const placeholderColor = colors.mutedColor;
 
   const handleChangeText = (value: string) => {
     onChangeText?.(format ? formatText(format, value) : value);

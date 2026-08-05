@@ -22,7 +22,7 @@ import { HttpError } from '@/lib/http';
 import { entryPathFor, getSession, setSession } from '@/lib/session';
 import { EMAIL_RE } from '@/lib/text-format';
 import { authService } from '@/services/auth';
-import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** ¿El sign-in falló porque el correo no está verificado? (code del backend). */
 function isEmailNotVerified(e: unknown): boolean {
@@ -38,6 +38,7 @@ function isEmailNotVerified(e: unknown): boolean {
 export default function LoginScreen() {
   const router = useRouter();
   const { isDark } = useAppTheme();
+  const colors = useResolvedAppColors();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
@@ -195,7 +196,7 @@ export default function LoginScreen() {
               <Ionicons
                 name={resending ? 'hourglass-outline' : 'mail-unread-outline'}
                 size={18}
-                color={getAppColors().primaryColor}
+                color={colors.primaryColor}
               />
               <Text className="flex-1 text-[13px] font-bold text-primary">
                 {resending
@@ -231,6 +232,16 @@ export default function LoginScreen() {
               onPress={() => router.push('/auth/register')}
             />
           </View>
+
+          <Pressable
+            onPress={() => router.push('/how-it-works')}
+            className="mt-5 flex-row items-center justify-center gap-1.5 self-center"
+          >
+            <Ionicons name="help-circle-outline" size={16} color={colors.mutedColor} />
+            <Text className="text-[13px] font-bold text-muted">
+              ¿Cómo funciona Mandalo?
+            </Text>
+          </Pressable>
 
           <View className="mt-6">
             <DeveloperCredit />

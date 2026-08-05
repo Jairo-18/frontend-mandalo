@@ -32,6 +32,7 @@ import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import { userAddressesService } from '@/services/user-addresses';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Role = 'client' | 'delivery';
 
@@ -43,6 +44,7 @@ type Role = 'client' | 'delivery';
  * → home. Repartidor: además identificación + fotos → cuenta en revisión.
  */
 export default function CompleteRegistrationScreen() {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   const { isDark } = useAppTheme();
   const params = useLocalSearchParams<{ role?: Role }>();
@@ -381,12 +383,12 @@ export default function CompleteRegistrationScreen() {
                   className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
                 >
                   {locating ? (
-                    <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+                    <ActivityIndicator size="small" color={colors.primaryColor} />
                   ) : (
                     <Ionicons
                       name={coords ? 'checkmark-circle' : 'locate-outline'}
                       size={16}
-                      color={getAppColors().primaryColor}
+                      color={colors.primaryColor}
                     />
                   )}
                   <Text className="text-[13px] font-bold text-primary">
@@ -405,7 +407,7 @@ export default function CompleteRegistrationScreen() {
                   <Ionicons
                     name={coords ? 'checkmark-circle' : 'map-outline'}
                     size={16}
-                    color={getAppColors().primaryColor}
+                    color={colors.primaryColor}
                   />
                   <Text className="text-[13px] font-bold text-primary">
                     {coords ? 'Ubicación marcada — toca para cambiarla' : 'Marcar en el mapa (obligatorio)'}
@@ -535,9 +537,9 @@ export default function CompleteRegistrationScreen() {
             className="mt-6 flex-row items-center justify-center gap-1.5"
           >
             {leaving ? (
-              <ActivityIndicator size="small" color={getAppColors().mutedColor} />
+              <ActivityIndicator size="small" color={colors.mutedColor} />
             ) : (
-              <Ionicons name="log-out-outline" size={16} color={getAppColors().mutedColor} />
+              <Ionicons name="log-out-outline" size={16} color={colors.mutedColor} />
             )}
             <Text className="text-[13px] font-semibold text-muted">
               Salir y continuar después
@@ -566,6 +568,7 @@ function RoleCard({
   active: boolean;
   onPress: () => void;
 }) {
+  const colors = useResolvedAppColors();
   return (
     <Pressable
       onPress={onPress}
@@ -573,7 +576,7 @@ function RoleCard({
         active ? 'border-primary bg-primary-tint' : 'border-border bg-card'
       }`}
     >
-      <Ionicons name={icon} size={28} color={active ? getAppColors().primaryColor : getAppColors().mutedColor} />
+      <Ionicons name={icon} size={28} color={active ? colors.primaryColor : colors.mutedColor} />
       <Text
         className={`mt-2 text-[15px] font-extrabold ${
           active ? 'text-primary' : 'text-ink'

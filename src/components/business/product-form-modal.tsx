@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { FormModal } from '@/components/ui/form-modal';
 import { Select, SelectOption } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
+import { UploadProgressBar } from '@/components/ui/upload-progress-bar';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { copToNumber, formatText } from '@/lib/text-format';
 import { adminCategoriesService } from '@/services/admin-catalogs';
@@ -52,6 +53,14 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
   const [loadingCategories, setLoadingCategories] = useState(false);
 
   const [saving, setSaving] = useState(false);
+  // Progreso agregado de las fotos pendientes (varias van una tras otra, no
+  // en un solo request como el registro de repartidor): "foto X de N" + %
+  // de la que está en curso, para no dejar el guardado sintiéndose colgado.
+  const [uploadProgress, setUploadProgress] = useState<{
+    index: number;
+    total: number;
+    fraction: number;
+  } | null>(null);
   const { errors, setErrors, clearError, validate } = useFormErrors();
 
   const isEdit = !!editing;
@@ -162,8 +171,14 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
       for (const url of removedUrls) {
         await businessService.products.removeImage(productId, url);
       }
-      for (const uri of pendingUris) {
-        await businessService.products.uploadImage(productId, uri);
+      for (let i = 0; i < pendingUris.length; i++) {
+        setUploadProgress({ index: i, total: pendingUris.length, fraction: 0 });
+        await businessService.products.uploadImage(
+          productId,
+          pendingUris[i],
+          (fraction) =>
+            setUploadProgress({ index: i, total: pendingUris.length, fraction }),
+        );
       }
 
       onSaved();
@@ -171,6 +186,7 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
       // El interceptor HTTP ya mostró el mensaje del backend.
     } finally {
       setSaving(false);
+      setUploadProgress(null);
     }
   }
 
@@ -277,6 +293,20 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
           label="Producto activo (visible para los clientes)"
         />
       </View>
+
+      {uploadProgress && (
+        <UploadProgressBar
+          fraction={
+            (uploadProgress.index + uploadProgress.fraction) /
+            uploadProgress.total
+          }
+          label={
+            uploadProgress.total > 1
+              ? `Subiendo foto ${uploadProgress.index + 1} de ${uploadProgress.total}…`
+              : 'Subiendo foto…'
+          }
+        />
+      )}
     </FormModal>
   );
 }

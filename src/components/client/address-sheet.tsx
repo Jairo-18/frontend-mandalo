@@ -7,6 +7,7 @@ import { AddressManager } from '@/components/client/address-manager';
 import { useAppTheme } from '@/context/app-theme';
 import { refreshAddresses } from '@/lib/user-data';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   visible: boolean;
@@ -19,6 +20,7 @@ type Props = {
  * pantalla "Mis direcciones" del drawer. Acá solo va el cascarón del modal.
  */
 export function AddressSheet({ visible, onClose }: Props) {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   // Mientras el formulario interno (y su mapa) está abierto, esta hoja se
@@ -56,7 +58,7 @@ export function AddressSheet({ visible, onClose }: Props) {
             Mis direcciones
           </Text>
           <Pressable onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={24} color={getAppColors().inkColor} />
+            <Ionicons name="close" size={24} color={colors.inkColor} />
           </Pressable>
         </View>
 

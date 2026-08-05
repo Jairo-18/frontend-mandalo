@@ -11,6 +11,7 @@ import {
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   visible: boolean;
@@ -25,6 +26,7 @@ type Props = {
  * y vuelve a subir. No cancela el pedido, solo invalida el soporte.
  */
 export function RejectProofDialog({ visible, onConfirm, onCancel }: Props) {
+  const colors = useResolvedAppColors();
   const [reason, setReason] = useState('');
   const [working, setWorking] = useState(false);
 
@@ -74,7 +76,7 @@ export function RejectProofDialog({ visible, onConfirm, onCancel }: Props) {
               <TextInput
                 className="min-h-[44px] text-[15px] text-ink"
                 placeholder="Ej: esa foto no corresponde al comprobante del pago."
-                placeholderTextColor={getAppColors().mutedColor}
+                placeholderTextColor={colors.mutedColor}
                 value={reason}
                 onChangeText={setReason}
                 multiline

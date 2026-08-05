@@ -11,6 +11,7 @@ import {
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   visible: boolean;
@@ -24,6 +25,7 @@ type Props = {
  * Lo usa el negocio; el cliente cancela con un motivo fijo sin este diálogo.
  */
 export function CancelOrderDialog({ visible, onConfirm, onCancel }: Props) {
+  const colors = useResolvedAppColors();
   const [reason, setReason] = useState('');
   const [working, setWorking] = useState(false);
 
@@ -76,7 +78,7 @@ export function CancelOrderDialog({ visible, onConfirm, onCancel }: Props) {
               <TextInput
                 className="min-h-[44px] text-[15px] text-ink"
                 placeholder="Ej: sin stock del producto."
-                placeholderTextColor={getAppColors().mutedColor}
+                placeholderTextColor={colors.mutedColor}
                 value={reason}
                 onChangeText={setReason}
                 multiline

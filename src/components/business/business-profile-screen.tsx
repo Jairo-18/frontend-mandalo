@@ -19,6 +19,7 @@ import { refreshMyBusiness } from '@/lib/my-business';
 import { formatHour12, formatText } from '@/lib/text-format';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** Nombres cortos de los días (0 = domingo), para mostrar el horario. */
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -42,6 +43,7 @@ function formatOpenDays(openDays: string | null): string {
  * guardar refresca el store compartido (cabecera del drawer + esta pantalla).
  */
 export function BusinessProfileScreen() {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const business = useMyBusiness();
   const [loading, setLoading] = useState(!business);
@@ -77,7 +79,7 @@ export function BusinessProfileScreen() {
   if (loading && !business) {
     return (
       <View className="flex-1 items-center justify-center bg-surface">
-        <ActivityIndicator size="large" color={getAppColors().primaryColor} />
+        <ActivityIndicator size="large" color={colors.primaryColor} />
       </View>
     );
   }
@@ -85,7 +87,7 @@ export function BusinessProfileScreen() {
   if (!business) {
     return (
       <View className="flex-1 items-center justify-center bg-surface px-8">
-        <Ionicons name="storefront-outline" size={48} color={getAppColors().mutedColor} />
+        <Ionicons name="storefront-outline" size={48} color={colors.mutedColor} />
         <Text className="mt-3 text-center text-[15px] text-muted">
           Tu cuenta aún no tiene un negocio asociado. Contacta al administrador.
         </Text>
@@ -110,13 +112,13 @@ export function BusinessProfileScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor={getAppColors().primaryColor}
+          tintColor={colors.primaryColor}
         />
       }
     >
       {/* Cabecera con el logo y el nombre del negocio */}
       <LinearGradient
-        colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+        colors={[colors.primaryColor, colors.darkColor]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
@@ -310,13 +312,14 @@ function InfoRow({
   children: ReactNode;
   last?: boolean;
 }) {
+  const colors = useResolvedAppColors();
   return (
     <View
       className={`flex-row items-start gap-3 ${
         last ? '' : 'mb-3 border-b border-border pb-3'
       }`}
     >
-      <Ionicons name={icon} size={20} color={getAppColors().mutedColor} style={{ marginTop: 2 }} />
+      <Ionicons name={icon} size={20} color={colors.mutedColor} style={{ marginTop: 2 }} />
       <View className="flex-1">
         <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
           {label}

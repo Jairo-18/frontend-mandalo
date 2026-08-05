@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = {
   value: string;
@@ -11,7 +12,8 @@ type Props = {
 
 /** Barra de búsqueda de los listados del panel (con botón para limpiar). */
 export function SearchBar({ value, onChangeText, placeholder }: Props) {
-  const mutedColor = getAppColors().mutedColor;
+  const colors = useResolvedAppColors();
+  const mutedColor = colors.mutedColor;
   return (
     <View className="h-[46px] flex-row items-center gap-2.5 rounded-xl bg-card px-3.5">
       <Ionicons name="search-outline" size={19} color={mutedColor} />

@@ -8,6 +8,7 @@ import { AuthHeader } from '@/components/auth/auth-header';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { useAppTheme } from '@/context/app-theme';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type RoleCardProps = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -17,26 +18,28 @@ type RoleCardProps = {
 };
 
 function RoleCard({ icon, title, desc, onPress }: RoleCardProps) {
+  const colors = useResolvedAppColors();
   return (
     <Pressable
       onPress={onPress}
       className="mb-4 flex-row items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary active:bg-primary-tint"
     >
       <View className="h-14 w-14 items-center justify-center">
-        <Ionicons name={icon} size={32} color={getAppColors().primaryColor} />
+        <Ionicons name={icon} size={32} color={colors.primaryColor} />
       </View>
       <View className="flex-1">
         <Text className="text-[17px] font-extrabold text-ink">{title}</Text>
         <Text className="mt-0.5 text-[13px] leading-4 text-muted">{desc}</Text>
       </View>
       <View className="h-8 w-8 items-center justify-center rounded-full bg-surface">
-        <Ionicons name="chevron-forward" size={17} color={getAppColors().primaryColor} />
+        <Ionicons name="chevron-forward" size={17} color={colors.primaryColor} />
       </View>
     </Pressable>
   );
 }
 
 export default function RegisterChooser() {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
@@ -94,13 +97,13 @@ export default function RegisterChooser() {
           className="mt-1 flex-row items-center gap-3 rounded-2xl bg-surface p-4 active:opacity-70"
         >
           <View className="h-11 w-11 items-center justify-center rounded-xl bg-card">
-            <Ionicons name="storefront-outline" size={20} color={getAppColors().primaryColor} />
+            <Ionicons name="storefront-outline" size={20} color={colors.primaryColor} />
           </View>
           <Text className="flex-1 text-xs leading-4 text-muted">
             ¿Tienes un negocio? El equipo de Mandalo crea tu cuenta — toca
             para contarnos de tu negocio.
           </Text>
-          <Ionicons name="chevron-forward" size={18} color={getAppColors().mutedColor} />
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
         </Pressable>
 
         <Pressable
@@ -109,6 +112,16 @@ export default function RegisterChooser() {
         >
           <Text className="text-sm font-bold text-primary">
             Volver a iniciar sesión
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push('/how-it-works')}
+          className="mt-3 flex-row items-center justify-center gap-1.5 self-center"
+        >
+          <Ionicons name="help-circle-outline" size={16} color={colors.mutedColor} />
+          <Text className="text-[13px] font-bold text-muted">
+            ¿Cómo funciona Mandalo?
           </Text>
         </Pressable>
 

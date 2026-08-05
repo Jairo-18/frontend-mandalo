@@ -13,6 +13,7 @@ import { useAppTheme } from '@/context/app-theme';
 import { EMAIL_RE } from '@/lib/text-format';
 import { getAppColors } from '@/lib/app-colors';
 import { authService } from '@/services/auth';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /**
  * Eliminar cuenta SIN necesidad de tener la app instalada (exigido por
@@ -22,6 +23,7 @@ import { authService } from '@/services/auth';
  * `/eliminar-cuenta`, mismo backend (`POST /user/request-deletion`).
  */
 export default function EliminarCuentaScreen() {
+  const colors = useResolvedAppColors();
   const router = useRouter();
   const { isDark } = useAppTheme();
   const [email, setEmail] = useState('');
@@ -61,7 +63,7 @@ export default function EliminarCuentaScreen() {
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
         >
-          <Ionicons name="arrow-back" size={20} color={getAppColors().inkColor} />
+          <Ionicons name="arrow-back" size={20} color={colors.inkColor} />
         </Pressable>
         <Text className="flex-1 text-lg font-extrabold text-ink">
           Eliminar mi cuenta
@@ -95,7 +97,7 @@ export default function EliminarCuentaScreen() {
 
             {sent ? (
               <View className="mb-5 flex-row gap-2 rounded-2xl bg-primary-tint p-4">
-                <Ionicons name="mail-outline" size={18} color={getAppColors().primaryColor} />
+                <Ionicons name="mail-outline" size={18} color={colors.primaryColor} />
                 <Text className="flex-1 text-[13px] leading-5 text-primary">
                   Te enviamos un correo para confirmar la eliminación de tu
                   cuenta.

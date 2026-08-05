@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { Select } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
+import { UploadProgressBar } from '@/components/ui/upload-progress-bar';
 import { useAppData } from '@/context/app-data';
 import { useAppTheme } from '@/context/app-theme';
 import { useFormErrors } from '@/hooks/use-form-errors';
@@ -80,6 +81,9 @@ export default function RegisterForm() {
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  // Progreso real de la subida (solo repartidor: manda 7 fotos/documentos en
+  // un solo POST) — null mientras no hay nada en curso.
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const departmentOptions = useMemo(
     () => departments.map((d) => ({ label: d.name, value: d.id })),
@@ -240,15 +244,20 @@ export default function RegisterForm() {
     try {
       setLoading(true);
       if (isDelivery) {
-        await authService.registerDelivery(payload, {
-          avatar: avatarUri!,
-          idFront: idFrontUri!,
-          idBack: idBackUri!,
-          licenseFront: licenseFrontUri!,
-          licenseBack: licenseBackUri!,
-          soat: soat!,
-          technicalInspection: technicalInspection!,
-        });
+        setUploadProgress(0);
+        await authService.registerDelivery(
+          payload,
+          {
+            avatar: avatarUri!,
+            idFront: idFrontUri!,
+            idBack: idBackUri!,
+            licenseFront: licenseFrontUri!,
+            licenseBack: licenseBackUri!,
+            soat: soat!,
+            technicalInspection: technicalInspection!,
+          },
+          setUploadProgress,
+        );
       } else {
         await authService.registerClient(payload);
       }
@@ -258,6 +267,7 @@ export default function RegisterForm() {
       // El interceptor HTTP ya mostró el toast con el mensaje del backend.
     } finally {
       setLoading(false);
+      setUploadProgress(null);
     }
   }
 
@@ -559,6 +569,12 @@ export default function RegisterForm() {
               }}
               error={errors.acceptedTerms}
             />
+            {uploadProgress != null && (
+              <UploadProgressBar
+                fraction={uploadProgress}
+                label="Subiendo tus fotos y documentos…"
+              />
+            )}
             <Button
               label="Crear cuenta"
               onPress={handleRegister}

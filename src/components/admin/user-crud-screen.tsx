@@ -18,6 +18,7 @@ import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 import {
   AdminUser,
@@ -81,6 +82,7 @@ export function UserCrudScreen({
   entityName,
   entityNamePlural,
 }: Props) {
+  const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isDark } = useAppTheme();
@@ -192,7 +194,7 @@ export function UserCrudScreen({
               hitSlop={8}
               className="h-9 w-9 items-center justify-center rounded-full bg-primary-tint active:opacity-70"
             >
-              <Ionicons name="cash-outline" size={17} color={getAppColors().primaryColor} />
+              <Ionicons name="cash-outline" size={17} color={colors.primaryColor} />
             </Pressable>
           )}
           <Pressable
@@ -200,7 +202,7 @@ export function UserCrudScreen({
             hitSlop={8}
             className="h-9 w-9 items-center justify-center rounded-full bg-surface active:opacity-70"
           >
-            <Ionicons name="pencil-outline" size={17} color={getAppColors().inkColor} />
+            <Ionicons name="pencil-outline" size={17} color={colors.inkColor} />
           </Pressable>
           <Pressable
             onPress={() => setToDelete(item)}
@@ -288,7 +290,7 @@ export function UserCrudScreen({
 
       {list.loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={getAppColors().primaryColor} />
+          <ActivityIndicator size="large" color={colors.primaryColor} />
         </View>
       ) : (
         <FlatList
