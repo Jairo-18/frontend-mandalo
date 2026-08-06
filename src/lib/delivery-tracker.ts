@@ -85,7 +85,9 @@ async function startBackgroundTracking(): Promise<boolean> {
     if (await Location.hasStartedLocationUpdatesAsync(TASK_NAME)) return true;
 
     await Location.startLocationUpdatesAsync(TASK_NAME, {
-      accuracy: Location.Accuracy.Balanced,
+      // Balanced (prioridad de red/fused) se cuelga en background al rato
+      // de arrancar en algunos dispositivos Android — ver SIMULACION.md.
+      accuracy: Location.Accuracy.High,
       timeInterval: 8000,
       distanceInterval: 25,
       // Notificación persistente del servicio (obligatoria en Android).
