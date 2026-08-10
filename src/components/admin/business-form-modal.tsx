@@ -121,9 +121,13 @@ export function BusinessFormModal({
 
   const [tagIds, setTagIds] = useState<number[]>([]);
   const [isActive, setIsActive] = useState(true);
-  // Comisión sobre lo vendido: 5% el primer mes, 12% después (el admin la
-  // sube a mano cuando corresponda, sin lógica automática por fecha).
-  const [commissionOrderRate, setCommissionOrderRate] = useState(5);
+  // Comisión sobre lo vendido: libre del 0 al 100%, a gusto del admin por
+  // negocio (convención habitual: 5% el primer mes, 12% después — los
+  // atajos de abajo solo prellenan el campo, no limitan el valor). String
+  // en vez de number, mismo patrón que el % de descuento del producto
+  // (`product-form-modal.tsx`), para permitir el campo vacío mientras se
+  // escribe sin forzar un 0.
+  const [commissionOrderRate, setCommissionOrderRate] = useState('5');
   // Horario de atención (hora Colombia). Sin horas = siempre abierto.
   const [openTime, setOpenTime] = useState('');
   const [closeTime, setCloseTime] = useState('');
@@ -185,7 +189,7 @@ export function BusinessFormModal({
     setAccountConfirm('');
     setTagIds(editing?.tags?.map((t) => t.id) ?? []);
     setIsActive(editing?.isActive ?? true);
-    setCommissionOrderRate(editing?.commissionOrderRate ?? 5);
+    setCommissionOrderRate(String(editing?.commissionOrderRate ?? 5));
     setOpenTime(editing?.openTime ?? '');
     setCloseTime(editing?.closeTime ?? '');
     setOpenDaysSel(parseOpenDays(editing?.openDays));
@@ -287,7 +291,7 @@ export function BusinessFormModal({
       (editing?.tags?.map((t) => t.id) ?? []).sort((a, b) => a - b).join(',') ||
     (!selfBusiness && isActive !== (editing?.isActive ?? true)) ||
     (!selfBusiness &&
-      commissionOrderRate !== (editing?.commissionOrderRate ?? 5)) ||
+      commissionOrderRate !== String(editing?.commissionOrderRate ?? 5)) ||
     openTime !== (editing?.openTime ?? '') ||
     closeTime !== (editing?.closeTime ?? '') ||
     daysToPayload(openDaysSel) !== daysToPayload(parseOpenDays(editing?.openDays)) ||

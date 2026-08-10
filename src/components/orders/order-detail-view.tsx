@@ -619,7 +619,7 @@ function CodeBanner({
       <Text className="text-[11px] font-bold uppercase tracking-widest text-primary">
         {label}
       </Text>
-      <Text className="mt-1 text-3xl font-extrabold tracking-[8px] text-ink">
+      <Text className="mt-1 text-3xl font-extrabold tracking-[8px] text-primary">
         {code}
       </Text>
       <Text className="mt-1 text-center text-xs text-muted">{caption}</Text>

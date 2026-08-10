@@ -1,6 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 
 import { getAppColors } from '@/lib/app-colors';
 
@@ -69,59 +76,71 @@ export function YesNoDialog({
         onPress={working ? undefined : onCancel}
       >
         <Pressable
-          className="w-full rounded-3xl border border-border bg-card p-6"
+          className="w-full max-h-[85%] rounded-3xl border border-border bg-card"
           onPress={() => {}}
         >
-          <View
-            className={`mb-4 h-14 w-14 self-center items-center justify-center rounded-full ${
-              destructive ? 'bg-red-50' : 'bg-primary-tint'
-            }`}
+          {/* Textos largos (p. ej. la divulgación de ubicación en segundo
+              plano) más letra/pantalla del sistema agrandadas pueden no
+              entrar completos — sin esto el contenido se corta contra el
+              borde y los botones quedan inalcanzables en vez de solo pedir
+              scroll. En el caso normal el contenido entra igual sin que se
+              note que es scrolleable. */}
+          <ScrollView
+            className="p-6"
+            contentContainerStyle={{ flexGrow: 1 }}
+            showsVerticalScrollIndicator={false}
           >
-            <Ionicons
-              name={headerIcon}
-              size={26}
-              color={destructive ? '#DC2626' : getAppColors().primaryColor}
-            />
-          </View>
+            <View
+              className={`mb-4 h-14 w-14 self-center items-center justify-center rounded-full ${
+                destructive ? 'bg-red-50' : 'bg-primary-tint'
+              }`}
+            >
+              <Ionicons
+                name={headerIcon}
+                size={26}
+                color={destructive ? '#DC2626' : getAppColors().primaryColor}
+              />
+            </View>
 
-          <Text className="text-center text-lg font-extrabold text-ink">
-            {title}
-          </Text>
-          {message ? (
-            <Text className="mt-2 text-center text-sm leading-5 text-muted">
-              {message}
+            <Text className="text-center text-lg font-extrabold text-ink">
+              {title}
             </Text>
-          ) : null}
-
-          <View className="mt-6 flex-row gap-3">
-            <Pressable
-              onPress={onCancel}
-              disabled={working}
-              className={`min-h-[48px] flex-1 items-center justify-center rounded-2xl border border-border px-2 py-3 active:opacity-70 ${
-                working ? 'opacity-50' : ''
-              }`}
-            >
-              <Text className="text-center text-[15px] font-bold text-ink">
-                {cancelLabel}
+            {message ? (
+              <Text className="mt-2 text-center text-sm leading-5 text-muted">
+                {message}
               </Text>
-            </Pressable>
+            ) : null}
 
-            <Pressable
-              onPress={handleConfirm}
-              disabled={working}
-              className={`min-h-[48px] flex-1 items-center justify-center rounded-2xl px-2 py-3 active:opacity-80 ${
-                destructive ? 'bg-red-600' : 'bg-primary'
-              }`}
-            >
-              {working ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text className="text-center text-[15px] font-bold text-white">
-                  {confirmLabel}
+            <View className="mt-6 flex-row gap-3">
+              <Pressable
+                onPress={onCancel}
+                disabled={working}
+                className={`min-h-[48px] flex-1 items-center justify-center rounded-2xl border border-border px-2 py-3 active:opacity-70 ${
+                  working ? 'opacity-50' : ''
+                }`}
+              >
+                <Text className="text-center text-[15px] font-bold text-ink">
+                  {cancelLabel}
                 </Text>
-              )}
-            </Pressable>
-          </View>
+              </Pressable>
+
+              <Pressable
+                onPress={handleConfirm}
+                disabled={working}
+                className={`min-h-[48px] flex-1 items-center justify-center rounded-2xl px-2 py-3 active:opacity-80 ${
+                  destructive ? 'bg-red-600' : 'bg-primary'
+                }`}
+              >
+                {working ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text className="text-center text-[15px] font-bold text-white">
+                    {confirmLabel}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </ScrollView>
         </Pressable>
       </Pressable>
     </Modal>

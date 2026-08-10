@@ -433,7 +433,7 @@ export function DeliveryOrders() {
         visible={needsBackgroundDisclosure}
         icon="navigate-outline"
         title="Ubicación en segundo plano"
-        message="Para que el cliente vea en vivo dónde va su pedido —incluso con la pantalla bloqueada o Mandalo en segundo plano— necesitamos tu ubicación exacta mientras tengas una entrega EN CAMINO. Se activa solo con pedidos asignados a ti y se apaga sola al entregar. Puedes revisar cómo tratamos tus datos en Política de Privacidad, dentro de Mi perfil."
+        message="Mientras tengas un pedido EN CAMINO, Mandalo recoge tu ubicación precisa incluso cuando la app está cerrada o no está en uso, y la comparte con el negocio y el cliente de ese pedido para que vean en vivo por dónde vas. No se comparte con nadie más. El seguimiento se activa solo con pedidos asignados a ti y se apaga al entregar."
         confirmLabel="Activar ubicación"
         cancelLabel="Ahora no"
         onConfirm={grantBackgroundConsent}

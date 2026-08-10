@@ -11,7 +11,6 @@ import { useSession } from '@/hooks/use-session';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { getSession, setSession } from '@/lib/session';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
-import { signOutEverywhere } from '@/lib/sign-out';
 import { AdminUser, adminUsersService } from '@/services/admin-users';
 import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
 import { useUnreviewedAccidentsCount } from '@/hooks/use-unreviewed-accidents-count';
@@ -25,6 +24,7 @@ type AdminRoute =
   | '/admin/accidents'
   | '/admin/tags'
   | '/admin/categories'
+  | '/admin/bulk-invite'
   | '/admin/app-settings';
 
 type Item = {
@@ -43,6 +43,7 @@ const ITEMS: Item[] = [
   { label: 'Accidentes', icon: 'warning-outline', href: '/admin/accidents' },
   { label: 'Etiquetas', icon: 'pricetags-outline', href: '/admin/tags' },
   { label: 'Categorías', icon: 'grid-outline', href: '/admin/categories' },
+  { label: 'Alta masiva', icon: 'people-circle-outline', href: '/admin/bulk-invite' },
   { label: 'Aplicación', icon: 'color-palette-outline', href: '/admin/app-settings' },
 ];
 
@@ -51,14 +52,14 @@ const ITEMS: Item[] = [
 type Props = { navigation: { closeDrawer: () => void } };
 
 /**
- * Sidebar del panel admin: cabecera con la marca y el usuario autenticado,
- * navegación por secciones y cierre de sesión abajo.
+ * Sidebar del panel admin: cabecera con la marca y el usuario autenticado
+ * (tocarla abre "Editar mi perfil", que también trae "Cerrar sesión"),
+ * navegación por secciones y el link a "¿Necesitas ayuda?" abajo.
  */
 export function AdminDrawerContent({ navigation }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const [signingOut, setSigningOut] = useState(false);
   const colors = useResolvedAppColors();
 
   // Edición del propio perfil: se abre desde la tarjeta del usuario.
@@ -117,14 +118,6 @@ export function AdminDrawerContent({ navigation }: Props) {
     } catch {
       // No pasa nada: se actualiza en el próximo inicio.
     }
-  }
-
-  async function handleLogout() {
-    setSigningOut(true);
-    // Navega al login por dentro, con el overlay "Cerrando sesión…" tapando
-    // el flash de las pantallas vaciándose.
-    await signOutEverywhere();
-    setSigningOut(false);
   }
 
   return (
@@ -212,26 +205,9 @@ export function AdminDrawerContent({ navigation }: Props) {
         })}
       </View>
 
-      {/* Cerrar sesión */}
-      <View className="border-t border-border px-3 pt-3">
-        <Pressable
-          onPress={handleLogout}
-          disabled={signingOut}
-          className="flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
-        >
-          {signingOut ? (
-            <ActivityIndicator size="small" color={colors.primaryColor} />
-          ) : (
-            <Ionicons name="log-out-outline" size={21} color={colors.primaryColor} />
-          )}
-          <Text className="text-[15px] font-bold text-primary">
-            Cerrar sesión
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* Ayuda y legal: separada de "Cerrar sesión" — nada que ver con la
-          sesión, así que va en su propio bloque debajo. */}
+      {/* Ayuda: guía de uso + legales, agrupados en una sola pantalla aparte
+          (antes eran 3 botones sueltos acá, muy apretado). "Cerrar sesión" se
+          movió a la edición del propio perfil (tarjeta de arriba). */}
       <View
         className="border-t border-border px-3 pt-3"
         style={{ paddingBottom: insets.bottom + 12 }}
@@ -239,37 +215,13 @@ export function AdminDrawerContent({ navigation }: Props) {
         <Pressable
           onPress={() => {
             navigation.closeDrawer();
-            router.push('/how-it-works');
-          }}
-          className="mb-1 flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
-        >
-          <Ionicons name="help-circle-outline" size={21} color={colors.mutedColor} />
-          <Text className="flex-1 text-[15px] font-medium text-ink">
-            ¿Cómo funciona Mandalo?
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            navigation.closeDrawer();
-            router.push('/terminos-y-condiciones-de-uso');
-          }}
-          className="mb-1 flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
-        >
-          <Ionicons name="document-text-outline" size={21} color={colors.mutedColor} />
-          <Text className="flex-1 text-[15px] font-medium text-ink">
-            Políticas de uso
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => {
-            navigation.closeDrawer();
-            router.push('/politicas-de-privacidad');
+            router.push('/help');
           }}
           className="flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
         >
-          <Ionicons name="shield-outline" size={21} color={colors.mutedColor} />
+          <Ionicons name="help-circle-outline" size={21} color={colors.mutedColor} />
           <Text className="flex-1 text-[15px] font-medium text-ink">
-            Política de privacidad
+            ¿Necesitas ayuda?
           </Text>
         </Pressable>
         <DeveloperCredit />

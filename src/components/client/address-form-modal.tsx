@@ -1,12 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AddressMapPicker } from '@/components/client/address-map-picker';
 import { FormModal } from '@/components/ui/form-modal';
 import { TextField } from '@/components/ui/text-field';
 import { useFormErrors } from '@/hooks/use-form-errors';
-import { DeviceCoords } from '@/lib/location';
+import {
+  DeviceCoords,
+  getDeviceLocation,
+} from '@/lib/location';
 import { getAppColors } from '@/lib/app-colors';
 import {
   UserAddress,
@@ -31,6 +34,7 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
   const [coords, setCoords] = useState<DeviceCoords>();
   const [mapVisible, setMapVisible] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
   const { errors, setErrors, clearError, bind, validate } = useFormErrors();
 
   const isEdit = !!editing;
@@ -72,6 +76,28 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
       clearError('address');
     }
     setMapVisible(false);
+  }
+
+  /**
+   * "Usar mi ubicación": pide permiso/GPS del sistema, marca el punto y
+   * prellena la dirección con el geocoder. Si el usuario no activa la
+   * ubicación, `getDeviceLocation` muestra el toast con la instrucción — el
+   * campo queda vacío para que la llene a mano (el aviso lo refuerza).
+   */
+  async function handleUseMyLocation() {
+    setLocating(true);
+    try {
+      const loc = await getDeviceLocation();
+      if (!loc) return; // El toast ya le dijo qué hacer.
+      setCoords(loc.coords);
+      clearError('location');
+      if (loc.address) {
+        setAddress(loc.address);
+        clearError('address');
+      }
+    } finally {
+      setLocating(false);
+    }
   }
 
   async function handleSave() {
@@ -134,18 +160,54 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
         placeholder="Casa, Trabajo, Donde mi mamá…"
       />
 
-      <TextField
-        label="Dirección"
-        icon="home-outline"
-        format="text"
-        value={address}
-        onChangeText={bind('address', setAddress)}
-        error={errors.address}
-        placeholder="Calle 1 # 2-3, Barrio Centro"
-      />
+      {/* Dirección + botón de GPS: activar ubicación llena el campo solo. */}
+      <View className="flex-row items-center gap-1.5">
+        <View className="flex-1">
+          <TextField
+            label="Dirección"
+            icon="home-outline"
+            format="text"
+            value={address}
+            onChangeText={bind('address', setAddress)}
+            error={errors.address}
+            placeholder="Calle 1 # 2-3, Barrio Centro"
+          />
+        </View>
+        <Pressable
+          onPress={handleUseMyLocation}
+          disabled={locating}
+          hitSlop={6}
+          className="mb-1.5 h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-primary-tint active:opacity-70"
+        >
+          {locating ? (
+            <ActivityIndicator size="small" color={getAppColors().primaryColor} />
+          ) : (
+            <Ionicons
+              name="locate"
+              size={20}
+              color={getAppColors().primaryColor}
+            />
+          )}
+        </Pressable>
+      </View>
+      {!address.trim() && (
+        <View className="-mt-1 mb-1 flex-row items-start gap-1.5">
+          <Ionicons
+            name="bulb-outline"
+            size={14}
+            color={getAppColors().primaryColor}
+          />
+          <Text className="flex-1 text-xs text-primary">
+            Toca el ícono
+            <Text className="font-bold"> ubicación</Text> para llenarla con tu
+            GPS, o escríbela a mano por favor (calle, n° y barrio).
+          </Text>
+        </View>
+      )}
+
       <Pressable
         onPress={() => setMapVisible(true)}
-        className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+        className="mb-2 flex-row items-center gap-1.5 self-start"
       >
         <Ionicons
           name={coords ? 'checkmark-circle' : 'map-outline'}
@@ -159,7 +221,7 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
         </Text>
       </Pressable>
       {!!errors.location && (
-        <Text className="-mt-2 mb-3 text-xs text-red-600">
+        <Text className="-mt-1 mb-2 text-xs text-red-600">
           {errors.location}
         </Text>
       )}

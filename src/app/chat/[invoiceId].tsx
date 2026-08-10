@@ -44,6 +44,9 @@ const CLIENT_REPLIES = [
   '¿Cuánto te falta?',
 ];
 
+/** Segundos que hay que esperar entre mensaje y mensaje (anti-spam). */
+const SEND_COOLDOWN_SECONDS = 5;
+
 /**
  * Chat del pedido (cliente ↔ repartidor asignado). Lista invertida de
  * burbujas con avatar/nombre/hora; en vivo por el socket `/orders`; envío
@@ -67,7 +70,36 @@ export default function ChatScreen() {
   const [hasMore, setHasMore] = useState(false);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const pageRef = useRef(1);
+  const cooldownRef = useRef(0);
+  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Limpia el timer del contador si el usuario sale del chat.
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    };
+  }, []);
+
+  /** Evita spam: tras un envío hay 5s de espera antes del siguiente. */
+  function startCooldown() {
+    cooldownRef.current = Date.now();
+    setCooldown(SEND_COOLDOWN_SECONDS);
+    if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    cooldownTimerRef.current = setInterval(() => {
+      const remaining = Math.max(
+        0,
+        SEND_COOLDOWN_SECONDS -
+          Math.floor((Date.now() - cooldownRef.current) / 1000),
+      );
+      setCooldown(remaining);
+      if (remaining <= 0 && cooldownTimerRef.current) {
+        clearInterval(cooldownTimerRef.current);
+        cooldownTimerRef.current = null;
+      }
+    }, 250);
+  }
 
   // Carga inicial: cabecera + primera página, y marca leídos.
   useEffect(() => {
@@ -120,6 +152,7 @@ export default function ChatScreen() {
   async function send(body: string) {
     const clean = body.trim();
     if (!clean || sending || !canWrite) return;
+    if (cooldown > 0) return; // El contador visible lo explica solo.
     setSending(true);
     setText('');
 
@@ -141,6 +174,9 @@ export default function ChatScreen() {
           ? cleaned
           : [res.data, ...cleaned];
       });
+      // Espera obligatoria antes del siguiente mensaje (todas las vistas:
+      // cliente, domiciliario, negocio y admin usan esta misma pantalla).
+      startCooldown();
     } catch {
       // El interceptor ya toasteó; se retira la burbuja fallida.
       setMessages((prev) => prev.filter((m) => m.id !== temp.id));
@@ -295,6 +331,18 @@ export default function ChatScreen() {
                 className="border-t border-border bg-card px-3 pt-2"
                 style={{ paddingBottom: insets.bottom + 8 }}
               >
+                {cooldown > 0 && (
+                  <View className="mb-2 flex-row items-center gap-1.5">
+                    <Ionicons
+                      name="time-outline"
+                      size={13}
+                      color={colors.mutedColor}
+                    />
+                    <Text className="text-[12px] text-muted">
+                      Podrás escribir otro mensaje en {cooldown}s
+                    </Text>
+                  </View>
+                )}
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -305,7 +353,7 @@ export default function ChatScreen() {
                     <Pressable
                       key={reply}
                       onPress={() => send(reply)}
-                      disabled={sending}
+                      disabled={sending || cooldown > 0}
                       className="rounded-full border border-primary/40 bg-primary-tint px-3.5 py-1.5 active:opacity-70"
                     >
                       <Text className="text-[13px] font-semibold text-primary">
@@ -330,13 +378,17 @@ export default function ChatScreen() {
                   </View>
                   <Pressable
                     onPress={() => send(text)}
-                    disabled={sending || !text.trim()}
-                    className={`h-11 w-11 items-center justify-center rounded-full ${
-                      text.trim() ? 'bg-primary' : 'bg-border'
+                    disabled={sending || !text.trim() || cooldown > 0}
+                    className={`h-12 items-center justify-center rounded-full px-4 ${
+                      text.trim() && cooldown === 0 ? 'bg-primary' : 'bg-border'
                     } active:opacity-80`}
                   >
                     {sending ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : cooldown > 0 ? (
+                      <Text className="text-sm font-bold text-white">
+                        {cooldown}
+                      </Text>
                     ) : (
                       <Ionicons name="send" size={18} color="#FFFFFF" />
                     )}

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ReactNode, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useMyBusiness } from '@/hooks/use-my-business';
 import { refreshMyBusiness } from '@/lib/my-business';
+import { signOutEverywhere } from '@/lib/sign-out';
 import { formatHour12, formatText } from '@/lib/text-format';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
@@ -49,6 +51,7 @@ export function BusinessProfileScreen() {
   const [loading, setLoading] = useState(!business);
   const [refreshing, setRefreshing] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   // El drawer (siempre montado durante la sesión) ya trae el negocio al
   // entrar al panel — si ya está en el store no hace falta volver a pedirlo
@@ -74,6 +77,15 @@ export function BusinessProfileScreen() {
   function handleSaved() {
     setFormVisible(false);
     refreshMyBusiness();
+  }
+
+  /** Cerrar sesión: antes vivía en el pie del sidebar — al quedar tan
+   * apretado con el resto de la navegación, se movió a "Mi negocio" (mismo
+   * lugar donde ya vive para admin y cliente/repartidor). */
+  async function handleLogout() {
+    setSigningOut(true);
+    await signOutEverywhere();
+    setSigningOut(false);
   }
 
   if (loading && !business) {
@@ -270,6 +282,24 @@ export function BusinessProfileScreen() {
             </Text>
           )}
         </Card>
+
+        {/* Cerrar sesión: separada de las cards de datos, al final. */}
+        <View className="mt-6">
+          <Pressable
+            onPress={handleLogout}
+            disabled={signingOut}
+            className="flex-row items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 active:opacity-70"
+          >
+            {signingOut ? (
+              <ActivityIndicator size="small" color={colors.primaryColor} />
+            ) : (
+              <Ionicons name="log-out-outline" size={20} color={colors.primaryColor} />
+            )}
+            <Text className="flex-1 text-[14px] font-bold text-primary">
+              Cerrar sesión
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <BusinessFormModal

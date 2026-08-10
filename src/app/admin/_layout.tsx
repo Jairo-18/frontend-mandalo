@@ -84,6 +84,7 @@ export default function AdminLayout() {
         <Drawer.Screen name="accidents" options={{ title: 'Accidentes' }} />
         <Drawer.Screen name="tags" options={{ title: 'Etiquetas' }} />
         <Drawer.Screen name="categories" options={{ title: 'Categorías' }} />
+        <Drawer.Screen name="bulk-invite" options={{ title: 'Alta masiva' }} />
         <Drawer.Screen name="app-settings" options={{ title: 'Aplicación' }} />
       </Drawer>
     </GestureHandlerRootView>
