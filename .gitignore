@@ -1,5 +1,9 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# Worktrees temporales creados durante sesiones de trabajo (cada uno es un
+# checkout git aparte) — nunca deben trackearse como submódulo del repo.
+.claude/worktrees/
+
 # dependencies
 node_modules/
 

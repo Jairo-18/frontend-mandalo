@@ -314,6 +314,14 @@ export function BusinessFormModal({
         !selfBusiness && identificationNumber.trim() && !identificationTypeId
           ? 'Selecciona el tipo.'
           : undefined,
+      commissionOrderRate:
+        !selfBusiness &&
+        (!commissionOrderRate.trim() ||
+          Number.isNaN(Number(commissionOrderRate)) ||
+          Number(commissionOrderRate) < 0 ||
+          Number(commissionOrderRate) > 100)
+          ? 'La comisión va de 0 a 100.'
+          : undefined,
       // Sin coordenadas el negocio NO aparece en el explorar (filtro por
       // cercanía) ni se puede estimar la entrega.
       location:
@@ -383,7 +391,9 @@ export function BusinessFormModal({
           accountPassword,
         }),
       tagIds,
-      ...(selfBusiness ? {} : { isActive, commissionOrderRate }),
+      ...(selfBusiness
+        ? {}
+        : { isActive, commissionOrderRate: Number(commissionOrderRate) }),
       openTime: openTime || null,
       closeTime: closeTime || null,
       openDays: daysToPayload(openDaysSel),
@@ -870,19 +880,28 @@ export function BusinessFormModal({
 
       {!selfBusiness && (
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-bold text-ink">
-            Comisión sobre lo vendido
-          </Text>
-          <View className="flex-row gap-2.5">
+          <TextField
+            label="Comisión sobre lo vendido (%)"
+            icon="pricetag-outline"
+            format="digits"
+            value={commissionOrderRate}
+            onChangeText={(v) => {
+              setCommissionOrderRate(v);
+              clearError('commissionOrderRate');
+            }}
+            error={errors.commissionOrderRate}
+            placeholder="5"
+          />
+          <View className="mt-1 flex-row gap-2.5">
             <CommissionChip
               label="5% (primer mes)"
-              active={commissionOrderRate === 5}
-              onPress={() => setCommissionOrderRate(5)}
+              active={commissionOrderRate === '5'}
+              onPress={() => setCommissionOrderRate('5')}
             />
             <CommissionChip
               label="12% (regular)"
-              active={commissionOrderRate === 12}
-              onPress={() => setCommissionOrderRate(12)}
+              active={commissionOrderRate === '12'}
+              onPress={() => setCommissionOrderRate('12')}
             />
           </View>
         </View>
