@@ -97,7 +97,7 @@ export function ProductGridCard({
       </View>
 
       <View className="p-2.5">
-        <Text numberOfLines={2} className="min-h-[36px] text-[13px] font-bold text-ink">
+        <Text numberOfLines={2} className="text-[13px] font-bold text-ink">
           {product.name}
         </Text>
         <View className="mt-1 flex-row items-center gap-1.5">

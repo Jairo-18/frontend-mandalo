@@ -24,15 +24,6 @@ type Props = {
    * pantalla completa); false dentro de la hoja "Enviar a…" del home.
    */
   fullScreen?: boolean;
-  /**
-   * Avisa cuándo se abre/cierra el formulario interno (que a su vez puede
-   * abrir el mapa). Lo usa `AddressSheet` para ocultarse mientras tanto: con
-   * la hoja + el formulario + el mapa + el aviso de ubicación apilados (4
-   * modales de React Native), Android a veces no saca a la vista el más
-   * nuevo — con un modal menos en la pila (esta hoja oculta) queda con la
-   * misma profundidad que desde "Mis direcciones" (sin hoja), donde sí sale.
-   */
-  onFormVisibleChange?: (visible: boolean) => void;
 };
 
 /**
@@ -42,7 +33,7 @@ type Props = {
  * drawer. Lee el caché compartido (`use-user-data`) — las mutaciones fuerzan
  * el refresh y el resto de pantallas se enteran solas.
  */
-export function AddressManager({ fullScreen = false, onFormVisibleChange }: Props) {
+export function AddressManager({ fullScreen = false }: Props) {
   const colors = useResolvedAppColors();
   const { isDark } = useAppTheme();
   const { addresses, loading } = useUserAddresses();
@@ -56,11 +47,6 @@ export function AddressManager({ fullScreen = false, onFormVisibleChange }: Prop
     // Al montar revalida si el TTL venció (normalmente no toca la red).
     void refreshAddresses();
   }, []);
-
-  useEffect(() => {
-    onFormVisibleChange?.(formVisible);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formVisible]);
 
   /** Tocar una dirección = enviar ahí (se marca principal). */
   async function choose(item: UserAddress) {

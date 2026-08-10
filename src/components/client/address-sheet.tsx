@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -18,20 +18,28 @@ type Props = {
  * Hoja "Enviar a…" del home: la gestión de direcciones (elegir principal,
  * agregar, editar, eliminar) vive en `AddressManager` — compartida con la
  * pantalla "Mis direcciones" del drawer. Acá solo va el cascarón del modal.
+ *
+ * IMPORTANTE (bug real encontrado en Android, APK de producción): este modal
+ * NO debe ocultarse (`visible=false`) mientras el formulario interno (otro
+ * `<Modal>`, anidado dentro de `AddressManager`) está abierto. Se intentó
+ * antes con `visible={visible && !formOpen}` para bajar la cantidad de
+ * modales nativos apilados — pero en Android, a diferencia de iOS, el
+ * `<Modal>` de React Native con `visible=false` no solo oculta la ventana
+ * nativa: DESMONTA todo su subárbol de React (confirmado en el código fuente
+ * de `react-native/Libraries/Modal/Modal.js`: `_shouldShowModal()` en
+ * Android es solo `this.props.visible === true`, sin el fallback
+ * `isRendered` que sí tiene iOS). Como `AddressFormModal` es HIJO de
+ * `AddressManager`, que a su vez es hijo de ESTE modal, ocultar este modal
+ * al abrir el formulario lo desmontaba a él también — el usuario veía la
+ * hoja cerrarse sin que se abriera nada, y como el store de direcciones
+ * (`lib/user-data.ts`) es compartido, "Mis direcciones" también quedaba
+ * mostrando datos viejos después. Con los dos modales SIEMPRE visibles a la
+ * vez (patrón estándar, usado en todo el resto de la app) no hay desmontaje.
  */
 export function AddressSheet({ visible, onClose }: Props) {
   const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
-  // Mientras el formulario interno (y su mapa) está abierto, esta hoja se
-  // oculta: con los 2 modales anidados de acá + los del formulario + el
-  // mapa + el aviso de ubicación quedan 4 modales de React Native apilados,
-  // y Android no siempre saca a la vista el más nuevo (el aviso de ubicación
-  // quedaba invisible). Ocultar esta hoja de por medio baja la pila a la
-  // misma profundidad que desde "Mis direcciones" (sin esta hoja), donde sí
-  // funciona. El estado del formulario no se pierde: sigue montado, solo se
-  // deja de ver la ventana nativa de ESTE modal.
-  const [formOpen, setFormOpen] = useState(false);
 
   useEffect(() => {
     // Al abrir revalida si el TTL venció (normalmente no toca la red).
@@ -40,7 +48,7 @@ export function AddressSheet({ visible, onClose }: Props) {
 
   return (
     <Modal
-      visible={visible && !formOpen}
+      visible={visible}
       transparent
       animationType="slide"
       onRequestClose={onClose}
@@ -62,7 +70,7 @@ export function AddressSheet({ visible, onClose }: Props) {
           </Pressable>
         </View>
 
-        <AddressManager onFormVisibleChange={setFormOpen} />
+        <AddressManager />
       </View>
     </Modal>
   );

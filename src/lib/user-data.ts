@@ -134,7 +134,18 @@ function revalidate<T>(
   if (!force && fresh && data[key] !== null) {
     return inFlight[key] ?? Promise.resolve();
   }
-  if (inFlight[key]) return inFlight[key]!;
+
+  if (inFlight[key]) {
+    if (!force) return inFlight[key]!;
+    // Ya hay un fetch en curso, pero este llamado exige datos frescos DE
+    // VERDAD (p. ej. justo después de guardar una edición: el que ya está en
+    // vuelo pudo haber arrancado ANTES del cambio y traer datos viejos). No
+    // basta con reusarlo — se encadena un fetch nuevo apenas termine el
+    // actual, para no perder el `force`.
+    return inFlight[key]!.then(() =>
+      revalidate(key, true, fetcher, assign, allowGuest),
+    );
+  }
 
   const promise = fetcher()
     .then((value) => {

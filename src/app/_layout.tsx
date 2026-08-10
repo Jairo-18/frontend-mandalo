@@ -14,6 +14,7 @@ import { useColorScheme } from 'nativewind';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { LocationConsentHost } from '@/components/ui/location-consent-host';
 import { SigningOutOverlay } from '@/components/ui/signing-out-overlay';
 import { ToastHost } from '@/components/ui/toast';
@@ -55,7 +56,9 @@ export default function RootLayout() {
           <AnimatedSplashOverlay />
           <AppDataProvider>
             <CartProvider>
-              <Stack screenOptions={{ headerShown: false }} />
+              <ErrorBoundary>
+                <Stack screenOptions={{ headerShown: false }} />
+              </ErrorBoundary>
             </CartProvider>
             <SigningOutOverlay />
             <ToastHost />
