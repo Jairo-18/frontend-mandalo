@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
@@ -13,11 +13,13 @@ type Props = {
 const SIZE = 56;
 const PLUS_LENGTH = 20;
 const PLUS_THICKNESS = 3;
-// Corrección manual calibrada con el usuario contra la guía amarilla: el
-// centro matemático (SIZE/2) rendía el "+" visualmente 3px a la derecha y
-// 3px abajo de donde debía verse.
-const OFFSET_X = -3;
-const OFFSET_Y = -3;
+// Corrección manual calibrada con el usuario contra la guía amarilla: en
+// NATIVO (Android probado) el centro matemático (SIZE/2) rendía el "+"
+// visualmente 3px a la derecha y 3px abajo de donde debía verse — no pasa en
+// web (el LinearGradient de expo-linear-gradient ahí es un <div> con CSS
+// gradient, sin la rareza de posicionamiento que tiene el nativo).
+const OFFSET_X = Platform.OS === 'web' ? 0 : -3;
+const OFFSET_Y = Platform.OS === 'web' ? 0 : -3;
 
 /** Botón flotante de crear (queda arriba del paginador). Degradado de marca
  * (antes `bg-primary` sólido). */
