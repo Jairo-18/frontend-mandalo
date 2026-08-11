@@ -22,7 +22,7 @@ function RoleCard({ icon, title, desc, onPress }: RoleCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="mb-4 flex-row items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm active:border-primary active:bg-primary-tint"
+      className="mb-4 flex-row items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm active:opacity-70"
     >
       <View className="h-14 w-14 items-center justify-center">
         <Ionicons name={icon} size={32} color={colors.primaryColor} />

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import {
   DeliveryPosition,
@@ -36,12 +36,24 @@ function regionFor(points: LatLng[]) {
 
 /**
  * Mapa en vivo del pedido: pin del negocio (recogida), pin de la dirección
- * de entrega y — mientras está EN RUTA — la moto del repartidor moviéndose
- * (evento `delivery:position` del socket). El repartidor además ve su propio
- * punto azul para orientarse. Si el pedido no tiene coordenadas no pinta nada.
+ * de entrega y — desde que el repartidor TOMA el pedido (PREP, camino al
+ * negocio) hasta que lo entrega (RUTA) — la moto moviéndose (evento
+ * `delivery:position` del socket, ver `delivery-tracker.ts`). El repartidor
+ * además ve su propio punto azul para orientarse. Si el pedido no tiene
+ * coordenadas no pinta nada.
+ *
+ * Líneas de ruta, cada una solo cuando hay datos reales para trazarla:
+ * - Negocio → destino (línea de referencia recta, siempre que haya ambos
+ *   puntos): "hacia dónde va el pedido en general".
+ * - Repartidor → negocio (mientras está EN PREPARACIÓN, camino a recoger) o
+ *   Repartidor → destino (mientras está EN RUTA, camino a entregar): el
+ *   tramo que falta EN VIVO, solo con la moto ya reportando posición — más
+ *   útil que la de arriba porque se actualiza con el avance real.
+ * Son líneas rectas (sin Directions API/costo extra) — no siguen calles.
  */
 export function OrderMap({ order, perspective }: Props) {
   const mapRef = useRef<MapView>(null);
+  const isOnRoute = order.stateType?.code === 'RUTA';
 
   const business: LatLng | null =
     order.organizational?.latitude != null &&
@@ -98,12 +110,36 @@ export function OrderMap({ order, perspective }: Props) {
         // tiles de Google en iOS: llenar ios.config.googleMapsApiKey y poner
         // PROVIDER_GOOGLE también acá.
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        // Satélite real (foto), mismo motivo que en el picker de dirección.
+        mapType="hybrid"
         style={{ height: 320, width: '100%' }}
         initialRegion={regionFor(points)}
         showsUserLocation={perspective === 'delivery'}
         showsMyLocationButton={perspective === 'delivery'}
         toolbarEnabled={false}
       >
+        {business && destination && (
+          <Polyline
+            coordinates={[business, destination]}
+            strokeColor={`${getAppColors().mutedColor}80`}
+            strokeWidth={2}
+            lineDashPattern={[8, 6]}
+          />
+        )}
+        {isOnRoute && courier && destination && (
+          <Polyline
+            coordinates={[courier, destination]}
+            strokeColor={getAppColors().primaryColor}
+            strokeWidth={3}
+          />
+        )}
+        {!isOnRoute && courier && business && (
+          <Polyline
+            coordinates={[courier, business]}
+            strokeColor={getAppColors().primaryColor}
+            strokeWidth={3}
+          />
+        )}
         {business && (
           <Marker
             coordinate={business}

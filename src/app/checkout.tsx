@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -166,8 +167,8 @@ export default function CheckoutScreen() {
         </View>
 
         <View className="flex-1 items-center justify-center px-8">
-          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary-tint">
-            <Ionicons name="cart-outline" size={30} color={colors.primaryColor} />
+          <View className="mb-4 h-16 w-16 items-center justify-center">
+            <Ionicons name="cart-outline" size={36} color={colors.primaryColor} />
           </View>
           <Text className="text-center text-[20px] font-extrabold text-ink">
             Crea tu cuenta para pedir
@@ -181,8 +182,14 @@ export default function CheckoutScreen() {
           <View className="mt-7 w-full">
             <Pressable
               onPress={() => router.push('/auth/quick-register')}
-              className="h-[54px] items-center justify-center rounded-2xl bg-primary active:opacity-80"
+              className="h-[54px] items-center justify-center overflow-hidden rounded-2xl active:opacity-80"
             >
+              <LinearGradient
+                colors={[colors.primaryColor, colors.darkColor]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ position: 'absolute', inset: 0 }}
+              />
               <Text className="text-base font-extrabold text-white">
                 Crear cuenta y continuar
               </Text>
@@ -435,10 +442,16 @@ export default function CheckoutScreen() {
         <Pressable
           onPress={confirm}
           disabled={submitting || loadingFee}
-          className={`h-[54px] flex-row items-center justify-center gap-2 rounded-2xl bg-primary active:opacity-80 ${
+          className={`h-[54px] flex-row items-center justify-center gap-2 overflow-hidden rounded-2xl active:opacity-80 ${
             submitting || loadingFee ? 'opacity-60' : ''
           }`}
         >
+          <LinearGradient
+            colors={[colors.primaryColor, colors.darkColor]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ position: 'absolute', inset: 0 }}
+          />
           {submitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (

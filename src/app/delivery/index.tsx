@@ -144,8 +144,8 @@ export default function DeliveryScreen() {
       <View className="flex-1 bg-card">
       <PanelHeader title="Repartir" subtitle="Panel del domiciliario" />
       <View className="flex-1 items-center justify-center px-8">
-        <View className="mb-6 h-20 w-20 items-center justify-center rounded-full bg-primary-tint">
-          <Ionicons name="hourglass-outline" size={40} color={getAppColors().primaryColor} />
+        <View className="mb-6 h-20 w-20 items-center justify-center">
+          <Ionicons name="hourglass-outline" size={48} color={getAppColors().primaryColor} />
         </View>
         <Text className="text-center text-2xl font-extrabold text-ink">
           Cuenta en proceso de habilitación

@@ -273,10 +273,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [cssVars]);
 
   if (state.loading) {
+    // Colores explícitos (no `bg-card`/`text-muted`): esta pantalla sale
+    // ANTES de que se resuelva la preferencia de tema real (guardada en
+    // disco, async) y antes de que lleguen los appSettings del backend —
+    // usar clases dependientes del tema acá corría el riesgo de mezclar un
+    // `isDark` viejo con colores nuevos y verse gris/deslavado. Con hex fijo
+    // (los defaults de marca) se ve igual siempre, sin parpadeo.
     return (
-      <View className="flex-1 items-center justify-center bg-card">
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: '#FFFFFF' }}
+      >
         <ActivityIndicator size="large" color={getAppColors().primaryColor} />
-        <Text className="mt-4 text-sm text-muted">Cargando Mandalo…</Text>
+        <Text className="mt-4 text-sm" style={{ color: '#7A7A8A' }}>
+          Cargando Mandalo…
+        </Text>
       </View>
     );
   }

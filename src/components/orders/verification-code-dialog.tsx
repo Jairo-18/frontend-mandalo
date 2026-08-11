@@ -73,8 +73,8 @@ export function VerificationCodeDialog({
             className="w-full rounded-3xl border border-border bg-card p-6"
             onPress={() => {}}
           >
-            <View className="mb-4 h-14 w-14 items-center justify-center self-center rounded-full bg-primary-tint">
-              <Ionicons name="keypad-outline" size={26} color={colors.primaryColor} />
+            <View className="mb-4 h-14 w-14 items-center justify-center self-center">
+              <Ionicons name="keypad-outline" size={30} color={colors.primaryColor} />
             </View>
 
             <Text className="text-center text-lg font-extrabold text-ink">

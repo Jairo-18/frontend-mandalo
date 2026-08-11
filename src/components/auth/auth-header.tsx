@@ -29,7 +29,12 @@ export function AuthHeader({
 
   return (
     <LinearGradient
-      colors={[WHITE, primaryColor, primaryColor]}
+      // 3 paradas (antes solo llegaba a primaryColor y se quedaba plana ahí,
+      // sin oscurecer): blanco→primario→oscuro, mismo patrón que los
+      // degradados de sidebars/navbars (`[primaryColor, darkColor]`) — así
+      // el header de login SÍ recorre todo el rango de marca, como el
+      // degradado real del ícono de la app (rojo→vino oscuro).
+      colors={[WHITE, primaryColor, darkColor]}
       // El colchón inferior debe cubrir el solape de la tarjeta blanca de las
       // pantallas (-mt-7 = 28px) + un margen visible bajo el subtítulo; con
       // menos, el blanco tapa el texto del header.

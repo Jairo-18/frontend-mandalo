@@ -72,8 +72,8 @@ export default function AcceptTermsScreen() {
         <AuthHeader compact subtitle="Términos y condiciones" />
 
         <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
-          <View className="mb-4 h-14 w-14 items-center justify-center self-center rounded-full bg-primary-tint">
-            <Ionicons name="shield-checkmark-outline" size={28} color={colors.primaryColor} />
+          <View className="mb-4 h-14 w-14 items-center justify-center self-center">
+            <Ionicons name="shield-checkmark-outline" size={32} color={colors.primaryColor} />
           </View>
           <Text className="text-center text-[22px] font-extrabold text-ink">
             Un último paso

@@ -112,6 +112,10 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
         <MapView
           ref={mapRef}
           provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+          // Satélite real (foto) + calles/nombres encima — pedido explícito
+          // ("relieve real", no el topográfico estilizado de "terrain"). Se
+          // ve en las dos plataformas sin key ni costo extra.
+          mapType="hybrid"
           style={{ flex: 1 }}
           initialRegion={{ ...center, latitudeDelta: DELTA, longitudeDelta: DELTA }}
           onRegionChangeComplete={handleRegionChangeComplete}

@@ -75,10 +75,15 @@ export function DeliveryOrders() {
     ),
   );
 
-  // Tracking en vivo: mientras tenga pedidos EN RUTA, su GPS viaja por el
-  // socket al mapa del cliente (se apaga solo al entregar). El permiso de
-  // ubicación en segundo plano queda detrás de un aviso propio (abajo, con
-  // el YesNoDialog) — Google Play lo exige antes del diálogo del sistema.
+  // Tracking en vivo: desde que el repartidor TOMA el pedido (PREP, camino
+  // al negocio a recogerlo) hasta que lo entrega (RUTA), su GPS viaja por el
+  // socket al mapa del cliente (se apaga solo al entregar). Antes solo se
+  // transmitía en RUTA — el tramo "repartidor→negocio" se veía como un
+  // punto fijo sin movimiento porque no había dato real que dibujar; con
+  // PREP incluido acá, el mapa (`OrderMap`) ya tiene una posición en vivo
+  // para esa etapa también. El permiso de ubicación en segundo plano queda
+  // detrás de un aviso propio (abajo, con el YesNoDialog) — Google Play lo
+  // exige antes del diálogo del sistema.
   const {
     needsBackgroundDisclosure,
     grantBackgroundConsent,
@@ -86,7 +91,9 @@ export function DeliveryOrders() {
   } = useDeliveryPositionBroadcast(
     mine.items
       .filter(
-        (o) => o.stateType?.code === 'RUTA' && o.deliveryUserId === myId,
+        (o) =>
+          (o.stateType?.code === 'PREP' || o.stateType?.code === 'RUTA') &&
+          o.deliveryUserId === myId,
       )
       .map((o) => o.id),
   );
@@ -232,10 +239,10 @@ export function DeliveryOrders() {
 
       {tab === 'available' && !hasArl ? (
         <View className="flex-1 items-center justify-center px-8">
-          <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-primary-tint">
+          <View className="mb-5 h-16 w-16 items-center justify-center">
             <Ionicons
               name="shield-checkmark-outline"
-              size={32}
+              size={38}
               color={colors.primaryColor}
             />
           </View>

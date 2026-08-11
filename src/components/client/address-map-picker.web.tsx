@@ -94,8 +94,8 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
         </View>
 
         <View className="flex-1 items-center justify-center px-8">
-          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary-tint">
-            <Ionicons name="location" size={30} color={colors.primaryColor} />
+          <View className="mb-4 h-16 w-16 items-center justify-center">
+            <Ionicons name="location" size={36} color={colors.primaryColor} />
           </View>
           <Text className="mb-2 text-center text-[15px] font-bold text-ink">
             La versión web no tiene mapa interactivo

@@ -26,10 +26,10 @@ export function InactiveAccountNotice({ title, menu }: Props) {
       <View className="flex-1 bg-surface">
         <PanelHeader title={title} menu={menu} />
         <View className="flex-1 items-center justify-center px-8">
-          <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-primary-tint">
+          <View className="mb-5 h-16 w-16 items-center justify-center">
             <Ionicons
               name="hourglass-outline"
-              size={32}
+              size={38}
               color={getAppColors().primaryColor}
             />
           </View>

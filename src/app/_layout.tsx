@@ -21,6 +21,7 @@ import { ToastHost } from '@/components/ui/toast';
 import { AppDataProvider } from '@/context/app-data';
 import { AppThemeProvider } from '@/context/app-theme';
 import { CartProvider } from '@/context/cart';
+import { useAppUpdateCheck } from '@/lib/app-update';
 import { usePushNotifications } from '@/lib/push';
 // Define la tarea de tracking en background del repartidor (import con efecto:
 // TaskManager exige que la tarea exista ANTES de que el SO la dispare).
@@ -32,6 +33,10 @@ export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   // Push: registra el token al haber sesión y navega al tocar notificaciones.
   usePushNotifications();
+  // Android: si hay una versión más nueva en Play Store, la descarga sola y
+  // avisa para reiniciar — sin esto, el tester queda a merced de cuándo su
+  // teléfono decida actualizar solo.
+  useAppUpdateCheck();
   // Tipografía de marca (Roboto, Google Fonts). Las claves quedan con el
   // mismo nombre de familia que usa el <link> de Google Fonts en +html.tsx
   // (fontFamily.sans en tailwind.config.js) para que "font-sans" resuelva

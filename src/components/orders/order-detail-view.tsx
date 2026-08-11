@@ -551,8 +551,8 @@ function ContactRow({
   const colors = useResolvedAppColors();
   return (
     <View className="mb-3 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5">
-      <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-tint">
-        <Ionicons name={icon} size={18} color={colors.primaryColor} />
+      <View className="h-10 w-10 items-center justify-center">
+        <Ionicons name={icon} size={22} color={colors.primaryColor} />
       </View>
       <View className="flex-1">
         {!!caption && (

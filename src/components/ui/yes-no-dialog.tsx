@@ -90,14 +90,10 @@ export function YesNoDialog({
             contentContainerStyle={{ flexGrow: 1 }}
             showsVerticalScrollIndicator={false}
           >
-            <View
-              className={`mb-4 h-14 w-14 self-center items-center justify-center rounded-full ${
-                destructive ? 'bg-red-50' : 'bg-primary-tint'
-              }`}
-            >
+            <View className="mb-4 h-14 w-14 self-center items-center justify-center">
               <Ionicons
                 name={headerIcon}
-                size={26}
+                size={30}
                 color={destructive ? '#DC2626' : getAppColors().primaryColor}
               />
             </View>

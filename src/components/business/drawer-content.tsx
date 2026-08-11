@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -12,6 +12,7 @@ import { usePendingOrdersCount } from '@/hooks/use-pending-orders-count';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { useSession } from '@/hooks/use-session';
 import { refreshMyBusiness } from '@/lib/my-business';
+import { signOutEverywhere } from '@/lib/sign-out';
 import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 
 type BusinessRoute =
@@ -43,14 +44,15 @@ type Props = { navigation: { closeDrawer: () => void } };
 /**
  * Sidebar del panel del negocio (rol NEGO): cabecera con el logo y el nombre
  * del negocio + el dueño/representante autenticado (tocarla abre "Mi
- * negocio", que también trae "Cerrar sesión"), navegación por secciones y el
- * link a "¿Necesitas ayuda?" abajo. Espejo del sidebar del panel admin.
+ * negocio"), navegación por secciones, cerrar sesión y el link a
+ * "¿Necesitas ayuda?" abajo. Espejo del sidebar del panel admin.
  */
 export function BusinessDrawerContent({ navigation }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const colors = useResolvedAppColors();
+  const [signingOut, setSigningOut] = useState(false);
 
   // Negocio del usuario autenticado (nombre comercial + logo de la cabecera),
   // desde el store REACTIVO compartido con la pantalla "Mi negocio": al guardar
@@ -74,6 +76,12 @@ export function BusinessDrawerContent({ navigation }: Props) {
   function go(href: BusinessRoute) {
     navigation.closeDrawer();
     if (pathname !== href) router.navigate(href);
+  }
+
+  async function handleLogout() {
+    setSigningOut(true);
+    await signOutEverywhere();
+    setSigningOut(false);
   }
 
   return (
@@ -156,9 +164,26 @@ export function BusinessDrawerContent({ navigation }: Props) {
         })}
       </View>
 
+      {/* Cerrar sesión */}
+      <View className="border-t border-border px-3 pt-3">
+        <Pressable
+          onPress={handleLogout}
+          disabled={signingOut}
+          className="flex-row items-center gap-3 rounded-xl px-3.5 py-3 active:opacity-70"
+        >
+          {signingOut ? (
+            <ActivityIndicator size="small" color={colors.primaryColor} />
+          ) : (
+            <Ionicons name="log-out-outline" size={21} color={colors.primaryColor} />
+          )}
+          <Text className="text-[15px] font-bold text-primary">
+            Cerrar sesión
+          </Text>
+        </Pressable>
+      </View>
+
       {/* Ayuda: guía de uso + legales, agrupados en una sola pantalla aparte
-          (antes eran 3 botones sueltos acá, muy apretado). "Cerrar sesión" se
-          movió a "Mi negocio" (mismo patrón que el sidebar admin). */}
+          (antes eran 3 botones sueltos acá, muy apretado). */}
       <View
         className="border-t border-border px-3 pt-3"
         style={{ paddingBottom: insets.bottom + 12 }}

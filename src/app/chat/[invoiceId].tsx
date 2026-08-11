@@ -379,10 +379,21 @@ export default function ChatScreen() {
                   <Pressable
                     onPress={() => send(text)}
                     disabled={sending || !text.trim() || cooldown > 0}
-                    className={`h-12 items-center justify-center rounded-full px-4 ${
-                      text.trim() && cooldown === 0 ? 'bg-primary' : 'bg-border'
+                    className={`h-12 w-12 items-center justify-center overflow-hidden rounded-full ${
+                      text.trim() && cooldown === 0 ? '' : 'bg-border'
                     } active:opacity-80`}
                   >
+                    {text.trim() && cooldown === 0 && (
+                      <LinearGradient
+                        colors={[colors.primaryColor, colors.darkColor]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                        }}
+                      />
+                    )}
                     {sending ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
                     ) : cooldown > 0 ? (
