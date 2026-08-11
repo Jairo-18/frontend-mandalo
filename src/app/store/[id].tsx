@@ -53,8 +53,8 @@ export default function StoreScreen() {
   const storeId = Number(id);
 
   const cart = useCart();
-  // Grid responsivo: 2 columnas en celular, hasta 6 en web ancho/tablet.
-  const numColumns = columnsForWidth(useWindowDimensions().width);
+  // Grid responsivo: 3 columnas en celular, hasta 6 en web ancho/tablet.
+  const numColumns = columnsForWidth(useWindowDimensions().width, 3);
   const [business, setBusiness] = useState<ExploreBusiness | null>(null);
   const [categories, setCategories] = useState<ExploreFilterItem[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(true);

@@ -14,6 +14,7 @@ import { QuickAction } from '@/components/ui/quick-action';
 import { SectionTitle } from '@/components/ui/section-title';
 import { StatCard } from '@/components/ui/stat-card';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useMyBusiness } from '@/hooks/use-my-business';
 import { usePendingOrdersCount } from '@/hooks/use-pending-orders-count';
 import { useSession } from '@/hooks/use-session';
 import { BusinessDashboardStats, dashboardService } from '@/services/dashboard';
@@ -48,6 +49,8 @@ export default function BusinessDashboardScreen() {
 
   // Saludo del héroe (useSession: regla React Compiler, no getSession suelto).
   const firstName = useSession()?.user.fullName?.split(' ')[0];
+  const business = useMyBusiness();
+  const businessName = business?.tradeName || business?.legalName;
   const pendingOrders = usePendingOrdersCount();
 
   const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
@@ -95,9 +98,11 @@ export default function BusinessDashboardScreen() {
               ¡Hola{firstName ? `, ${firstName}` : ''}!
             </Text>
             <Text className="mt-0.5 text-xs text-white/70">
-              Así va{' '}
-              <Text className="font-extrabold text-primary-soft">tu negocio</Text>{' '}
-              hoy.
+              Tu negocio{' '}
+              <Text className="font-extrabold text-primary-soft">
+                {businessName || 'tu negocio'}
+              </Text>{' '}
+              va así hoy.
             </Text>
           </View>
           <ThemeToggle

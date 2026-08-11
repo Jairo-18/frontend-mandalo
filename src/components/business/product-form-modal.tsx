@@ -9,7 +9,6 @@ import { TextField } from '@/components/ui/text-field';
 import { UploadProgressBar } from '@/components/ui/upload-progress-bar';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { copToNumber, formatText } from '@/lib/text-format';
-import { adminCategoriesService } from '@/services/admin-catalogs';
 import {
   BusinessProduct,
   BusinessProductPayload,
@@ -26,6 +25,14 @@ type Props = {
   onClose: () => void;
   /** Se guardó bien: la pantalla recarga el listado y cierra el modal. */
   onSaved: () => void;
+  /**
+   * Categorías ya precargadas por la pantalla padre (una sola vez, al montar
+   * el listado) — antes este modal las volvía a pedir CADA VEZ que se abría
+   * (crear o editar), lo que se notaba como que la categoría "cargaba
+   * después" que el resto del producto en el Select.
+   */
+  categories: SelectOption[];
+  loadingCategories: boolean;
 };
 
 /**
@@ -34,7 +41,14 @@ type Props = {
  * marcadas para quitar se eliminan también al guardar. Cancelar no deja
  * huérfanos (mismo patrón que el avatar/logo del panel admin).
  */
-export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) {
+export function ProductFormModal({
+  visible,
+  editing,
+  onClose,
+  onSaved,
+  categories,
+  loadingCategories,
+}: Props) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [price, setPrice] = useState('');
@@ -48,9 +62,6 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
   const [savedImages, setSavedImages] = useState<string[]>([]);
   const [removedUrls, setRemovedUrls] = useState<string[]>([]);
   const [pendingUris, setPendingUris] = useState<string[]>([]);
-
-  const [categories, setCategories] = useState<SelectOption[]>([]);
-  const [loadingCategories, setLoadingCategories] = useState(false);
 
   const [saving, setSaving] = useState(false);
   // Progreso agregado de las fotos pendientes (varias van una tras otra, no
@@ -102,28 +113,6 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
     setRemovedUrls([]);
     setPendingUris([]);
   }, [visible, editing, setErrors]);
-
-  // Categorías de producto para el Select (una vez por apertura).
-  useEffect(() => {
-    if (!visible) return;
-    let alive = true;
-    setLoadingCategories(true);
-    adminCategoriesService
-      .paginated({ page: 1, perPage: 100 })
-      .then((res) => {
-        if (!alive) return;
-        setCategories(res.data.map((c) => ({ label: c.name, value: c.id })));
-      })
-      .catch(() => {
-        // El interceptor HTTP ya mostró el error; se puede guardar sin categoría.
-      })
-      .finally(() => {
-        if (alive) setLoadingCategories(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [visible]);
 
   function validateForm() {
     const priceValue = copToNumber(price);
@@ -284,6 +273,9 @@ export function ProductFormModal({ visible, editing, onClose, onSaved }: Props) 
         onChangeText={setDescription}
         placeholder="Doble carne, queso y tocineta."
         multiline
+        numberOfLines={6}
+        maxLength={500}
+        showCharCount
       />
 
       <View className="mb-6 mt-1">

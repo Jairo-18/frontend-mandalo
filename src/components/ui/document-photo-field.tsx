@@ -22,6 +22,17 @@ type Props = {
   error?: string;
   /** Icono del placeholder cuando no hay foto. */
   placeholderIcon?: keyof typeof Ionicons.glyphMap;
+  /** Solo ver: tocar abre la preview directo, sin opción de cambiar/quitar. */
+  readOnly?: boolean;
+  /** Alto del recuadro (default 130) — más grande para previews que necesitan
+   *  verse legibles, p. ej. el QR de Bancolombia. */
+  height?: number;
+  /**
+   * "contain" en vez de "cover" (default): para imágenes CUADRADAS en un
+   * recuadro ancho (el QR de Bancolombia) — con "cover" se recortarían los
+   * bordes y el código podría dejar de ser escaneable.
+   */
+  contain?: boolean;
 };
 
 /**
@@ -36,6 +47,9 @@ export function DocumentPhotoField({
   onRemove,
   error,
   placeholderIcon = 'card-outline',
+  readOnly = false,
+  height = 130,
+  contain = false,
 }: Props) {
   const colors = useResolvedAppColors();
   const [preview, setPreview] = useState<string | null>(null);
@@ -77,8 +91,12 @@ export function DocumentPhotoField({
       <Text className="mb-2 text-sm font-bold text-ink">{label}</Text>
 
       <Pressable
-        onPress={() => setMenuVisible(true)}
-        className={`h-[130px] items-center justify-center overflow-hidden rounded-xl border active:opacity-80 ${
+        onPress={() =>
+          readOnly ? uri && setPreview(uri) : setMenuVisible(true)
+        }
+        disabled={readOnly && !uri}
+        style={{ height }}
+        className={`items-center justify-center overflow-hidden rounded-xl border active:opacity-80 ${
           error
             ? 'border-red-500'
             : uri
@@ -91,12 +109,14 @@ export function DocumentPhotoField({
             <Image
               source={{ uri }}
               style={{ width: '100%', height: '100%' }}
-              resizeMode="cover"
+              resizeMode={contain ? 'contain' : 'cover'}
             />
             {/* Badge de cámara: se puede tocar para cambiar la foto */}
-            <View className="absolute bottom-2 right-2 h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary">
-              <Ionicons name="camera-outline" size={15} color="#FFFFFF" />
-            </View>
+            {!readOnly && (
+              <View className="absolute bottom-2 right-2 h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary">
+                <Ionicons name="camera-outline" size={15} color="#FFFFFF" />
+              </View>
+            )}
           </>
         ) : (
           <>

@@ -114,6 +114,7 @@ export default function ClientOrderDetailScreen() {
       ) : (
         <>
           <ScrollView
+            style={{ flex: 1 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}

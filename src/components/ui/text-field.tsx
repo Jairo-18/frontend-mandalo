@@ -32,6 +32,12 @@ type Props = TextInputProps & {
    * "¿Guardar/actualizar contraseña?" al ver el par correo+contraseña.
    */
   noAutofill?: boolean;
+  /**
+   * Muestra "N/maxLength" debajo del campo mientras se escribe (requiere
+   * pasar también `maxLength`). Pensado para descripciones largas
+   * (`multiline`) donde el límite no es obvio a simple vista.
+   */
+  showCharCount?: boolean;
 };
 
 /** Props de teclado que cada formato trae por defecto (sobrescribibles). */
@@ -60,6 +66,7 @@ export function TextField({
   format,
   readOnly,
   noAutofill,
+  showCharCount,
   onChangeText,
   onBlur,
   multiline,
@@ -139,9 +146,19 @@ export function TextField({
           </Pressable>
         )}
       </View>
-      {error ? (
-        <Text className="mt-1 text-xs font-medium text-red-500">{error}</Text>
-      ) : null}
+      <View className="mt-1 flex-row items-start justify-between">
+        {error ? (
+          <Text className="flex-1 text-xs font-medium text-red-500">{error}</Text>
+        ) : (
+          <View className="flex-1" />
+        )}
+        {showCharCount && inputProps.maxLength != null && (
+          <Text className="text-xs font-medium text-muted">
+            {typeof inputProps.value === 'string' ? inputProps.value.length : 0}/
+            {inputProps.maxLength}
+          </Text>
+        )}
+      </View>
     </View>
   );
 }

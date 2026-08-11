@@ -165,7 +165,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
       </View>
 
       {/* Cerrar sesión */}
-      <View className="border-t border-border px-3 pt-3">
+      <View className="border-t border-border px-3">
         <Pressable
           onPress={handleLogout}
           disabled={signingOut}

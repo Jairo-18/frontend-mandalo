@@ -31,6 +31,8 @@ type Props = {
   placeholderIcon?: keyof typeof Ionicons.glyphMap;
   /** Mensaje de error de validación (para fotos obligatorias). */
   error?: string;
+  /** Solo ver: tocar abre la preview directo, sin opción de cambiar/quitar. */
+  readOnly?: boolean;
 };
 
 const SIZE = 104;
@@ -50,6 +52,7 @@ export function PhotoField({
   fallbackSource,
   placeholderIcon = 'person-outline',
   error,
+  readOnly = false,
 }: Props) {
   const [picked, setPicked] = useState<{
     uri: string;
@@ -101,7 +104,13 @@ export function PhotoField({
 
   return (
     <View className="mb-4 items-center">
-      <Pressable onPress={() => setMenuVisible(true)} className="active:opacity-80">
+      <Pressable
+        onPress={() =>
+          readOnly ? shown && setPreview(shown) : setMenuVisible(true)
+        }
+        disabled={readOnly && !shown}
+        className="active:opacity-80"
+      >
         <View
           className={`items-center justify-center overflow-hidden bg-primary-tint ${radiusClass}`}
           style={{ width: SIZE, height: SIZE }}
@@ -123,10 +132,12 @@ export function PhotoField({
           )}
         </View>
 
-        {/* Badge de cámara */}
-        <View className="absolute -bottom-1 -right-1 h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-primary">
-          <Ionicons name="camera-outline" size={17} color="#FFFFFF" />
-        </View>
+        {/* Badge de cámara (solo cuando se puede editar) */}
+        {!readOnly && (
+          <View className="absolute -bottom-1 -right-1 h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-primary">
+            <Ionicons name="camera-outline" size={17} color="#FFFFFF" />
+          </View>
+        )}
       </Pressable>
 
       <Text className="mt-2 text-xs font-medium text-muted">{label}</Text>

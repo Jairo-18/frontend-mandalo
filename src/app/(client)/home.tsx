@@ -58,9 +58,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const cart = useCart();
-  // Grid responsivo: 2 columnas en celular, hasta 6 en web ancho/tablet
-  // (mismo cálculo que store/[id].tsx, ver lib/grid-style.ts).
-  const numColumns = columnsForWidth(useWindowDimensions().width);
+  // Grid responsivo: 3 columnas en celular (pedido del usuario, 2 se veían
+  // muy grandes), hasta 6 en web ancho/tablet (mismo cálculo que
+  // store/[id].tsx, ver lib/grid-style.ts).
+  const numColumns = columnsForWidth(useWindowDimensions().width, 3);
   // Botón "ver filtros" del buscador: abre la hoja de filtros (select), los
   // sliders "Negocios"/"Categorías" del layout siguen ahí, es otra forma de
   // elegir lo mismo.

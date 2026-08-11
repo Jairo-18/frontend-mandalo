@@ -155,7 +155,7 @@ export function AddressManager({ fullScreen = false }: Props) {
         </View>
       ) : (
         <FlatList
-          className={fullScreen ? 'flex-1' : undefined}
+          style={fullScreen ? { flex: 1 } : undefined}
           data={addresses}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}

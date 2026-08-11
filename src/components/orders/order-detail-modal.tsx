@@ -126,6 +126,7 @@ export function OrderDetailModal({
             return (
               <>
                 <ScrollView
+                  style={{ flex: 1 }}
                   contentContainerStyle={
                     actionContent ? undefined : { paddingBottom: insets.bottom + 12 }
                   }

@@ -186,6 +186,9 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
               name="locate"
               size={20}
               color={getAppColors().primaryColor}
+              // Mismo padding de fuente extra de Android que corre los
+              // glifos dentro de su caja (ver filter-chips.tsx).
+              style={{ includeFontPadding: false }}
             />
           )}
         </Pressable>

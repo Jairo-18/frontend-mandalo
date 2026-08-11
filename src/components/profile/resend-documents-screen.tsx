@@ -130,7 +130,7 @@ export function ResendDocumentsScreen() {
           <Ionicons name="arrow-back" size={20} color={colors.inkColor} />
         </Pressable>
         <Text className="flex-1 text-lg font-extrabold text-ink">
-          Reenviar documentos
+          {locked ? 'Mis documentos' : 'Reenviar documentos'}
         </Text>
         <ThemeToggle />
       </View>
@@ -138,20 +138,70 @@ export function ResendDocumentsScreen() {
       {loading ? (
         <ActivityIndicator size="large" color={colors.primaryColor} style={{ marginTop: 48 }} />
       ) : locked ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <Ionicons name="shield-checkmark-outline" size={52} color="#22C55E" />
-          <Text className="mt-4 text-center text-lg font-extrabold text-ink">
-            Documentos verificados
-          </Text>
-          <Text className="mt-2 text-center text-[14px] leading-5 text-muted">
-            Tu cuenta ya está verificada, así que tus documentos quedaron
-            congelados. Si necesitas actualizar alguno, contacta al
-            administrador.
-          </Text>
-          <Pressable onPress={() => (router.replace('/delivery/profile'))} className="mt-6">
-            <Text className="text-[15px] font-bold text-primary">Volver</Text>
-          </Pressable>
-        </View>
+        <KeyboardAwareScroll>
+          <View className="px-5 pb-10">
+            <View className="mb-4 mt-2 flex-row items-center gap-2 rounded-xl bg-surface px-3.5 py-3">
+              <Ionicons name="shield-checkmark-outline" size={20} color="#22C55E" />
+              <Text className="flex-1 text-[13px] leading-5 text-muted">
+                Tu cuenta ya está verificada — tus documentos quedaron
+                congelados. Para actualizar alguno, contacta al administrador.
+              </Text>
+            </View>
+
+            <PhotoField
+              label="Foto de tu rostro"
+              imageUrl={avatarUri}
+              onChange={() => {}}
+              shape="circle"
+              fallbackSource={DEFAULT_USER_AVATAR}
+              placeholderIcon="person-outline"
+              readOnly
+            />
+            <DocumentPhotoField
+              label="Documento — por delante"
+              uri={idFrontUri}
+              onChange={() => {}}
+              readOnly
+            />
+            <DocumentPhotoField
+              label="Documento — por detrás"
+              uri={idBackUri}
+              onChange={() => {}}
+              readOnly
+            />
+
+            <FormSection label="Vehículo y documentos" />
+            <TextField
+              label="Placa del vehículo"
+              icon="bicycle-outline"
+              format="identification"
+              value={vehiclePlate}
+              onChangeText={() => {}}
+              editable={false}
+            />
+            <DocumentPhotoField
+              label="Licencia de conducción — por delante"
+              uri={licenseFrontUri}
+              onChange={() => {}}
+              placeholderIcon="car-outline"
+              readOnly
+            />
+            <DocumentPhotoField
+              label="Licencia de conducción — por detrás"
+              uri={licenseBackUri}
+              onChange={() => {}}
+              placeholderIcon="car-outline"
+              readOnly
+            />
+            <VehicleDocumentField label="SOAT" value={soat} onChange={() => {}} readOnly />
+            <VehicleDocumentField
+              label="Tecnomecánica"
+              value={technicalInspection}
+              onChange={() => {}}
+              readOnly
+            />
+          </View>
+        </KeyboardAwareScroll>
       ) : (
         <KeyboardAwareScroll>
           <View className="px-5 pb-10">

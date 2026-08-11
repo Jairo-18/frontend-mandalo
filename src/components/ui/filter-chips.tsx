@@ -42,6 +42,9 @@ export function FilterChips<T extends string>({
               className={`text-xs font-semibold ${
                 selected ? 'text-primary' : 'text-ink'
               }`}
+              // Android agrega padding de fuente extra por defecto, que corre
+              // el texto hacia abajo dentro de pastillas chicas como esta.
+              style={{ includeFontPadding: false, textAlignVertical: 'center' }}
             >
               {option.label}
             </Text>

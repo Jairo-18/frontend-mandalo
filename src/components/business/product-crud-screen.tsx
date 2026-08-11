@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -16,12 +16,14 @@ import { Fab } from '@/components/ui/fab';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { Paginator } from '@/components/ui/paginator';
 import { SearchBar } from '@/components/ui/search-bar';
+import { SelectOption } from '@/components/ui/select';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { columnsForWidth, gridItemStyle } from '@/lib/grid-style';
 import { finalPrice, formatPrice } from '@/lib/price';
+import { adminCategoriesService } from '@/services/admin-catalogs';
 import { BusinessProduct, businessService } from '@/services/business';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
@@ -46,6 +48,32 @@ export function ProductCrudScreen() {
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<BusinessProduct | null>(null);
   const [toDelete, setToDelete] = useState<BusinessProduct | null>(null);
+
+  // Categorías precargadas UNA vez al entrar a la pantalla (no cada vez que
+  // se abre el modal de crear/editar) — antes el Select de categoría se
+  // quedaba vacío hasta que resolvía su propio fetch, y se notaba como que
+  // la categoría "cargaba después" que el resto del producto.
+  const [categories, setCategories] = useState<SelectOption[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    adminCategoriesService
+      .paginated({ page: 1, perPage: 100 })
+      .then((res) => {
+        if (!alive) return;
+        setCategories(res.data.map((c) => ({ label: c.name, value: c.id })));
+      })
+      .catch(() => {
+        // El interceptor HTTP ya mostró el error; se puede guardar sin categoría.
+      })
+      .finally(() => {
+        if (alive) setLoadingCategories(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   function openCreate() {
     setEditing(null);
@@ -89,7 +117,7 @@ export function ProductCrudScreen() {
       <View style={gridItemStyle(index, list.items.length, numColumns)}>
         <Pressable
           onPress={() => openEdit(item)}
-          className="mb-3 overflow-hidden rounded-2xl bg-card active:opacity-80"
+          className="mb-3 overflow-hidden rounded-2xl border border-border bg-card active:opacity-80"
         >
           <View className="w-full bg-surface" style={{ aspectRatio: 1 }}>
             <Image
@@ -229,6 +257,8 @@ export function ProductCrudScreen() {
         editing={editing}
         onClose={() => setFormVisible(false)}
         onSaved={handleSaved}
+        categories={categories}
+        loadingCategories={loadingCategories}
       />
 
       <YesNoDialog

@@ -593,13 +593,16 @@ export function ProfileScreen({
               </Pressable>
             )}
             {resendDocumentsHref && profile?.isActive && (
-              <View className="mb-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3">
+              <Pressable
+                onPress={() => router.push(resendDocumentsHref)}
+                className="mb-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+              >
                 <Ionicons name="shield-checkmark-outline" size={20} color="#22C55E" />
-                <Text className="flex-1 text-[13px] text-muted">
-                  Tus documentos están verificados. Para actualizar alguno,
-                  contacta al administrador.
+                <Text className="flex-1 text-[14px] font-bold text-ink">
+                  Ver mis documentos
                 </Text>
-              </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
+              </Pressable>
             )}
 
             {/* Cambiar contraseña: pantalla propia */}

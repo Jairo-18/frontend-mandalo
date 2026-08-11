@@ -17,6 +17,8 @@ type Props = {
   onChange: (value: DocumentValue) => void;
   /** Mensaje de error de validación (se muestra debajo del campo). */
   error?: string;
+  /** Solo ver: tocar abre la preview/PDF directo, sin opción de cambiar. */
+  readOnly?: boolean;
 };
 
 /**
@@ -48,7 +50,13 @@ async function pickPdf(): Promise<{ uri: string } | null> {
  * certificado digital de una sola página y obligar a fotografiar el papel
  * impreso da peor calidad. El backend decide cómo guardarlo según el mimetype.
  */
-export function VehicleDocumentField({ label, value, onChange, error }: Props) {
+export function VehicleDocumentField({
+  label,
+  value,
+  onChange,
+  error,
+  readOnly = false,
+}: Props) {
   const colors = useResolvedAppColors();
   const [preview, setPreview] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -108,7 +116,15 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
       <Text className="mb-2 text-sm font-bold text-ink">{label}</Text>
 
       <Pressable
-        onPress={() => setMenuVisible(true)}
+        onPress={() => {
+          if (!readOnly) {
+            setMenuVisible(true);
+            return;
+          }
+          if (value?.kind === 'image') setPreview(value.uri);
+          else if (value?.kind === 'pdf') openPdf();
+        }}
+        disabled={readOnly && !value}
         className={`h-[130px] items-center justify-center overflow-hidden rounded-xl border active:opacity-80 ${
           error
             ? 'border-red-500'
@@ -139,7 +155,7 @@ export function VehicleDocumentField({ label, value, onChange, error }: Props) {
           </>
         )}
 
-        {value ? (
+        {value && !readOnly ? (
           <View className="absolute bottom-2 right-2 h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary">
             <Ionicons name="swap-horizontal-outline" size={15} color="#FFFFFF" />
           </View>

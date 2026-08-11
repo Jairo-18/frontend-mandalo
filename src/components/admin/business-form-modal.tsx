@@ -569,7 +569,9 @@ export function BusinessFormModal({
         error={errors.description}
         placeholder="Parrilla y comidas rápidas…"
         multiline
-        numberOfLines={3}
+        numberOfLines={6}
+        maxLength={500}
+        showCharCount
       />
 
       <TextField
@@ -807,6 +809,8 @@ export function BusinessFormModal({
             : undefined
         }
         placeholderIcon="qr-code-outline"
+        height={220}
+        contain
       />
 
       {/* Horario de atención: fuera de él, el cliente ve el negocio "Cerrado"

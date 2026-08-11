@@ -33,7 +33,6 @@ import {
 } from '@/services/admin-users';
 import { authService } from '@/services/auth';
 import { getAppColors } from '@/lib/app-colors';
-import { signOutEverywhere } from '@/lib/sign-out';
 
 type Props = {
   visible: boolean;
@@ -92,7 +91,6 @@ export function UserFormModal({
 
   const [saving, setSaving] = useState(false);
   const [sendingRecovery, setSendingRecovery] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
   const { errors, setErrors, clearError, bind, validate } = useFormErrors();
 
   const isEdit = !!editing;
@@ -244,15 +242,6 @@ export function UserFormModal({
     } finally {
       setSendingRecovery(false);
     }
-  }
-
-  /** Cerrar sesión: antes vivía en el pie del sidebar admin — al quedar tan
-   * apretado con el resto de la navegación, se movió acá (edición del propio
-   * perfil), mismo lugar donde ya vive para cliente/repartidor. */
-  async function handleLogout() {
-    setSigningOut(true);
-    await signOutEverywhere();
-    setSigningOut(false);
   }
 
   async function handleSave() {
@@ -594,22 +583,6 @@ export function UserFormModal({
         </Pressable>
       )}
 
-      {selfProfile && (
-        <Pressable
-          onPress={handleLogout}
-          disabled={signingOut}
-          className="mb-6 flex-row items-center gap-2.5 rounded-2xl border border-border px-4 py-3 active:opacity-70"
-        >
-          {signingOut ? (
-            <ActivityIndicator size="small" color={getAppColors().primaryColor} />
-          ) : (
-            <Ionicons name="log-out-outline" size={18} color={getAppColors().primaryColor} />
-          )}
-          <Text className="flex-1 text-[13px] font-bold text-primary">
-            Cerrar sesión
-          </Text>
-        </Pressable>
-      )}
     </FormModal>
   );
 }
