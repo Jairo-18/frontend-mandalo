@@ -156,9 +156,10 @@ export function ProductFormModal({
         productId = Number(res.data.rowId);
       }
 
-      // Fotos: primero las quitadas (edición), luego las nuevas en orden.
-      for (const url of removedUrls) {
-        await businessService.products.removeImage(productId, url);
+      // Fotos: primero las quitadas (edición, todas en una sola petición),
+      // luego las nuevas en orden.
+      if (removedUrls.length > 0) {
+        await businessService.products.removeImages(productId, removedUrls);
       }
       for (let i = 0; i < pendingUris.length; i++) {
         setUploadProgress({ index: i, total: pendingUris.length, fraction: 0 });

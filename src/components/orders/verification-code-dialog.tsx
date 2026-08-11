@@ -11,6 +11,7 @@ import {
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
+import { HttpError } from '@/lib/http';
 
 type Props = {
   visible: boolean;
@@ -36,9 +37,17 @@ export function VerificationCodeDialog({
   const colors = useResolvedAppColors();
   const [code, setCode] = useState('');
   const [working, setWorking] = useState(false);
+  // El toast global (lib/toast) queda tapado por este Modal nativo, que se
+  // pinta en su propia capa por encima del resto del árbol — así que el
+  // error de "código incorrecto" necesita mostrarse acá mismo, dentro del
+  // diálogo, para que el usuario lo vea.
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (visible) setCode('');
+    if (visible) {
+      setCode('');
+      setError(null);
+    }
   }, [visible]);
 
   const ready = code.length === 4;
@@ -47,9 +56,12 @@ export function VerificationCodeDialog({
     if (!ready || working) return;
     try {
       setWorking(true);
+      setError(null);
       await onConfirm(code);
-    } catch {
-      // El interceptor HTTP ya mostró el error (código incorrecto, etc.).
+    } catch (e) {
+      setError(
+        e instanceof HttpError ? e.message : 'No se pudo verificar el código',
+      );
     } finally {
       setWorking(false);
     }
@@ -86,14 +98,24 @@ export function VerificationCodeDialog({
 
             <TextInput
               value={code}
-              onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 4))}
+              onChangeText={(v) => {
+                setCode(v.replace(/\D/g, '').slice(0, 4));
+                setError(null);
+              }}
               keyboardType="number-pad"
               maxLength={4}
               autoFocus
               placeholder="••••"
               placeholderTextColor={colors.mutedColor}
-              className="mt-4 self-center rounded-2xl border border-border bg-surface px-6 py-3 text-center text-2xl font-extrabold tracking-[12px] text-ink"
+              className={`mt-4 self-center rounded-2xl border bg-surface px-6 py-3 text-center text-2xl font-extrabold tracking-[12px] text-ink ${
+                error ? 'border-red-500' : 'border-border'
+              }`}
             />
+            {error ? (
+              <Text className="mt-2 text-center text-[13px] font-bold text-red-600">
+                {error}
+              </Text>
+            ) : null}
 
             <View className="mt-5 flex-row gap-3">
               <Pressable

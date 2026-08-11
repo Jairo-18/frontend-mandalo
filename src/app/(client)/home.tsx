@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -26,6 +26,7 @@ import { SearchBar } from '@/components/ui/search-bar';
 import { SectionTitle } from '@/components/ui/section-title';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useCart } from '@/context/cart';
+import { useDeliveryEstimates } from '@/hooks/use-delivery-estimates';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useExploreFilters, useUserAddresses } from '@/hooks/use-user-data';
 import { useSession } from '@/hooks/use-session';
@@ -58,10 +59,9 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const cart = useCart();
-  // Grid responsivo: 3 columnas en celular (pedido del usuario, 2 se veían
-  // muy grandes), hasta 6 en web ancho/tablet (mismo cálculo que
-  // store/[id].tsx, ver lib/grid-style.ts).
-  const numColumns = columnsForWidth(useWindowDimensions().width, 3);
+  // Grid responsivo: 2 columnas en celular, hasta 6 en web ancho/tablet
+  // (mismo cálculo que store/[id].tsx, ver lib/grid-style.ts).
+  const numColumns = columnsForWidth(useWindowDimensions().width, 2);
   // Botón "ver filtros" del buscador: abre la hoja de filtros (select), los
   // sliders "Negocios"/"Categorías" del layout siguen ahí, es otra forma de
   // elegir lo mismo.
@@ -130,6 +130,22 @@ export default function HomeScreen() {
     // arranque): evita fetchear sin coords y refetchear al llegar.
     { enabled: !loadingAddress },
   );
+  // Distancia/ETA al negocio de cada producto visible (estilo Rappi): un
+  // solo fix de GPS (ver el hook) + se piden solo los ids nuevos que van
+  // apareciendo al scrollear, cacheados por negocio.
+  const visibleOrgIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          productList.items
+            .map((p) => p.organizational?.id)
+            .filter((id): id is number => id != null),
+        ),
+      ),
+    [productList.items],
+  );
+  const deliveryEstimates = useDeliveryEstimates(visibleOrgIds);
+
   const searching =
     productList.search.trim().length > 0 ||
     selectedCategoryId != null ||
@@ -384,6 +400,11 @@ export default function HomeScreen() {
                 onPress={
                   item.organizational
                     ? () => openStore(item.organizational!.id)
+                    : undefined
+                }
+                estimate={
+                  item.organizational
+                    ? deliveryEstimates[item.organizational.id]
                     : undefined
                 }
               />

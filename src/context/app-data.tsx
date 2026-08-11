@@ -8,10 +8,10 @@ import {
   useRef,
   useState,
 } from 'react';
-import { ActivityIndicator, Platform, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { vars } from 'nativewind';
 
-import { Button } from '@/components/ui/button';
 import { API_URL } from '@/constants/api';
 import { useAppTheme } from '@/context/app-theme';
 import { getAppColors, setCurrentAppColors } from '@/lib/app-colors';
@@ -301,9 +301,23 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         <Text className="mb-6 text-center text-sm text-muted">
           {state.error}
         </Text>
-        <View className="w-full">
-          <Button label="Reintentar" onPress={() => load()} />
-        </View>
+        {/* Botón inline (no el `Button` compartido): ese depende de
+            `useResolvedAppColors`, que a su vez depende de este contexto —
+            importarlo aquí cerraba un require cycle. Mismos colores fijos
+            que la pantalla de "Cargando…" arriba, por la misma razón. */}
+        <Pressable
+          onPress={() => load()}
+          className="w-full overflow-hidden rounded-[30px] shadow-md active:opacity-80"
+        >
+          <LinearGradient
+            colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text className="text-base font-bold text-white">Reintentar</Text>
+          </LinearGradient>
+        </Pressable>
         {/* Detalle técnico para soporte: con un pantallazo se diagnostica remoto. */}
         <Text className="mt-6 text-center text-[10px] text-muted/70">
           {API_URL.replace(/^https?:\/\//, '')}

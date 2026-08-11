@@ -65,7 +65,24 @@ export type ExploreProduct = {
     logoUrl: string | null;
     /** false = el negocio está cerrado ahora (badge en la card del feed). */
     isOpen?: boolean;
+    latitude?: number | null;
+    longitude?: number | null;
   } | null;
+};
+
+/**
+ * Distancia + tarifa de domicilio (YA con recargos) + ETA desde el usuario
+ * hasta un negocio (estilo Rappi, sin crear pedido). Todo en null si el
+ * negocio no tiene coordenadas guardadas. `surchargeReasons` viene en texto
+ * amigable ("recargo nocturno", "condiciones climáticas", "alta demanda")
+ * cuando alguno aplica ahora mismo.
+ */
+export type DeliveryEstimate = {
+  organizationalId: number;
+  distanceKm: number | null;
+  deliveryFee: number | null;
+  etaMinutes: number | null;
+  surchargeReasons: string[];
 };
 
 /** Nombre que ve el cliente: nombre comercial o, si no hay, razón social. */
@@ -183,6 +200,25 @@ export const exploreService = {
     return http<Paginated<ExploreProduct>>(
       `/explore/organizationals/${organizationalId}/products?${query.toString()}`,
       { authOptional: true },
+    );
+  },
+
+  /**
+   * Distancia + tarifa de domicilio + ETA desde el usuario hasta uno o
+   * varios negocios (estilo Rappi). Redondea la coord del usuario a 2
+   * decimales (~1 km) por lo mismo que `appendNear`: el backend cachea
+   * `/explore/*` por URL, y con precisión completa cada usuario tendría su
+   * propia clave (el caché no serviría).
+   */
+  deliveryEstimates: (near: NearCoords, organizationalIds: number[]) => {
+    const query = new URLSearchParams({
+      lat: near.latitude.toFixed(2),
+      lng: near.longitude.toFixed(2),
+      organizationalIds: organizationalIds.join(','),
+    });
+    return http<{ data: DeliveryEstimate[] }>(
+      `/explore/delivery-estimate?${query.toString()}`,
+      { authOptional: true, toastError: false },
     );
   },
 };

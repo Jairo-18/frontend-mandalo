@@ -14,8 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
+import { formatDistance } from '@/lib/distance';
 import { finalPrice, formatPrice } from '@/lib/price';
-import { ExploreProduct } from '@/services/explore';
+import { DeliveryEstimate, ExploreProduct } from '@/services/explore';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
 
@@ -29,6 +30,8 @@ type Props = {
   onAdd: () => void;
   onDecrement: () => void;
   onClose: () => void;
+  /** Distancia/ETA/tarifa al negocio que lo vende (estilo Rappi). */
+  estimate?: DeliveryEstimate | null;
 };
 
 /**
@@ -43,6 +46,7 @@ export function ProductDetailSheet({
   onAdd,
   onDecrement,
   onClose,
+  estimate,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -90,11 +94,18 @@ export function ProductDetailSheet({
                 setIndex(Math.round(e.nativeEvent.contentOffset.x / width))
               }
               renderItem={({ item }) => (
-                <Pressable onPress={() => setPreview(item)}>
+                <Pressable
+                  onPress={() => setPreview(item)}
+                  className="bg-surface"
+                  style={{ width, height: CAROUSEL_HEIGHT }}
+                >
+                  {/* `contain` (no `cover`): las fotos que suben los negocios
+                      no siempre tienen esta proporción — con `cover` algunas
+                      quedaban con zoom y recortadas sin verse completas. */}
                   <Image
                     source={{ uri: item }}
                     style={{ width, height: CAROUSEL_HEIGHT }}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 </Pressable>
               )}
@@ -103,7 +114,8 @@ export function ProductDetailSheet({
             <Image
               source={DEFAULT_PRODUCT_IMAGE}
               style={{ width, height: CAROUSEL_HEIGHT }}
-              resizeMode="cover"
+              resizeMode="contain"
+              className="bg-surface"
             />
           )}
 
@@ -136,12 +148,9 @@ export function ProductDetailSheet({
             </Text>
           )}
 
-          <View className="mt-2 flex-row items-center gap-2.5">
-            <Text className="text-lg font-extrabold text-primary">
-              {formatPrice(price)}
-            </Text>
+          <View className="mt-2">
             {hasDiscount && product && (
-              <>
+              <View className="flex-row items-center gap-2">
                 <Text className="text-sm text-muted line-through">
                   {formatPrice(product.priceSale)}
                 </Text>
@@ -150,9 +159,33 @@ export function ProductDetailSheet({
                     -{product.discount}%
                   </Text>
                 </View>
-              </>
+              </View>
             )}
+            <Text className="text-lg font-extrabold text-primary">
+              {formatPrice(price)}
+            </Text>
           </View>
+
+          {estimate?.distanceKm != null && (
+            <View className="mt-2 flex-row items-start gap-1.5">
+              <Ionicons
+                name="navigate-outline"
+                size={13}
+                color={getAppColors().mutedColor}
+                style={{ marginTop: 1 }}
+              />
+              <Text className="flex-1 text-xs text-muted">
+                {formatDistance(estimate.distanceKm)} de ti · ~{estimate.etaMinutes} min ·{' '}
+                {formatPrice(estimate.deliveryFee ?? 0)} de domicilio
+                {estimate.surchargeReasons.length > 0 && (
+                  <Text className="font-bold text-primary">
+                    {' '}
+                    (incluye {estimate.surchargeReasons.join(', ')})
+                  </Text>
+                )}
+              </Text>
+            </View>
+          )}
 
           {!!product?.description && (
             <Text className="mb-2 mt-3 text-sm leading-5 text-ink">

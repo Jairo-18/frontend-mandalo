@@ -167,15 +167,15 @@ export function ProductCrudScreen() {
             >
               {item.name}
             </Text>
-            <View className="mt-1 flex-row items-center gap-1.5">
-              <Text className="text-[15px] font-extrabold text-primary">
-                {formatPrice(price)}
-              </Text>
+            <View className="mt-1">
               {hasDiscount && (
                 <Text className="text-[11px] text-muted line-through">
                   {formatPrice(item.priceSale)}
                 </Text>
               )}
+              <Text className="text-[15px] font-extrabold text-primary">
+                {formatPrice(price)}
+              </Text>
             </View>
             <Text numberOfLines={1} className="mt-0.5 text-[11px] text-muted">
               {[item.categoryType?.name, item.code].filter(Boolean).join(' · ') ||

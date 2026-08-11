@@ -9,6 +9,7 @@ import { OrderDetailModal } from '@/components/orders/order-detail-modal';
 import { ReportAccidentDialog } from '@/components/orders/report-accident-dialog';
 import { ReportDeliveryFailureDialog } from '@/components/orders/report-delivery-failure-dialog';
 import { VerificationCodeDialog } from '@/components/orders/verification-code-dialog';
+import { AddressMapPicker } from '@/components/client/address-map-picker';
 import { useDeliveryPositionBroadcast } from '@/lib/delivery-tracker';
 import {
   ORDER_FILTER_CODES,
@@ -20,6 +21,12 @@ import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { businessDisplayName } from '@/services/explore';
 import { DeviceCoords, getDeviceCoordsSilently } from '@/lib/location';
+import {
+  clearDeliveryLocationOverride,
+  DeliveryLocationOverride,
+  getDeliveryLocationOverride,
+  setDeliveryLocationOverride,
+} from '@/lib/delivery-location-override';
 import { useOrderEvents } from '@/lib/orders-socket';
 import { useSession } from '@/hooks/use-session';
 import { Order, ordersService } from '@/services/orders';
@@ -52,10 +59,41 @@ export function DeliveryOrders() {
   // Posición del repartidor: limita "Disponibles" al radio de cercanía y los
   // ordena por distancia al negocio. Si niega el permiso o no hay fix, la
   // lista sale SIN filtrar (mejor eso que una pantalla vacía).
-  const [coords, setCoords] = useState<DeviceCoords | null>(null);
+  const [deviceCoords, setDeviceCoords] = useState<DeviceCoords | null>(null);
   useEffect(() => {
-    getDeviceCoordsSilently().then(setCoords);
+    getDeviceCoordsSilently().then(setDeviceCoords);
   }, []);
+
+  // Ubicación MANUAL (app en pruebas): mientras esté activa, reemplaza el GPS
+  // real al buscar "Disponibles" — deja simular estar en otra ciudad/zona sin
+  // depender de la posición real del dispositivo. Persistida por dispositivo.
+  const [override, setOverride] = useState<DeliveryLocationOverride | null>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  useEffect(() => {
+    getDeliveryLocationOverride().then(setOverride);
+  }, []);
+  const coords = override?.coords ?? deviceCoords;
+
+  async function confirmOverride(result: {
+    coords: DeviceCoords;
+    address?: string;
+    city?: string;
+    region?: string;
+  }) {
+    const label =
+      result.city && result.region
+        ? `${result.city}, ${result.region}`
+        : result.address ?? result.city ?? 'Punto elegido en el mapa';
+    const next = { coords: result.coords, label };
+    await setDeliveryLocationOverride(next);
+    setOverride(next);
+    setPickerVisible(false);
+  }
+
+  async function removeOverride() {
+    await clearDeliveryLocationOverride();
+    setOverride(null);
+  }
 
   const available = usePaginatedList<Order>(
     useCallback(
@@ -146,6 +184,10 @@ export function DeliveryOrders() {
     }
   }
 
+  // Confirmación previa a comprometerse con un pedido disponible: el
+  // repartidor debe confirmar antes de que quede asignado (antes se tomaba
+  // con un solo tap, sin poder dar un paso atrás).
+  const [takeTarget, setTakeTarget] = useState<{ id: number } | null>(null);
   // Entrega verificada: pide el código que el CLIENTE ve en su app.
   const [deliverTarget, setDeliverTarget] = useState<{ id: number } | null>(
     null,
@@ -170,7 +212,7 @@ export function DeliveryOrders() {
       return {
         label: 'Tomar pedido',
         icon: 'bicycle' as const,
-        onPress: () => take(order.id),
+        onPress: () => setTakeTarget({ id: order.id }),
       };
     }
     if (order.stateType?.code === 'RUTA') {
@@ -235,6 +277,27 @@ export function DeliveryOrders() {
             onOrder={setOrder}
           />
         </View>
+      )}
+
+      {/* App en pruebas: ubicación manual para "Disponibles" en vez del GPS
+          real (simular estar en otra ciudad/zona). */}
+      {tab === 'available' && hasArl && (
+        <Pressable
+          onPress={() => setPickerVisible(true)}
+          className="mx-4 mb-2 flex-row items-center gap-2 rounded-xl border border-dashed border-primary bg-primary-tint px-3 py-2 active:opacity-70"
+        >
+          <Ionicons name="flask-outline" size={15} color={colors.primaryColor} />
+          <Text numberOfLines={1} className="flex-1 text-xs font-semibold text-primary">
+            {override
+              ? `Modo prueba: buscando cerca de ${override.label}`
+              : 'Buscando cerca de tu ubicación · Tocar para cambiar'}
+          </Text>
+          {override && (
+            <Pressable onPress={removeOverride} hitSlop={8}>
+              <Ionicons name="close-circle" size={16} color={colors.primaryColor} />
+            </Pressable>
+          )}
+        </Pressable>
       )}
 
       {tab === 'available' && !hasArl ? (
@@ -334,16 +397,9 @@ export function DeliveryOrders() {
             return (
               <ActionButton
                 label="Tomar pedido"
-                onPress={async () => {
-                  try {
-                    await ordersService.take(order.id);
-                    mine.fetchPage(1, 'refresh');
-                  } catch {
-                    // El interceptor ya mostró el error.
-                    available.fetchPage(1, 'refresh');
-                  } finally {
-                    close();
-                  }
+                onPress={() => {
+                  setTakeTarget({ id: order.id });
+                  close();
                 }}
               />
             );
@@ -389,6 +445,31 @@ export function DeliveryOrders() {
           }
           return null;
         }}
+      />
+
+      {/* Confirmación antes de comprometerse con un pedido disponible. */}
+      <YesNoDialog
+        visible={takeTarget != null}
+        icon="bicycle-outline"
+        title="¿Tomar este pedido?"
+        message="Al confirmar quedarás asignado: deberás recogerlo en el negocio y entregarlo al cliente."
+        confirmLabel="Sí, tomar pedido"
+        cancelLabel="Ahora no"
+        onConfirm={async () => {
+          if (!takeTarget) return;
+          await take(takeTarget.id);
+          setTakeTarget(null);
+        }}
+        onCancel={() => setTakeTarget(null)}
+      />
+
+      {/* App en pruebas: elegir a mano dónde "está" el repartidor para
+          probar Disponibles en otra ciudad/zona sin depender del GPS real. */}
+      <AddressMapPicker
+        visible={pickerVisible}
+        initialCoords={coords ?? undefined}
+        onClose={() => setPickerVisible(false)}
+        onConfirm={confirmOverride}
       />
 
       {/* Entrega verificada: el cliente dicta su código de entrega. Solo

@@ -24,11 +24,13 @@ import { useAppTheme } from '@/context/app-theme';
 import { useCart } from '@/context/cart';
 import { getAppColors } from '@/lib/app-colors';
 import { lightenHex } from '@/lib/color';
+import { formatDistance } from '@/lib/distance';
 import { columnsForWidth, gridItemStyle } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
 import { formatHour12 } from '@/lib/text-format';
 import { toast } from '@/lib/toast';
 import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
+import { useDeliveryEstimates } from '@/hooks/use-delivery-estimates';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
@@ -53,8 +55,10 @@ export default function StoreScreen() {
   const storeId = Number(id);
 
   const cart = useCart();
-  // Grid responsivo: 3 columnas en celular, hasta 6 en web ancho/tablet.
-  const numColumns = columnsForWidth(useWindowDimensions().width, 3);
+  // Grid responsivo: 2 columnas en celular (pedido del usuario — las cards
+  // de producto con foto+nombre+precio+distancia se ven muy chicas en 3),
+  // hasta 6 en web ancho/tablet.
+  const numColumns = columnsForWidth(useWindowDimensions().width, 2);
   const [business, setBusiness] = useState<ExploreBusiness | null>(null);
   const [categories, setCategories] = useState<ExploreFilterItem[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(true);
@@ -74,6 +78,14 @@ export default function StoreScreen() {
       [storeId, categoryTypeId],
     ),
   );
+
+  // Distancia/ETA/tarifa a ESTE negocio (estilo Rappi): un solo valor para
+  // toda la pantalla, se muestra una vez en la cabecera (todos los productos
+  // de este negocio comparten la misma distancia).
+  const estimates = useDeliveryEstimates(
+    Number.isFinite(storeId) ? [storeId] : [],
+  );
+  const estimate = estimates[storeId];
 
   useEffect(() => {
     let alive = true;
@@ -208,7 +220,10 @@ export default function StoreScreen() {
       )}
 
       {/* Datos de contacto */}
-      {(!!location || !!business.phone || !!business.description) && (
+      {(!!location ||
+        !!business.phone ||
+        !!business.description ||
+        estimate?.distanceKm != null) && (
         <View className="mx-5 mb-3 rounded-2xl bg-surface p-3.5">
           {!!business.description && (
             <Text numberOfLines={2} className="mb-1.5 text-xs text-ink">
@@ -227,6 +242,26 @@ export default function StoreScreen() {
             <View className="mt-1 flex-row items-center gap-1.5">
               <Ionicons name="call-outline" size={13} color={colors.mutedColor} />
               <Text className="text-xs text-muted">{business.phone}</Text>
+            </View>
+          )}
+          {estimate?.distanceKm != null && (
+            <View className="mt-1 flex-row items-start gap-1.5">
+              <Ionicons
+                name="navigate-outline"
+                size={13}
+                color={colors.mutedColor}
+                style={{ marginTop: 1 }}
+              />
+              <Text className="flex-1 text-xs text-muted">
+                {formatDistance(estimate.distanceKm)} de ti · ~{estimate.etaMinutes} min ·{' '}
+                {formatPrice(estimate.deliveryFee ?? 0)} de domicilio
+                {estimate.surchargeReasons.length > 0 && (
+                  <Text className="font-bold text-primary">
+                    {' '}
+                    (incluye {estimate.surchargeReasons.join(', ')})
+                  </Text>
+                )}
+              </Text>
             </View>
           )}
         </View>
@@ -279,6 +314,7 @@ export default function StoreScreen() {
                   quantity={cart.quantityOf(item.id)}
                   onAdd={() => handleAdd(item)}
                   onDecrement={() => cart.decrement(item.id)}
+                  estimate={estimate}
                 />
               </View>
             )}
@@ -347,6 +383,7 @@ export default function StoreScreen() {
         onAdd={() => detail && handleAdd(detail)}
         onDecrement={() => detail && cart.decrement(detail.id)}
         onClose={() => setDetail(null)}
+        estimate={estimate}
       />
 
       <YesNoDialog

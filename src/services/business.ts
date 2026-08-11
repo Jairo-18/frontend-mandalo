@@ -157,10 +157,14 @@ export const businessService = {
       );
     },
 
-    /** Quita una foto (la URL tal como está guardada en `images`). */
-    removeImage: (id: number, url: string) =>
+    /**
+     * Quita una o varias fotos (URLs tal como están guardadas en `images`)
+     * en UNA sola petición, aunque se hayan quitado varias a la vez al
+     * editar el producto.
+     */
+    removeImages: (id: number, urls: string[]) =>
       http<{ data: { images: string[] } }>(
-        `/product/${id}/image?url=${encodeURIComponent(url)}`,
+        `/product/${id}/image?urls=${urls.map(encodeURIComponent).join(',')}`,
         { method: 'DELETE', auth: true },
       ),
   },

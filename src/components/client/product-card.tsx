@@ -82,12 +82,9 @@ export function ProductCard({
           </Text>
         )}
 
-        <View className="mt-1 flex-row items-center gap-2">
-          <Text className="text-sm font-extrabold text-primary">
-            {formatPrice(price)}
-          </Text>
+        <View className="mt-1">
           {hasDiscount && (
-            <>
+            <View className="flex-row items-center gap-1.5">
               <Text className="text-xs text-muted line-through">
                 {formatPrice(product.priceSale)}
               </Text>
@@ -96,8 +93,11 @@ export function ProductCard({
                   -{product.discount}%
                 </Text>
               </View>
-            </>
+            </View>
           )}
+          <Text className="text-sm font-extrabold text-primary">
+            {formatPrice(price)}
+          </Text>
         </View>
 
         {product.organizational ? (
