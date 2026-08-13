@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
+import { BusinessLocationPicker } from '@/components/admin/business-location-picker';
 import { OwnerField } from '@/components/admin/owner-field';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChipMultiSelect } from '@/components/ui/chip-multi-select';
@@ -14,7 +15,6 @@ import { useAppData } from '@/context/app-data';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
 import { DeviceCoords } from '@/lib/location';
-import { extractCoordsFromMapsUrl } from '@/lib/maps-url';
 import {
   EMAIL_RE,
   formatHour12,
@@ -107,11 +107,10 @@ export function BusinessFormModal({
   const [description, setDescription] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  // Ubicación del local: se extrae del link "Compartir" de Google Maps
-  // (alimenta el radio de cercanía del explorar y la ETA de entrega).
-  const [mapsUrl, setMapsUrl] = useState('');
+  // Ubicación del local (mapa + buscador + link, ver `BusinessLocationPicker`):
+  // alimenta el radio de cercanía del explorar y la ETA de entrega.
   const [coords, setCoords] = useState<DeviceCoords | null>(null);
-  const [extracting, setExtracting] = useState(false);
+  const [locationPickerVisible, setLocationPickerVisible] = useState(false);
   // Dueño/representante: usuario existente elegido con el buscador…
   const [owner, setOwner] = useState<BusinessOwner | null>(null);
   // …o cuenta nueva del negocio (correo + contraseña, solo al crear).
@@ -177,7 +176,6 @@ export function BusinessFormModal({
     // al editar muestra el guardado ya formateado.
     setPhone(editing?.phone ? formatText('phone', editing.phone) : PHONE_PREFIX);
     setAddress(editing?.address ?? '');
-    setMapsUrl('');
     setCoords(
       editing?.latitude != null && editing?.longitude != null
         ? { latitude: editing.latitude, longitude: editing.longitude }
@@ -242,27 +240,6 @@ export function BusinessFormModal({
     !isEdit &&
     !owner &&
     !!(accountEmail.trim() || accountPassword || accountConfirm);
-
-  /** Saca lat/lng del link pegado (o de "lat, lng" a mano). */
-  async function handleExtractLocation() {
-    if (!mapsUrl.trim() || extracting) return;
-    setExtracting(true);
-    try {
-      const result = await extractCoordsFromMapsUrl(mapsUrl);
-      if (result) {
-        setCoords(result);
-        clearError('location');
-      } else {
-        setErrors((prev) => ({
-          ...prev,
-          location:
-            'No pudimos leer la ubicación de ese link. Usa el botón "Compartir" del negocio en Google Maps.',
-        }));
-      }
-    } finally {
-      setExtracting(false);
-    }
-  }
 
   // En edición, guardar solo se habilita si algo cambió respecto a lo cargado
   // (evita PATCH inútiles); al crear siempre está habilitado.
@@ -553,6 +530,7 @@ export function BusinessFormModal({
         label="Número de identificación (NIT)"
         icon="id-card-outline"
         format="nit"
+        maxLength={15}
         value={identificationNumber}
         onChangeText={bind('identificationNumber', setIdentificationNumber)}
         error={errors.identificationNumber}
@@ -642,44 +620,43 @@ export function BusinessFormModal({
         </View>
       ) : (
         <>
-          {/* Ubicación exacta: link "Compartir" de Google Maps del negocio */}
-          <TextField
-            label="Ubicación (link de Google Maps)"
-            icon="map-outline"
-            value={mapsUrl}
-            onChangeText={(text) => {
-              setMapsUrl(text);
-              clearError('location');
-            }}
-            placeholder="https://maps.app.goo.gl/…"
-            autoCapitalize="none"
-          />
+          {/* Ubicación exacta: mapa + buscador + link (ver BusinessLocationPicker) */}
+          <Text className="mb-2 text-sm font-bold text-ink">
+            Ubicación del negocio
+          </Text>
           <Pressable
-            onPress={handleExtractLocation}
-            disabled={extracting || !mapsUrl.trim()}
-            className="-mt-2 mb-1 flex-row items-center gap-1.5 self-start"
+            onPress={() => setLocationPickerVisible(true)}
+            className="mb-1 h-[52px] flex-row items-center gap-2.5 rounded-xl border border-border px-3.5 active:opacity-70"
           >
-            {extracting ? (
-              <ActivityIndicator size="small" color={colors.primaryColor} />
-            ) : (
-              <Ionicons
-                name={coords ? 'checkmark-circle' : 'locate-outline'}
-                size={16}
-                color={colors.primaryColor}
-              />
-            )}
-            <Text className="text-[13px] font-bold text-primary">
-              {extracting
-                ? 'Leyendo el link…'
-                : coords
-                  ? 'Ubicación guardada — pega otro link para cambiarla'
-                  : 'Extraer ubicación del link (obligatorio)'}
+            <Ionicons
+              name={coords ? 'checkmark-circle' : 'map-outline'}
+              size={20}
+              color={coords ? colors.primaryColor : colors.mutedColor}
+            />
+            <Text
+              className={`flex-1 text-[15px] ${coords ? 'font-semibold text-ink' : 'text-muted'}`}
+            >
+              {coords
+                ? `Ubicación asignada (${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)})`
+                : 'Elegir ubicación en el mapa (obligatorio)'}
             </Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
           </Pressable>
           {!!errors.location && (
             <Text className="mb-3 text-xs text-red-600">{errors.location}</Text>
           )}
           <View className="mb-4" />
+
+          <BusinessLocationPicker
+            visible={locationPickerVisible}
+            initialCoords={coords}
+            onClose={() => setLocationPickerVisible(false)}
+            onConfirm={(result) => {
+              setCoords(result.coords);
+              clearError('location');
+              setLocationPickerVisible(false);
+            }}
+          />
         </>
       )}
 

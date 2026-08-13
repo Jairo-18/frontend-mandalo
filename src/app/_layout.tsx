@@ -13,6 +13,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'nativewind';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
+import { useEffect } from 'react';
+
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { LocationConsentHost } from '@/components/ui/location-consent-host';
@@ -22,7 +24,9 @@ import { AppDataProvider } from '@/context/app-data';
 import { AppThemeProvider } from '@/context/app-theme';
 import { CartProvider } from '@/context/cart';
 import { useAppUpdateCheck } from '@/lib/app-update';
+import { setUnauthorizedHandler } from '@/lib/http';
 import { usePushNotifications } from '@/lib/push';
+import { signOutEverywhere } from '@/lib/sign-out';
 // Define la tarea de tracking en background del repartidor (import con efecto:
 // TaskManager exige que la tarea exista ANTES de que el SO la dispare).
 import '@/lib/delivery-tracker';
@@ -31,6 +35,14 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
+  // El backend rechazó con 401 una sesión que sí mandamos (token vencido,
+  // cuenta baneada a mitad de uso) → cierra sesión y manda a login en vez de
+  // dejar al usuario colgado en la pantalla actual (ver `lib/http.ts`).
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      void signOutEverywhere();
+    });
+  }, []);
   // Push: registra el token al haber sesión y navega al tocar notificaciones.
   usePushNotifications();
   // Android: si hay una versión más nueva en Play Store, la descarga sola y

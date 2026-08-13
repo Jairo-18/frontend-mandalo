@@ -6,7 +6,12 @@ import { FormSection } from '@/components/ui/form-section';
 import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
-import { AppColors, appSettingsService, PlatformArl } from '@/services/app-settings';
+import {
+  AppColors,
+  appSettingsService,
+  PlatformArl,
+  PlatformSocial,
+} from '@/services/app-settings';
 
 const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
 
@@ -176,6 +181,94 @@ function ArlSection() {
 }
 
 /**
+ * Redes y contacto públicos: YouTube/Facebook/Instagram + teléfono de
+ * contacto. Se muestran en login/registro (debajo de "¿Cómo funciona
+ * Mandalo?") y en la ayuda de los 4 roles. A diferencia de `ArlSection`, esta
+ * SÍ se siembra desde `useAppData().platformSocial` (ya está en el contexto
+ * global desde el splash) en vez de pedirlo aparte — mismo ahorro de
+ * peticiones que la sección de colores de arriba.
+ */
+function SocialSection() {
+  const { platformSocial } = useAppData();
+  const [values, setValues] = useState<PlatformSocial>(platformSocial);
+  const [initial, setInitial] = useState<PlatformSocial>(platformSocial);
+  const [saving, setSaving] = useState(false);
+
+  const dirty =
+    values.youtubeUrl !== initial.youtubeUrl ||
+    values.facebookUrl !== initial.facebookUrl ||
+    values.instagramUrl !== initial.instagramUrl ||
+    values.contactPhone !== initial.contactPhone;
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await appSettingsService.update(values);
+      setInitial(values);
+    } catch {
+      // El interceptor HTTP ya mostró el error.
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function setField(key: keyof PlatformSocial, text: string) {
+    setValues((v) => ({ ...v, [key]: text }));
+  }
+
+  return (
+    <View className="mt-4 rounded-2xl bg-card p-4">
+      <FormSection label="Redes y contacto" />
+      <Text className="-mt-2 mb-3 text-xs text-muted">
+        Se muestran debajo de "¿Cómo funciona Mandalo?" en el login/registro y
+        en la ayuda de todos los roles. Deja vacío el que no aplique.
+      </Text>
+      <TextField
+        label="YouTube"
+        icon="logo-youtube"
+        value={values.youtubeUrl ?? ''}
+        onChangeText={(text) => setField('youtubeUrl', text)}
+        placeholder="https://youtube.com/@mandalo"
+        autoCapitalize="none"
+        keyboardType="url"
+      />
+      <TextField
+        label="Facebook"
+        icon="logo-facebook"
+        value={values.facebookUrl ?? ''}
+        onChangeText={(text) => setField('facebookUrl', text)}
+        placeholder="https://facebook.com/mandalo"
+        autoCapitalize="none"
+        keyboardType="url"
+      />
+      <TextField
+        label="Instagram"
+        icon="logo-instagram"
+        value={values.instagramUrl ?? ''}
+        onChangeText={(text) => setField('instagramUrl', text)}
+        placeholder="https://instagram.com/mandalo"
+        autoCapitalize="none"
+        keyboardType="url"
+      />
+      <TextField
+        label="Teléfono de contacto (WhatsApp)"
+        icon="logo-whatsapp"
+        format="phone"
+        value={values.contactPhone ?? ''}
+        onChangeText={(text) => setField('contactPhone', text)}
+        placeholder="+57 - 300 123 456 7"
+      />
+      <Button
+        label="Guardar redes y contacto"
+        onPress={handleSave}
+        loading={saving}
+        disabled={!dirty}
+      />
+    </View>
+  );
+}
+
+/**
  * Pantalla "Aplicación" del panel admin (§50/§51): edita los 12 colores base
  * de la marca — 2 fijos (identidad, no cambian con el tema) + 5 pares
  * claro/oscuro (cada uno EXPLÍCITO, nada se deriva solo). Se guardan en
@@ -264,6 +357,7 @@ export function AppSettingsScreen() {
       </View>
 
       <ArlSection />
+      <SocialSection />
       </View>
     </KeyboardAwareScroll>
     </View>

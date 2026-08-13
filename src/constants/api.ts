@@ -33,7 +33,8 @@ type RuntimeEnv = Partial<
   Record<
     | 'EXPO_PUBLIC_PROD_API_URL'
     | 'EXPO_PUBLIC_CLIENT_API_KEY'
-    | 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
+    | 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'
+    | 'EXPO_PUBLIC_GOOGLE_MAPS_WEB_KEY',
     string
   >
 >;
@@ -95,4 +96,17 @@ export const CLIENT_API_KEY = pick(
 export const GOOGLE_WEB_CLIENT_ID = pick(
   RUNTIME_ENV.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+);
+
+/**
+ * API key de "Maps JavaScript API" (restringida por HTTP referrer, distinta
+ * de las keys nativas Android/iOS que sí están restringidas por
+ * app/certificado). Se define en `.env.local`
+ * (`EXPO_PUBLIC_GOOGLE_MAPS_WEB_KEY`). Sin ella, el picker de ubicación del
+ * admin en web cae a "buscador + link pegado, sin mapa visual" (no bloquea
+ * poder guardar una ubicación).
+ */
+export const GOOGLE_MAPS_WEB_KEY = pick(
+  RUNTIME_ENV.EXPO_PUBLIC_GOOGLE_MAPS_WEB_KEY,
+  process.env.EXPO_PUBLIC_GOOGLE_MAPS_WEB_KEY,
 );

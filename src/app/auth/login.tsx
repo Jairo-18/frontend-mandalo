@@ -6,6 +6,7 @@ import { Platform, Pressable, Text, View } from 'react-native';
 
 import { AuthHeader } from '@/components/auth/auth-header';
 import { GoogleButton } from '@/components/auth/google-button';
+import { SocialContactBar } from '@/components/auth/social-contact-bar';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
@@ -242,6 +243,8 @@ export default function LoginScreen() {
               ¿Cómo funciona Mandalo?
             </Text>
           </Pressable>
+
+          <SocialContactBar />
 
           <View className="mt-6">
             <DeveloperCredit />

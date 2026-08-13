@@ -489,6 +489,7 @@ export default function RegisterForm() {
                 label="Número de identificación"
                 icon="finger-print-outline"
                 format="identification"
+                maxLength={15}
                 value={identificationNumber}
                 onChangeText={bind('identificationNumber', setIdentificationNumber)}
                 error={errors.identificationNumber}

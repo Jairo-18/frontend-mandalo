@@ -482,6 +482,7 @@ export function UserFormModal({
         label="Número de identificación"
         icon="id-card-outline"
         format="identification"
+        maxLength={15}
         value={identificationNumber}
         onChangeText={bind('identificationNumber', setIdentificationNumber)}
         error={errors.identificationNumber}
@@ -492,11 +493,11 @@ export function UserFormModal({
         <TextField
           label="Placa del vehículo"
           icon="bicycle-outline"
-          format="identification"
+          format="plate"
           value={vehiclePlate}
           onChangeText={bind('vehiclePlate', setVehiclePlate)}
           error={errors.vehiclePlate}
-          placeholder="ABC12D"
+          placeholder="2B3-172"
         />
       )}
 

@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useAppData } from '@/context/app-data';
 import { useAppTheme } from '@/context/app-theme';
 import { useSession } from '@/hooks/use-session';
+import { buildSocialLinkItems } from '@/lib/social-links';
 import { homePathFor } from '@/lib/session';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
@@ -43,6 +45,8 @@ export function HelpScreen() {
   const { isDark } = useAppTheme();
   const session = useSession();
   const colors = useResolvedAppColors();
+  const { platformSocial } = useAppData();
+  const socialItems = buildSocialLinkItems(platformSocial);
 
   return (
     <SafeAreaView className="flex-1 bg-card">
@@ -89,6 +93,31 @@ export function HelpScreen() {
               </Pressable>
             ))}
           </View>
+
+          {socialItems.length > 0 && (
+            <>
+              <Text className="mb-2 mt-6 text-sm font-bold text-ink">
+                Síguenos y contacto
+              </Text>
+              <View className="rounded-2xl border border-border bg-surface p-2">
+                {socialItems.map((item, i) => (
+                  <Pressable
+                    key={item.key}
+                    onPress={() => Linking.openURL(item.url)}
+                    className={`flex-row items-center gap-3 rounded-xl px-3.5 py-3.5 active:opacity-70 ${
+                      i > 0 ? 'mt-1' : ''
+                    }`}
+                  >
+                    <Ionicons name={item.icon} size={20} color={colors.mutedColor} />
+                    <Text className="flex-1 text-[14px] font-bold text-ink">
+                      {item.label}
+                    </Text>
+                    <Ionicons name="open-outline" size={16} color={colors.mutedColor} />
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

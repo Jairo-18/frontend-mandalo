@@ -64,15 +64,40 @@ export type PlatformArl = {
   arlPolicyNumber: string | null;
 };
 
+/**
+ * Redes y contacto públicos de la plataforma: el admin los carga una sola
+ * vez desde "Aplicación" y se muestran en login/registro (debajo de
+ * "¿Cómo funciona Mandalo?") y en la ayuda de los 4 roles. Igual que
+ * `PlatformArl`, viven en la misma fila `appSettings` pero SEPARADOS de
+ * `AppColors` — `isValidAppColors` no debe romperse por estos 4 opcionales.
+ */
+export type PlatformSocial = {
+  youtubeUrl: string | null;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  contactPhone: string | null;
+};
+
+export const DEFAULT_PLATFORM_SOCIAL: PlatformSocial = {
+  youtubeUrl: null,
+  facebookUrl: null,
+  instagramUrl: null,
+  contactPhone: null,
+};
+
 export const appSettingsService = {
   /** Público (como /catalog): la app lo pide en el splash, antes de login. */
   get: () =>
     http<{
-      data: AppColors & PlatformArl & { id: number; updatedAt: string | null };
+      data: AppColors &
+        PlatformArl &
+        PlatformSocial & { id: number; updatedAt: string | null };
     }>('/app-settings'),
 
   /** Solo ADMIN. */
-  update: (payload: Partial<AppColors> & Partial<PlatformArl>) =>
+  update: (
+    payload: Partial<AppColors> & Partial<PlatformArl> & Partial<PlatformSocial>,
+  ) =>
     http<{ message?: string }>('/app-settings', {
       method: 'PATCH',
       body: payload,

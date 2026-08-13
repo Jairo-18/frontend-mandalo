@@ -18,7 +18,8 @@ export type TextFormat =
   | 'identification'
   | 'upper'
   | 'nit'
-  | 'cop';
+  | 'cop'
+  | 'plate';
 
 /** Validación de formato de correo (compartida por login y registro). */
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -111,12 +112,25 @@ const FORMATTERS: Record<TextFormat, (value: string) => string> = {
   },
   /** Celular legible: "+57 - 310 210 366 0" (enviar con normalizePhone). */
   phone: formatPhone,
-  /** Identificación: números y letras MAYÚSCULAS (cédulas y pasaportes). */
-  identification: (v) => v.toUpperCase().replace(/[^A-Z0-9]/g, ''),
+  /**
+   * Identificación: MAYÚSCULAS, letras/números/símbolos (cédulas, pasaportes
+   * y extranjería traen formatos mixtos — solo se bloquean espacios). El
+   * tope de 15 caracteres lo pone el `maxLength` de cada campo.
+   */
+  identification: (v) => v.toUpperCase().replace(/\s+/g, ''),
   /** MAYÚSCULAS sostenidas (razón social). */
   upper: (v) => collapseSpaces(v).toUpperCase(),
   /** NIT: dígitos y guion de verificación ("901234567-8"). */
   nit: (v) => v.replace(/[^0-9-]/g, ''),
+  /**
+   * Placa del vehículo: MAYÚSCULAS, solo letras/números, guion automático
+   * tras el 3er carácter ("2B3-172") — máximo 6 caracteres SIN contar el
+   * guion (el propio formatter lo trunca, no hace falta `maxLength`).
+   */
+  plate: (v) => {
+    const clean = v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    return clean.length > 3 ? `${clean.slice(0, 3)}-${clean.slice(3)}` : clean;
+  },
   /** Pesos colombianos legibles: "20000" → "20.000" (enviar con copToNumber). */
   cop: (v) => {
     const digits = v.replace(/\D/g, '').replace(/^0+(?=\d)/, '');

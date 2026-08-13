@@ -462,6 +462,7 @@ export default function CompleteRegistrationScreen() {
                     label="Número de identificación"
                     icon="finger-print-outline"
                     format="identification"
+                    maxLength={15}
                     value={identificationNumber}
                     onChangeText={bind(
                       'identificationNumber',

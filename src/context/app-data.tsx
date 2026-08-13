@@ -22,7 +22,9 @@ import {
   AppColors,
   appSettingsService,
   DEFAULT_APP_COLORS,
+  DEFAULT_PLATFORM_SOCIAL,
   isValidAppColors,
+  PlatformSocial,
 } from '@/services/app-settings';
 import {
   catalogService,
@@ -41,6 +43,13 @@ type AppData = {
    * las variables CSS solas, ver `AppColorsRoot` más abajo).
    */
   appColors: AppColors;
+  /**
+   * Redes y contacto públicos (el admin los carga en "Aplicación"): YouTube/
+   * Facebook/Instagram/teléfono. Disponible desde antes de login (login,
+   * registro) — cualquiera de los 4 puede venir `null` si el admin no lo
+   * llenó, quien lo consume oculta esa fila puntual.
+   */
+  platformSocial: PlatformSocial;
   /** Municipios de un departamento (con caché en memoria y en disco). */
   getMunicipalities: (departmentId: number) => Promise<Municipality[]>;
 };
@@ -63,6 +72,7 @@ type State = {
   departments: Department[];
   identificationTypes: IdentificationType[];
   appColors: AppColors;
+  platformSocial: PlatformSocial;
 };
 
 /**
@@ -113,6 +123,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           departments: cached.departments,
           identificationTypes: cached.identificationTypes,
           appColors: cachedAppColors,
+          platformSocial: cached.platformSocial ?? DEFAULT_PLATFORM_SOCIAL,
         }
       : {
           loading: true,
@@ -121,6 +132,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           departments: [],
           identificationTypes: [],
           appColors: DEFAULT_APP_COLORS,
+          platformSocial: DEFAULT_PLATFORM_SOCIAL,
         },
   );
 
@@ -133,6 +145,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     departments: cached?.departments ?? [],
     identificationTypes: cached?.identificationTypes ?? [],
     appColors: cachedAppColors,
+    platformSocial: cached?.platformSocial ?? DEFAULT_PLATFORM_SOCIAL,
   });
 
   const persist = useCallback(() => {
@@ -166,7 +179,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           borderLightColor: appColorsRes.data.borderLightColor,
           borderDarkColor: appColorsRes.data.borderDarkColor,
         };
-        latestData.current = { departments, identificationTypes, appColors };
+        const platformSocial: PlatformSocial = {
+          youtubeUrl: appColorsRes.data.youtubeUrl,
+          facebookUrl: appColorsRes.data.facebookUrl,
+          instagramUrl: appColorsRes.data.instagramUrl,
+          contactPhone: appColorsRes.data.contactPhone,
+        };
+        latestData.current = {
+          departments,
+          identificationTypes,
+          appColors,
+          platformSocial,
+        };
         setState({
           loading: false,
           error: null,
@@ -174,6 +198,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           departments,
           identificationTypes,
           appColors,
+          platformSocial,
         });
         persist();
       } catch (e) {
@@ -333,6 +358,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         departments: state.departments,
         identificationTypes: state.identificationTypes,
         appColors: state.appColors,
+        platformSocial: state.platformSocial,
         getMunicipalities,
       }}
     >

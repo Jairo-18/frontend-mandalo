@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Platform,
   Pressable,
   Text,
@@ -31,6 +32,7 @@ import { getSession, setSession } from '@/lib/session';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { formatText, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
 import { MyProfile, profileService } from '@/services/profile';
+import { buildSocialLinkItems } from '@/lib/social-links';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
@@ -76,7 +78,8 @@ export function ProfileScreen({
   // pedidos); el repartidor no lo tiene, así que la nota de más abajo no
   // aplica para él.
   const isClient = changePasswordHref === '/change-password';
-  const { departments, identificationTypes } = useAppData();
+  const { departments, identificationTypes, platformSocial } = useAppData();
+  const socialItems = buildSocialLinkItems(platformSocial);
   const muni = useMunicipalities();
   const { errors, clearError, bind, validate } = useFormErrors();
 
@@ -437,6 +440,7 @@ export function ProfileScreen({
               label="Número de identificación"
               icon="finger-print-outline"
               format="identification"
+              maxLength={15}
               value={identificationNumber}
               onChangeText={bind(
                 'identificationNumber',
@@ -695,6 +699,22 @@ export function ProfileScreen({
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
             </Pressable>
+
+            {/* Redes/contacto que el admin carga en "Aplicación" — vacío si
+                todavía no cargó nada. */}
+            {socialItems.map((item) => (
+              <Pressable
+                key={item.key}
+                onPress={() => Linking.openURL(item.url)}
+                className="mt-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+              >
+                <Ionicons name={item.icon} size={20} color={colors.mutedColor} />
+                <Text className="flex-1 text-[14px] font-bold text-ink">
+                  {item.label}
+                </Text>
+                <Ionicons name="open-outline" size={16} color={colors.mutedColor} />
+              </Pressable>
+            ))}
           </View>
         </View>
       </KeyboardAwareScroll>

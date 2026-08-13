@@ -189,6 +189,7 @@ export default function BusinessLeadScreen() {
                 label="NIT o cédula (opcional)"
                 icon="finger-print-outline"
                 format="identification"
+                maxLength={15}
                 value={identificationNumber}
                 onChangeText={setIdentificationNumber}
                 placeholder="1090123456"

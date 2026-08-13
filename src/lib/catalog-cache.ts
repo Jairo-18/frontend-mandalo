@@ -1,6 +1,6 @@
 import { File, Paths } from 'expo-file-system';
 
-import type { AppColors } from '@/services/app-settings';
+import type { AppColors, PlatformSocial } from '@/services/app-settings';
 import type {
   Department,
   IdentificationType,
@@ -23,6 +23,9 @@ export type CatalogCache = {
    * campo no lo traen — `appColors ?? DEFAULT_APP_COLORS` en quien lo lea.
    */
   appColors?: AppColors;
+  /** Redes/contacto públicos (§ redes y contacto). Igual que `appColors`,
+   * opcional: los cachés guardados antes de este campo no lo traen. */
+  platformSocial?: PlatformSocial;
   savedAt: string;
 };
 

@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthHeader } from '@/components/auth/auth-header';
+import { SocialContactBar } from '@/components/auth/social-contact-bar';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { useAppTheme } from '@/context/app-theme';
 import { getAppColors } from '@/lib/app-colors';
@@ -124,6 +125,8 @@ export default function RegisterChooser() {
             ¿Cómo funciona Mandalo?
           </Text>
         </Pressable>
+
+        <SocialContactBar />
 
         <View className="mt-auto pt-4">
           <DeveloperCredit />

@@ -56,6 +56,7 @@ const FORMAT_DEFAULTS: Partial<Record<TextFormat, TextInputProps>> = {
   // iOS muestra teclado numérico con signos; Android cae al teclado normal.
   nit: { keyboardType: 'numbers-and-punctuation', autoCorrect: false },
   cop: { keyboardType: 'number-pad' },
+  plate: { autoCapitalize: 'characters', autoCorrect: false },
 };
 
 export function TextField({

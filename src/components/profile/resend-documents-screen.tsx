@@ -174,7 +174,7 @@ export function ResendDocumentsScreen() {
             <TextField
               label="Placa del vehículo"
               icon="bicycle-outline"
-              format="identification"
+              format="plate"
               value={vehiclePlate}
               onChangeText={() => {}}
               editable={false}
@@ -234,10 +234,10 @@ export function ResendDocumentsScreen() {
             <TextField
               label="Placa del vehículo"
               icon="bicycle-outline"
-              format="identification"
+              format="plate"
               value={vehiclePlate}
               onChangeText={setVehiclePlate}
-              placeholder="ABC12D"
+              placeholder="2B3-172"
             />
             <DocumentPhotoField
               label="Licencia de conducción — por delante"

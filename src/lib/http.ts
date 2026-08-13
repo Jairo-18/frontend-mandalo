@@ -12,6 +12,31 @@ export class HttpError extends Error {
   }
 }
 
+/**
+ * Qué hacer cuando el backend rechaza con 401 una sesión que SÍ mandamos
+ * (token vencido/revocado, cuenta baneada a mitad de uso) — sin esto, el
+ * interceptor solo mostraba el toast y el usuario quedaba colgado en la
+ * pantalla actual. Se registra UNA vez desde `_layout.tsx` con
+ * `signOutEverywhere` (`lib/sign-out.ts`); no se importa directo acá para no
+ * armar un ciclo (`sign-out.ts` → `services/auth.ts` → `http.ts`).
+ */
+let unauthorizedHandler: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: () => void): void {
+  unauthorizedHandler = handler;
+}
+
+/** Evita disparar el handler varias veces si llegan varios 401 casi juntos
+ * (pantallas distintas refetcheando a la vez cuando la sesión muere). */
+let handlingUnauthorized = false;
+function notifyUnauthorized(): void {
+  if (handlingUnauthorized) return;
+  handlingUnauthorized = true;
+  unauthorizedHandler?.();
+  setTimeout(() => {
+    handlingUnauthorized = false;
+  }, 3000);
+}
+
 type Options = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
@@ -129,6 +154,12 @@ export async function http<T = unknown>(
   if (!res.ok) {
     const message = pickMessage(json, 'Ocurrió un error inesperado');
     if (toastError) toast.error(message);
+    // Solo dispara con el Bearer AUTOMÁTICO de la sesión (`auth`/`authOptional`).
+    // `signOut` manda un `token` explícito — si no se excluyera, un 401 ahí
+    // (sesión ya muerta) volvería a llamarse a sí mismo sin parar.
+    if (res.status === 401 && (auth || authOptional) && bearer) {
+      notifyUnauthorized();
+    }
     throw new HttpError(message, res.status, json);
   }
 
@@ -205,6 +236,9 @@ export function httpUpload<T = unknown>(
       } else {
         const message = pickMessage(json, 'Ocurrió un error inesperado');
         if (toastError) toast.error(message);
+        if (xhr.status === 401 && auth && bearer) {
+          notifyUnauthorized();
+        }
         reject(new HttpError(message, xhr.status, json));
       }
     };

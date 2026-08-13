@@ -90,11 +90,11 @@ export function DeliveryVerification({
       <TextField
         label="Placa del vehículo"
         icon="bicycle-outline"
-        format="identification"
+        format="plate"
         value={vehiclePlate}
         onChangeText={onVehiclePlate}
         error={errors.vehiclePlate}
-        placeholder="ABC12D"
+        placeholder="2B3-172"
       />
       <DocumentPhotoField
         label="Licencia de conducción — por delante"
