@@ -32,9 +32,8 @@ export type ArlInfo = {
 };
 
 export const REASON_OPTIONS = [
-  'Me accidenté',
-  'Me caí',
-  'Me chocaron',
+  'Choque con otro vehículo',
+  'Caída',
   'Otro',
 ] as const;
 

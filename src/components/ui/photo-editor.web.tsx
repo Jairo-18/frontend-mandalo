@@ -80,7 +80,9 @@ export function PhotoEditor({ visible, uri, width, height, onCancel, onDone }: P
         context.resize({ width: MAX_OUTPUT, height: MAX_OUTPUT });
       }
       const rendered = await context.renderAsync();
-      const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.85 });
+      // Casi sin pérdida: el backend igual re-optimiza a WebP, ver mismo
+      // comentario en photo-editor.tsx.
+      const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.95 });
       onDone(saved.uri);
     } catch {
       toast.error('No se pudo recortar la imagen');

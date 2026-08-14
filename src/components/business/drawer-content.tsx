@@ -1,7 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -127,8 +133,9 @@ export function BusinessDrawerContent({ navigation }: Props) {
       </View>
       </LinearGradient>
 
-      {/* Navegación */}
-      <View className="flex-1 px-3 pt-4">
+      {/* Navegación: ScrollView (no View), ver mismo comentario en
+          admin/drawer-content.tsx — evita el solape en web con muchos ítems. */}
+      <ScrollView className="flex-1 px-3 pt-4" showsVerticalScrollIndicator={false}>
         {ITEMS.map((item) => {
           const active = pathname === item.href;
           const badge = item.href === '/business/orders' ? pendingCount : 0;
@@ -162,7 +169,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* Cerrar sesión */}
       <View className="border-t border-border px-3">

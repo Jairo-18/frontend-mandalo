@@ -28,7 +28,10 @@ const MAX_ZOOM = 5;
  * con sharp). Ajustable por caso de uso vía `maxOutput` (p. ej. las fotos de
  * producto no necesitan tanto detalle como un avatar/documento). */
 const DEFAULT_MAX_OUTPUT = 1080;
-const DEFAULT_QUALITY = 0.85;
+// Casi sin pérdida: el backend igual re-optimiza a WebP (localStorage.service
+// .ts), así que comprimir fuerte acá solo suma una segunda pasada de pérdida
+// sobre avatares/documentos (pedido del cliente 2026-08-13, se veían borrosos).
+const DEFAULT_QUALITY = 0.95;
 
 type Props = {
   visible: boolean;

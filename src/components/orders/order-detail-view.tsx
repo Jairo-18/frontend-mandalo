@@ -343,7 +343,8 @@ export function OrderDetailView({
         <View className="flex-row items-center gap-2">
           <Ionicons name="cash-outline" size={16} color={colors.mutedColor} />
           <Text className="text-[13px] text-ink">
-            Pago: {order.paidType?.name ?? '—'} (contra-entrega)
+            Pago: {order.paidType?.name ?? '—'}
+            {order.paidType?.code === 'EFEC' ? ' (contra-entrega)' : ''}
           </Text>
         </View>
         {!!order.notes && (

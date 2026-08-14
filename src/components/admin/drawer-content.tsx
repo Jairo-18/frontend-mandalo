@@ -1,7 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -176,8 +182,10 @@ export function AdminDrawerContent({ navigation }: Props) {
       </View>
       </LinearGradient>
 
-      {/* Navegación */}
-      <View className="flex-1 px-3 pt-4">
+      {/* Navegación: ScrollView (no View) — en web con muchos ítems el
+          contenido desbordaba un `flex-1` sin scroll y se montaba encima de
+          "Cerrar sesión"/"¿Necesitas ayuda?" en vez de dejar hacer scroll. */}
+      <ScrollView className="flex-1 px-3 pt-4" showsVerticalScrollIndicator={false}>
         {ITEMS.map((item) => {
           const active = pathname === item.href;
           const badge = item.href === '/admin/accidents' ? unreviewedAccidents : 0;
@@ -211,7 +219,7 @@ export function AdminDrawerContent({ navigation }: Props) {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* Cerrar sesión */}
       <View className="border-t border-border px-3">

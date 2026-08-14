@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /business
+Disallow: /delivery
+Disallow: /chat
+Disallow: /checkout
+Disallow: /auth
