@@ -170,7 +170,9 @@ export function AdminDrawerContent({ navigation }: Props) {
               {displayName}
             </Text>
             <Text className="text-xs text-white/60">
-              {user?.role?.name ?? 'Administrador'} · Editar mi perfil
+              {user?.role?.name ?? 'Administrador'}
+              {user?.municipality ? ` · ${user.municipality.name}` : ''}
+              {' · Editar mi perfil'}
             </Text>
           </View>
           {loadingProfile ? (

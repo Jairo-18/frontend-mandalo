@@ -21,6 +21,8 @@ export type Session = {
     fullName: string;
     roleTypeId?: string;
     role?: { id: string; code: string; name: string } | null;
+    /** Solo ADMIN: municipio de la cuenta (regional) o null (superadmin, ve todo). */
+    municipality?: { id: number; name: string } | null;
     avatarUrl?: string | null;
     /** false en un DELI recién registrado: cuenta en proceso de habilitación. */
     isActive?: boolean;
@@ -46,6 +48,7 @@ export function homePathFor(
 ): '/admin/dashboard' | '/business/dashboard' | '/delivery' | '/home' {
   switch (user?.role?.code) {
     case 'ADMIN':
+    case 'SUPERADMIN':
       return '/admin/dashboard';
     case 'NEGO':
       return '/business/dashboard';

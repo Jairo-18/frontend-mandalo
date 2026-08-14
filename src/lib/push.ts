@@ -147,7 +147,7 @@ function navigateFromNotification(
     if (data.type !== 'order') return;
     if (role === 'NEGO') router.push('/business/orders');
     else if (role === 'DELI') router.push('/delivery');
-    else if (role === 'ADMIN') router.push('/admin/orders');
+    else if (role === 'ADMIN' || role === 'SUPERADMIN') router.push('/admin/orders');
     else router.push(`/orders/${data.invoiceId}`);
   } catch {
     // Router sin montar todavía (cold start muy temprano): el usuario ya

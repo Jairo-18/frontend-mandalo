@@ -228,6 +228,12 @@ export function UserFormModal({
         identificationNumber.trim() && !identificationTypeId
           ? 'Selecciona el tipo.'
           : undefined,
+      // Una cuenta ADMIN siempre necesita municipio (el backend lo exige
+      // igual) — ya no existe "ADMIN sin municipio" como superadmin implícito.
+      municipalityId:
+        !isEdit && roleCode === 'ADMIN' && !muni.municipalityId
+          ? 'Asigna un municipio a la cuenta de administrador.'
+          : undefined,
     });
   }
 

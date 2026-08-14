@@ -38,7 +38,7 @@ export default function AdminLayout() {
     );
   }
 
-  if (session?.user.role?.code !== 'ADMIN') {
+  if (!['ADMIN', 'SUPERADMIN'].includes(session?.user.role?.code ?? '')) {
     return <Redirect href={homePathFor(session?.user)} />;
   }
 

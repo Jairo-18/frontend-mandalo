@@ -15,6 +15,7 @@ import { SearchBar } from '@/components/ui/search-bar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
+import { useSession } from '@/hooks/use-session';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
@@ -86,6 +87,11 @@ export function UserCrudScreen({
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isDark } = useAppTheme();
+  // Solo el rol SUPERADMIN puede crear cuentas ADMIN — el backend lo exige
+  // igual (UserService.create), esto es solo la UI.
+  const isSuperAdmin = useSession()?.user.role?.code === 'SUPERADMIN';
+  const canCreateAdmin = isSuperAdmin && roleCodes.includes('ADMIN');
+  const [creatingRole, setCreatingRole] = useState<RoleCode>(createRoleCode);
 
   const [searchField, setSearchField] = useState<UserSearchField>('search');
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all');
@@ -113,8 +119,9 @@ export function UserCrudScreen({
   // Con más de un rol en pantalla, cada tarjeta muestra el suyo.
   const showRoleBadge = roleCodes.length > 1;
 
-  function openCreate() {
+  function openCreate(role: RoleCode = createRoleCode) {
     setEditing(null);
+    setCreatingRole(role);
     setFormVisible(true);
   }
 
@@ -327,12 +334,25 @@ export function UserCrudScreen({
         />
       </View>
 
-      <Fab onPress={openCreate} />
+      {/* Solo superadmin: crear cuenta ADMIN (regional o superadmin) aparte
+          del botón normal de crear cliente. */}
+      {canCreateAdmin && (
+        <Pressable
+          onPress={() => openCreate('ADMIN')}
+          className="absolute right-5 flex-row items-center gap-1.5 rounded-full bg-card px-3.5 py-2 shadow-lg active:opacity-80"
+          style={{ bottom: insets.bottom + 140 }}
+        >
+          <Ionicons name="shield-checkmark-outline" size={16} color={colors.primaryColor} />
+          <Text className="text-xs font-bold text-primary">Nuevo admin</Text>
+        </Pressable>
+      )}
+
+      <Fab onPress={() => openCreate()} />
 
       <UserFormModal
         visible={formVisible}
-        roleCode={createRoleCode}
-        entityName={entityName}
+        roleCode={creatingRole}
+        entityName={creatingRole === 'ADMIN' ? 'administrador' : entityName}
         editing={editing}
         onClose={() => setFormVisible(false)}
         onSaved={handleSaved}

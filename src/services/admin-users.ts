@@ -2,7 +2,7 @@ import { http } from '@/lib/http';
 import { filePart } from '@/lib/upload';
 
 /** Codes de rol tal como están sembrados en la tabla `roleType` del backend. */
-export type RoleCode = 'USER' | 'DELI' | 'NEGO' | 'ADMIN';
+export type RoleCode = 'USER' | 'DELI' | 'NEGO' | 'ADMIN' | 'SUPERADMIN';
 
 export type CatalogRef = {
   id: string | number;
