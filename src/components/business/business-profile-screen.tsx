@@ -202,8 +202,8 @@ export function BusinessProfileScreen() {
           </InfoRow>
           <InfoRow icon="navigate-outline" label="Ubicación exacta" last>
             {business.latitude != null && business.longitude != null
-              ? 'Asignada por el administrador'
-              : 'Sin asignar'}
+              ? 'Asignada — toca "Editar mi negocio" para ajustarla'
+              : 'Sin asignar — tócala en "Editar mi negocio"'}
           </InfoRow>
         </Card>
 

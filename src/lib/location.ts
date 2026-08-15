@@ -207,7 +207,10 @@ export async function reverseGeocodeCoords(
 }
 
 export async function getDeviceLocation(): Promise<DeviceLocation | null> {
-  if (!(await ensureLocationConsent())) return null;
+  if (!(await ensureLocationConsent())) {
+    toast.error('Debes aceptar el uso de ubicación en la app para marcar tu dirección.');
+    return null;
+  }
 
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {

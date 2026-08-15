@@ -93,6 +93,7 @@ export default function ClientOrdersScreen() {
                 ? businessDisplayName(item.organizational)
                 : `Pedido #${item.id}`
             }
+            logoUri={item.organizational?.logoUrl}
             onPress={() =>
               router.push({ pathname: '/orders/[id]', params: { id: String(item.id) } })
             }

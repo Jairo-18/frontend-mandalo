@@ -13,9 +13,10 @@ let coordsPromise: Promise<DeviceCoords | null> | null = null;
  * Un solo fix de GPS por sesión de la app, compartido entre TODAS las
  * pantallas que cotizan domicilio (antes cada montada de `useDeliveryEstimates`
  * pedía su propio fix — home Y la tienda pedían el GPS por separado al
- * navegar de una a la otra).
+ * navegar de una a la otra). Exportada para que el home también la use como
+ * respaldo del filtro de cercanía cuando no hay dirección guardada (invitado).
  */
-function sharedCoords(): Promise<DeviceCoords | null> {
+export function sharedCoords(): Promise<DeviceCoords | null> {
   if (!coordsPromise) coordsPromise = getDeviceCoordsSilently();
   return coordsPromise;
 }

@@ -17,6 +17,7 @@ import { ProductDetailSheet } from '@/components/client/product-detail-sheet';
 import { Avatar } from '@/components/ui/avatar';
 import { FilterChips } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { SearchBar } from '@/components/ui/search-bar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
@@ -67,6 +68,8 @@ export default function StoreScreen() {
   const [switchTo, setSwitchTo] = useState<ExploreProduct | null>(null);
   // Detalle abierto (tocar la tarjeta): fotos completas + descripción.
   const [detail, setDetail] = useState<ExploreProduct | null>(null);
+  // Logo del negocio a pantalla completa (tocar el avatar de la cabecera).
+  const [logoPreview, setLogoPreview] = useState(false);
 
   const categoryTypeId =
     categoryValue === 'all' ? undefined : Number(categoryValue);
@@ -180,13 +183,18 @@ export default function StoreScreen() {
       {/* Cabecera: volver + negocio */}
       <View className="flex-row items-center gap-3 px-5 pb-3 pt-2">
         <BackButton onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
-        <Avatar
-          uri={business.logoUrl}
-          fallbackSource={DEFAULT_BUSINESS_LOGO}
-          icon="storefront-outline"
-          size={48}
-          shape="rounded"
-        />
+        <Pressable
+          onPress={() => business.logoUrl && setLogoPreview(true)}
+          disabled={!business.logoUrl}
+        >
+          <Avatar
+            uri={business.logoUrl}
+            fallbackSource={DEFAULT_BUSINESS_LOGO}
+            icon="storefront-outline"
+            size={72}
+            shape="rounded"
+          />
+        </Pressable>
         <View className="flex-1">
           <Text numberOfLines={1} className="text-lg font-extrabold text-ink">
             {businessDisplayName(business)}
@@ -394,6 +402,11 @@ export default function StoreScreen() {
         confirmLabel="Vaciar y agregar"
         onConfirm={confirmSwitch}
         onCancel={() => setSwitchTo(null)}
+      />
+
+      <PhotoPreviewModal
+        uri={logoPreview ? business.logoUrl ?? null : null}
+        onClose={() => setLogoPreview(false)}
       />
     </SafeAreaView>
   );

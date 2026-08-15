@@ -177,15 +177,15 @@ export default function QuickRegisterScreen() {
             placeholder="+57 - 300 123 456 7"
           />
 
-          {/* Dirección de entrega: solo lectura, se llena con el mapa. */}
+          {/* Dirección de entrega: se prellena con el mapa pero queda editable. */}
           <TextField
-            label="Dirección (se llena con tu ubicación)"
+            label="Dirección"
             icon="home-outline"
             format="text"
             value={address}
+            onChangeText={bind('address', setAddress)}
             error={errors.location}
             placeholder="Toca «Marcar en el mapa»"
-            editable={false}
           />
           <Pressable
             onPress={() => setMapVisible(true)}

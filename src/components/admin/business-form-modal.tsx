@@ -387,12 +387,19 @@ export function BusinessFormModal({
       if (selfBusiness) {
         // Panel del negocio: el backend resuelve el id desde el JWT y solo
         // acepta lo que el negocio puede tocar. Se envía únicamente eso (la
-        // identidad legal, ubicación y etiquetas las asigna el admin/vendedor);
-        // el backend igual las descarta por si acaso (updateMine).
+        // identidad legal, el municipio y etiquetas las asigna el
+        // admin/vendedor); el backend igual las descarta por si acaso
+        // (updateMine). La ubicación exacta (dirección/coords) SÍ viaja: el
+        // negocio ya puede ajustar su propio punto en el mapa.
         const minePayload: Partial<AdminBusinessPayload> = {
           tradeName: payload.tradeName,
           description: payload.description,
           phone: payload.phone,
+          address: payload.address,
+          ...(coords && {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          }),
           openTime: payload.openTime,
           closeTime: payload.closeTime,
           openDays: payload.openDays,
@@ -479,15 +486,16 @@ export function BusinessFormModal({
         placeholderIcon="storefront-outline"
       />
 
-      {/* En el panel del negocio, la identidad legal, la ubicación y las
-          etiquetas las asigna el admin/vendedor: se ven bloqueadas (🔒). */}
+      {/* En el panel del negocio, la identidad legal, el municipio y las
+          etiquetas las asigna el admin/vendedor: se ven bloqueadas (🔒). La
+          ubicación exacta (dirección/mapa) sí la puede ajustar el negocio. */}
       {selfBusiness && (
         <View className="mb-4 flex-row gap-2.5 rounded-xl bg-primary-tint px-3.5 py-3">
           <Ionicons name="lock-closed" size={18} color={colors.primaryColor} />
           <Text className="flex-1 text-[13px] text-primary">
-            Los campos con candado (razón social, identificación, ubicación y
+            Los campos con candado (razón social, identificación, municipio y
             etiquetas) los asigna el administrador y no se pueden editar aquí.
-            Puedes cambiar el resto.
+            La ubicación exacta y el resto sí los puedes cambiar.
           </Text>
         </View>
       )}
@@ -602,63 +610,55 @@ export function BusinessFormModal({
         onChangeText={bind('address', setAddress)}
         error={errors.address}
         placeholder="Cra 5 # 10-23, Centro"
-        readOnly={selfBusiness}
       />
 
-      {selfBusiness ? (
-        /* Ubicación de solo lectura: la asigna el administrador. */
-        <View className="mb-4 flex-row items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-3">
-          <Ionicons name="lock-closed" size={20} color={colors.mutedColor} />
-          <Text className="flex-1 text-[15px] text-muted">
-            {coords
-              ? 'Ubicación exacta asignada por el administrador.'
-              : 'El administrador aún no asignó la ubicación exacta.'}
-          </Text>
-          {coords && (
-            <Ionicons name="checkmark-circle" size={18} color={colors.primaryColor} />
-          )}
-        </View>
-      ) : (
-        <>
-          {/* Ubicación exacta: mapa + buscador + link (ver BusinessLocationPicker) */}
-          <Text className="mb-2 text-sm font-bold text-ink">
-            Ubicación del negocio
-          </Text>
-          <Pressable
-            onPress={() => setLocationPickerVisible(true)}
-            className="mb-1 h-[52px] flex-row items-center gap-2.5 rounded-xl border border-border px-3.5 active:opacity-70"
-          >
-            <Ionicons
-              name={coords ? 'checkmark-circle' : 'map-outline'}
-              size={20}
-              color={coords ? colors.primaryColor : colors.mutedColor}
-            />
-            <Text
-              className={`flex-1 text-[15px] ${coords ? 'font-semibold text-ink' : 'text-muted'}`}
-            >
-              {coords
-                ? `Ubicación asignada (${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)})`
-                : 'Elegir ubicación en el mapa (obligatorio)'}
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
-          </Pressable>
-          {!!errors.location && (
-            <Text className="mb-3 text-xs text-red-600">{errors.location}</Text>
-          )}
-          <View className="mb-4" />
-
-          <BusinessLocationPicker
-            visible={locationPickerVisible}
-            initialCoords={coords}
-            onClose={() => setLocationPickerVisible(false)}
-            onConfirm={(result) => {
-              setCoords(result.coords);
-              clearError('location');
-              setLocationPickerVisible(false);
-            }}
-          />
-        </>
+      {/* Ubicación exacta: mapa + buscador + link (ver BusinessLocationPicker).
+          El negocio la puede ajustar igual que el admin — normalmente parado
+          en su propio local, con mejor precisión que el admin a la distancia. */}
+      <Text className="mb-2 text-sm font-bold text-ink">
+        Ubicación del negocio
+      </Text>
+      <Pressable
+        onPress={() => setLocationPickerVisible(true)}
+        className="mb-1 h-[52px] flex-row items-center gap-2.5 rounded-xl border border-border px-3.5 active:opacity-70"
+      >
+        <Ionicons
+          name={coords ? 'checkmark-circle' : 'map-outline'}
+          size={20}
+          color={coords ? colors.primaryColor : colors.mutedColor}
+        />
+        <Text
+          className={`flex-1 text-[15px] ${coords ? 'font-semibold text-ink' : 'text-muted'}`}
+        >
+          {coords
+            ? `Ubicación asignada (${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)})`
+            : selfBusiness
+              ? 'Elegir ubicación en el mapa'
+              : 'Elegir ubicación en el mapa (obligatorio)'}
+        </Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
+      </Pressable>
+      {!!errors.location && (
+        <Text className="mb-3 text-xs text-red-600">{errors.location}</Text>
       )}
+      <View className="mb-4" />
+
+      <BusinessLocationPicker
+        visible={locationPickerVisible}
+        initialCoords={coords}
+        onClose={() => setLocationPickerVisible(false)}
+        onConfirm={(result) => {
+          setCoords(result.coords);
+          clearError('location');
+          // Prellena la dirección con lo que resolvió el mapa (Google/geocoder
+          // nativo) — el campo sigue editable por si el texto queda genérico.
+          if (result.label) {
+            setAddress(result.label);
+            clearError('address');
+          }
+          setLocationPickerVisible(false);
+        }}
+      />
 
       {/* Dueño/representante y cuenta de acceso: solo los maneja el admin */}
       {!selfBusiness && (

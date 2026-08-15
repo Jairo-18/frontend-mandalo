@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -16,9 +17,11 @@ import { OrderMap } from '@/components/orders/order-map';
 import { OrderTimeline } from '@/components/orders/order-timeline';
 import { Avatar } from '@/components/ui/avatar';
 import { PhotoActionsSheet } from '@/components/ui/photo-actions-sheet';
+import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { pickPhoto } from '@/lib/pick-photo';
 import { formatPrice } from '@/lib/price';
-import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
+import { toast } from '@/lib/toast';
+import { DEFAULT_BUSINESS_LOGO, DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
 import { businessDisplayName } from '@/services/explore';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
@@ -256,6 +259,7 @@ export function OrderDetailView({
       {perspective !== 'business' && (
         <ContactRow
           icon="storefront-outline"
+          avatarUri={order.organizational?.logoUrl}
           label={businessName}
           detail={order.organizational?.phone || order.organizational?.address}
         />
@@ -523,38 +527,77 @@ export function OrderDetailView({
   );
 }
 
-/** Fila "etiqueta · valor" de los datos para pagar (número/llave/cuenta). */
+/** Fila "etiqueta · valor" de los datos para pagar (número/llave/cuenta), con botón de copiar. */
 function PayRow({ label, value }: { label: string; value: string }) {
+  const colors = useResolvedAppColors();
+
+  async function handleCopy() {
+    await Clipboard.setStringAsync(value);
+    toast.success('Copiado al portapapeles.');
+  }
+
   return (
-    <View className="mt-1 flex-row items-center justify-between">
+    <View className="mt-1 flex-row items-center justify-between gap-2">
       <Text className="text-[12px] text-muted">{label}</Text>
-      <Text
-        selectable
-        className="text-[13px] font-extrabold tracking-wide text-ink"
+      <Pressable
+        onPress={handleCopy}
+        hitSlop={6}
+        className="flex-row items-center gap-1.5 active:opacity-60"
       >
-        {value}
-      </Text>
+        <Text
+          selectable
+          className="text-[13px] font-extrabold tracking-wide text-ink"
+        >
+          {value}
+        </Text>
+        <Ionicons name="copy-outline" size={14} color={colors.primaryColor} />
+      </Pressable>
     </View>
   );
 }
 
 function ContactRow({
   icon,
+  avatarUri,
   label,
   detail,
   caption,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
+  /** Foto del negocio (logo) — si viene, reemplaza el ícono plano. */
+  avatarUri?: string | null;
   label: string;
   detail?: string | null;
   caption?: string;
 }) {
   const colors = useResolvedAppColors();
+  const [preview, setPreview] = useState(false);
   return (
     <View className="mb-3 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-3.5">
-      <View className="h-10 w-10 items-center justify-center">
-        <Ionicons name={icon} size={22} color={colors.primaryColor} />
-      </View>
+      {avatarUri !== undefined ? (
+        <>
+          <Pressable
+            onPress={() => avatarUri && setPreview(true)}
+            disabled={!avatarUri}
+          >
+            <Avatar
+              uri={avatarUri}
+              fallbackSource={DEFAULT_BUSINESS_LOGO}
+              icon={icon}
+              size={40}
+              shape="rounded"
+            />
+          </Pressable>
+          <PhotoPreviewModal
+            uri={preview ? avatarUri ?? null : null}
+            onClose={() => setPreview(false)}
+          />
+        </>
+      ) : (
+        <View className="h-10 w-10 items-center justify-center">
+          <Ionicons name={icon} size={22} color={colors.primaryColor} />
+        </View>
+      )}
       <View className="flex-1">
         {!!caption && (
           <Text className="text-[10px] font-bold uppercase tracking-wide text-muted">

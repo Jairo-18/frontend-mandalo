@@ -363,18 +363,22 @@ export default function CompleteRegistrationScreen() {
                 error={errors.municipalityId}
               />
 
-              {/* Solo lectura: se llena desde el GPS (repartidor) o el mapa
-                  (cliente). */}
+              {/* Repartidor: solo lectura — debe corresponder exacto al GPS
+                  (verificación de identidad). Cliente: prellenada por el mapa
+                  pero editable. */}
               <TextField
-                label="Dirección (se llena con tu ubicación)"
+                label={
+                  isDelivery ? 'Dirección (se llena con tu ubicación)' : 'Dirección'
+                }
                 icon="home-outline"
                 format="text"
                 value={address}
+                onChangeText={isDelivery ? undefined : bind('address', setAddress)}
                 error={errors.address}
                 placeholder={
                   isDelivery ? 'Toca «Usar mi ubicación actual»' : 'Toca «Marcar en el mapa»'
                 }
-                editable={false}
+                editable={!isDelivery}
               />
               {isDelivery ? (
                 <Pressable

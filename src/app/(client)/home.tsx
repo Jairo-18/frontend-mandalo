@@ -26,7 +26,7 @@ import { SearchBar } from '@/components/ui/search-bar';
 import { SectionTitle } from '@/components/ui/section-title';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useCart } from '@/context/cart';
-import { useDeliveryEstimates } from '@/hooks/use-delivery-estimates';
+import { useDeliveryEstimates, useNearGpsFallback } from '@/hooks/use-delivery-estimates';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useExploreFilters, useUserAddresses } from '@/hooks/use-user-data';
 import { useSession } from '@/hooks/use-session';
@@ -85,10 +85,14 @@ export default function HomeScreen() {
   const isGuest = !user;
 
   // Cercanía: el explorar se limita al radio alrededor de la dirección
-  // principal ("enviar a"). Primitivos en las deps (un objeto nuevo por
-  // render dispararía refetch infinito); sin coords no se filtra.
-  const nearLat = defaultAddress?.latitude ?? null;
-  const nearLng = defaultAddress?.longitude ?? null;
+  // principal ("enviar a"). Sin dirección guardada (invitado, o usuario
+  // logueado que aún no eligió una) cae al GPS silencioso — si no, esos
+  // usuarios ven TODOS los negocios del país sin filtrar (§ver home bug).
+  // Primitivos en las deps (un objeto nuevo por render dispararía refetch
+  // infinito); sin coords no se filtra.
+  const gpsCoords = useNearGpsFallback(!loadingAddress && !defaultAddress);
+  const nearLat = defaultAddress?.latitude ?? gpsCoords?.latitude ?? null;
+  const nearLng = defaultAddress?.longitude ?? gpsCoords?.longitude ?? null;
 
   /** Feed de negocios: solo el chip "Todos" lo abre (navegar negocios sin filtrar). */
   const businessMode = allBusinesses;

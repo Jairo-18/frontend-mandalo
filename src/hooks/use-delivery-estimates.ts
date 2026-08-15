@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
-import { fetchDeliveryEstimates } from '@/lib/delivery-estimates-store';
+import { fetchDeliveryEstimates, sharedCoords } from '@/lib/delivery-estimates-store';
+import { DeviceCoords } from '@/lib/location';
 import { DeliveryEstimate } from '@/services/explore';
 
 /**
@@ -30,4 +31,27 @@ export function useDeliveryEstimates(
   }, [idsKey]);
 
   return estimates;
+}
+
+/**
+ * GPS silencioso como respaldo del filtro "cerca de mí" cuando no hay
+ * dirección guardada (invitado, o usuario logueado que aún no eligió una) —
+ * mismo fix de GPS COMPARTIDO que usan las cotizaciones de domicilio
+ * (`lib/delivery-estimates-store.ts`), no pide el permiso dos veces.
+ */
+export function useNearGpsFallback(enabled: boolean): DeviceCoords | null {
+  const [coords, setCoords] = useState<DeviceCoords | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    sharedCoords().then((c) => {
+      if (alive) setCoords(c);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [enabled]);
+
+  return coords;
 }

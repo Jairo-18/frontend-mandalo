@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { OrderEta } from '@/components/orders/order-eta';
+import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 import { formatPrice } from '@/lib/price';
 import { stateMeta } from '@/lib/order-status';
 import { Order } from '@/services/orders';
@@ -14,8 +16,10 @@ type Props = {
   order: Order;
   /** Título de la tarjeta (negocio para el cliente, cliente para negocio/DELI). */
   title: string;
-  /** Icono junto al título. */
+  /** Icono junto al título (o de respaldo si `logoUri`/`DEFAULT_BUSINESS_LOGO` no aplican). */
   titleIcon?: keyof typeof Ionicons.glyphMap;
+  /** Foto/logo del negocio (perspectiva cliente) — para reconocer a quién le pidió. */
+  logoUri?: string | null;
   onPress: () => void;
   /** Rol que mira la lista: muestra el tiempo estimado vigente en la tarjeta. */
   perspective?: 'client' | 'business' | 'delivery';
@@ -51,6 +55,7 @@ export function OrderCard({
   order,
   title,
   titleIcon = 'storefront-outline',
+  logoUri,
   onPress,
   perspective,
   showAddress = false,
@@ -82,7 +87,17 @@ export function OrderCard({
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-1 flex-row items-center gap-2">
-          <Ionicons name={titleIcon} size={16} color={colors.mutedColor} />
+          {logoUri !== undefined ? (
+            <Avatar
+              uri={logoUri}
+              fallbackSource={DEFAULT_BUSINESS_LOGO}
+              icon={titleIcon}
+              size={28}
+              shape="rounded"
+            />
+          ) : (
+            <Ionicons name={titleIcon} size={16} color={colors.mutedColor} />
+          )}
           <Text numberOfLines={1} className="flex-1 text-[15px] font-bold text-ink">
             {title}
           </Text>

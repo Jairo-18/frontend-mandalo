@@ -90,22 +90,35 @@ export function BusinessLocationPicker({
   );
 
   // Carga el mapa (una sola vez por apertura del modal) y engancha el drag.
+  // Sin ubicación previa (negocio nuevo): arranca en el centro fijo de
+  // Putumayo y, si el GPS silencioso llega ANTES de que el mapa termine de
+  // cargar, `startRef` ya tiene el punto correcto para crearlo ahí mismo; si
+  // llega DESPUÉS, `moveTo` re-centra el mapa ya creado (mismo patrón que la
+  // versión nativa, `business-location-picker.tsx`).
   useEffect(() => {
     if (!visible || !GOOGLE_MAPS_WEB_KEY) return;
     let cancelled = false;
-    const start = initialCoords ?? DEFAULT_CENTER;
-    setCenter(start);
+    const startRef = { current: initialCoords ?? DEFAULT_CENTER };
+    setCenter(startRef.current);
     setMapsUrl('');
     setLinkError(undefined);
     setShowLinkInput(false);
-    void resolve(start);
+    void resolve(startRef.current);
+
+    if (!initialCoords) {
+      getDeviceCoordsSilently().then((coords) => {
+        if (cancelled || !coords) return;
+        startRef.current = coords;
+        moveTo(coords);
+      });
+    }
 
     loadGoogleMapsWeb(GOOGLE_MAPS_WEB_KEY)
       .then((google) => {
         if (cancelled) return;
         const container = mapContainerRef.current as unknown as HTMLElement | null;
         if (!container) return;
-        const point = { lat: start.latitude, lng: start.longitude };
+        const point = { lat: startRef.current.latitude, lng: startRef.current.longitude };
 
         if (!mapInstanceRef.current) {
           mapInstanceRef.current = new google.maps.Map(container, {

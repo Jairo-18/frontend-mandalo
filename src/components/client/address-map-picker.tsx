@@ -72,15 +72,43 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
   // el resto de modales de la app), así que hay que re-centrarlo a mano —
   // `initialRegion` solo aplica en el montaje inicial, no en reaperturas con
   // otras coords (p. ej. crear una dirección después de editar otra).
+  //
+  // Sin dirección previa (crear): arranca en el centro fijo de Putumayo y,
+  // apenas llega el GPS silencioso (si el usuario lo permite), se mueve ahí
+  // solo — antes se quedaba fijo en el centro hasta que el usuario tocaba
+  // "Usar mi ubicación" a mano, mostrando siempre Villagarzón de entrada.
   useEffect(() => {
     if (!visible) return;
-    const start = initialCoords ?? DEFAULT_CENTER;
-    setCenter(start);
+    if (initialCoords) {
+      setCenter(initialCoords);
+      mapRef.current?.animateToRegion(
+        { ...initialCoords, latitudeDelta: DELTA, longitudeDelta: DELTA },
+        0,
+      );
+      void resolve(initialCoords);
+      return;
+    }
+
+    setCenter(DEFAULT_CENTER);
     mapRef.current?.animateToRegion(
-      { ...start, latitudeDelta: DELTA, longitudeDelta: DELTA },
+      { ...DEFAULT_CENTER, latitudeDelta: DELTA, longitudeDelta: DELTA },
       0,
     );
-    void resolve(start);
+    void resolve(DEFAULT_CENTER);
+
+    let alive = true;
+    getDeviceCoordsSilently().then((coords) => {
+      if (!alive || !coords) return;
+      mapRef.current?.animateToRegion(
+        { ...coords, latitudeDelta: DELTA, longitudeDelta: DELTA },
+        400,
+      );
+      setCenter(coords);
+      void resolve(coords);
+    });
+    return () => {
+      alive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 

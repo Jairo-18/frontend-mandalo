@@ -93,19 +93,42 @@ export function BusinessLocationPicker({
     [resolve],
   );
 
-  // Al abrir: arranca desde la ubicación en edición (si la hay).
+  // Al abrir: arranca desde la ubicación en edición (si la hay). Sin ubicación
+  // previa (negocio nuevo), arranca en el centro fijo de Putumayo y se mueve
+  // solo al GPS silencioso apenas llega (si el usuario lo permite) — útil
+  // sobre todo cuando quien abre el picker es el propio negocio (está parado
+  // ahí), no solo el admin (que sí suele estar lejos y usa buscador/link).
   useEffect(() => {
     if (!visible) return;
-    const start = initialCoords ?? DEFAULT_CENTER;
-    setCenter(start);
     setMapsUrl('');
     setLinkError(undefined);
     setShowLinkInput(false);
+
+    if (initialCoords) {
+      setCenter(initialCoords);
+      mapRef.current?.animateToRegion(
+        { ...initialCoords, latitudeDelta: DELTA, longitudeDelta: DELTA },
+        0,
+      );
+      void resolve(initialCoords);
+      return;
+    }
+
+    setCenter(DEFAULT_CENTER);
     mapRef.current?.animateToRegion(
-      { ...start, latitudeDelta: DELTA, longitudeDelta: DELTA },
+      { ...DEFAULT_CENTER, latitudeDelta: DELTA, longitudeDelta: DELTA },
       0,
     );
-    void resolve(start);
+    void resolve(DEFAULT_CENTER);
+
+    let alive = true;
+    getDeviceCoordsSilently().then((coords) => {
+      if (!alive || !coords) return;
+      moveTo(coords);
+    });
+    return () => {
+      alive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 

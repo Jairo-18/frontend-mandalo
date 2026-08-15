@@ -384,19 +384,23 @@ export default function RegisterForm() {
             error={errors.municipalityId}
           />
 
-          {/* Solo lectura: se llena desde el GPS (repartidor) o el mapa
-              (cliente) para que el texto siempre corresponda a las
-              coordenadas reales. */}
+          {/* Repartidor: solo lectura — el texto debe corresponder exacto al
+              GPS (verificación de identidad junto a sus documentos). Cliente:
+              se prellena con el mapa pero queda editable por si el geocoder
+              da un texto genérico. */}
           <TextField
-            label="Dirección (se llena con tu ubicación)"
+            label={
+              isDelivery ? 'Dirección (se llena con tu ubicación)' : 'Dirección'
+            }
             icon="home-outline"
             format="text"
             value={address}
+            onChangeText={isDelivery ? undefined : bind('address', setAddress)}
             error={errors.address}
             placeholder={
               isDelivery ? 'Toca «Usar mi ubicación actual»' : 'Toca «Marcar en el mapa»'
             }
-            editable={false}
+            editable={!isDelivery}
           />
           {isDelivery ? (
             // El repartidor necesita su ubicación REAL (va junto a sus
