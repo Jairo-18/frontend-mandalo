@@ -69,13 +69,13 @@ export function OrderTimeline({ order }: Props) {
                 }`}
               />
               <View
-                className={`h-7 w-7 items-center justify-center rounded-full ${
-                  done ? 'bg-primary' : 'bg-border'
+                className={`h-8 w-8 items-center justify-center rounded-full border ${
+                  done ? 'border-primary bg-primary' : 'border-border bg-white'
                 }`}
               >
                 <Ionicons
                   name={meta.icon}
-                  size={15}
+                  size={16}
                   color={done ? '#FFFFFF' : colors.mutedColor}
                 />
               </View>
@@ -92,7 +92,7 @@ export function OrderTimeline({ order }: Props) {
             </View>
             <Text
               numberOfLines={1}
-              className={`mt-1 text-[9px] font-semibold ${
+              className={`mt-1 text-[10px] font-semibold ${
                 done ? 'text-primary' : 'text-muted'
               }`}
             >

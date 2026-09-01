@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/orders/action-button';
 import { OrderCard } from '@/components/orders/order-card';
@@ -42,7 +41,6 @@ type Tab = 'available' | 'mine';
  */
 export function DeliveryOrders() {
   const colors = useResolvedAppColors();
-  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('available');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // Filtros de "Mis entregas" (los disponibles no se filtran: van por antigüedad).
@@ -334,10 +332,13 @@ export function DeliveryOrders() {
             action={cardAction(item)}
           />
         )}
-        // La pantalla solo aplica el safe area de arriba (edges top): el
-        // inset inferior va aquí para que la última tarjeta no quede debajo
-        // de la barra de navegación del sistema.
-        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24 }}
+        // Fijo, SIN sumar insets.bottom: esta pantalla vive dentro del menú
+        // inferior de Tabs del repartidor, que ya reserva el inset real de
+        // la barra de navegación del sistema en su propia altura — sumarlo
+        // acá también (como antes, de cuando esta pantalla no tenía barra
+        // inferior) dejaba un espacio vacío de más entre la última tarjeta y
+        // el menú.
+        contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
         refreshing={list.refreshing}
         onRefresh={() => list.fetchPage(1, 'refresh')}
         onEndReached={list.loadMore}

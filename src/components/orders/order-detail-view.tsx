@@ -519,7 +519,7 @@ export function OrderDetailView({
         {order.deliverySurcharge > 0 && (
           <TotalRow label="Recargo" value={formatPrice(order.deliverySurcharge)} />
         )}
-        <TotalRow label="Servicio" value={formatPrice(order.serviceFee)} />
+        <TotalRow label="Tarifa de servicio" value={formatPrice(order.serviceFee)} />
         <View className="my-2 h-px bg-border" />
         <TotalRow label="Total" value={formatPrice(order.total)} bold />
       </View>

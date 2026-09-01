@@ -1,18 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
-import { AuthHeader } from '@/components/auth/auth-header';
+import { AuthShell } from '@/components/auth/auth-shell';
 import { TermsCheckbox } from '@/components/auth/terms-checkbox';
 import { Button } from '@/components/ui/button';
-import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
-import { useAppTheme } from '@/context/app-theme';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { getSession, homePathFor, setSession } from '@/lib/session';
 import { authService } from '@/services/auth';
-import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /**
@@ -25,7 +21,6 @@ import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 export default function AcceptTermsScreen() {
   const colors = useResolvedAppColors();
   const router = useRouter();
-  const { isDark } = useAppTheme();
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -66,54 +61,47 @@ export default function AcceptTermsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-card">
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <KeyboardAwareScroll>
-        <AuthHeader compact subtitle="Términos y condiciones" />
+    <AuthShell compact subtitle="Términos y condiciones">
+      <View className="mb-4 h-14 w-14 items-center justify-center self-center">
+        <Ionicons name="shield-checkmark-outline" size={32} color={colors.primaryColor} />
+      </View>
+      <Text className="text-center text-[22px] font-extrabold text-ink">
+        Un último paso
+      </Text>
+      <Text className="mb-6 mt-1.5 text-center text-sm leading-5 text-muted">
+        Para usar Mandalo necesitamos que leas y aceptes nuestros Términos y
+        Condiciones y la Política de Tratamiento de Datos.
+      </Text>
 
-        <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
-          <View className="mb-4 h-14 w-14 items-center justify-center self-center">
-            <Ionicons name="shield-checkmark-outline" size={32} color={colors.primaryColor} />
-          </View>
-          <Text className="text-center text-[22px] font-extrabold text-ink">
-            Un último paso
-          </Text>
-          <Text className="mb-6 mt-1.5 text-center text-sm leading-5 text-muted">
-            Para usar Mandalo necesitamos que leas y aceptes nuestros Términos y
-            Condiciones y la Política de Tratamiento de Datos.
-          </Text>
+      <TermsCheckbox
+        checked={accepted}
+        onChange={(v) => {
+          setAccepted(v);
+          setError('');
+        }}
+        error={error}
+      />
 
-          <TermsCheckbox
-            checked={accepted}
-            onChange={(v) => {
-              setAccepted(v);
-              setError('');
-            }}
-            error={error}
-          />
+      <Button
+        label="Aceptar y continuar"
+        onPress={handleAccept}
+        loading={saving}
+      />
 
-          <Button
-            label="Aceptar y continuar"
-            onPress={handleAccept}
-            loading={saving}
-          />
-
-          <Pressable
-            onPress={handleLogout}
-            disabled={leaving}
-            className="mt-4 flex-row items-center justify-center gap-2 py-2 active:opacity-70"
-          >
-            {leaving ? (
-              <ActivityIndicator size="small" color={colors.mutedColor} />
-            ) : (
-              <Ionicons name="log-out-outline" size={16} color={colors.mutedColor} />
-            )}
-            <Text className="text-[13px] font-bold text-muted">
-              Cerrar sesión
-            </Text>
-          </Pressable>
-        </View>
-      </KeyboardAwareScroll>
-    </View>
+      <Pressable
+        onPress={handleLogout}
+        disabled={leaving}
+        className="mt-4 flex-row items-center justify-center gap-2 py-2 active:opacity-70"
+      >
+        {leaving ? (
+          <ActivityIndicator size="small" color={colors.mutedColor} />
+        ) : (
+          <Ionicons name="log-out-outline" size={16} color={colors.mutedColor} />
+        )}
+        <Text className="text-[13px] font-bold text-muted">
+          Cerrar sesión
+        </Text>
+      </Pressable>
+    </AuthShell>
   );
 }

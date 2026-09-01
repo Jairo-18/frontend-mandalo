@@ -1,21 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AddressMapPicker } from '@/components/client/address-map-picker';
-import { AuthHeader } from '@/components/auth/auth-header';
+import { AuthShell } from '@/components/auth/auth-shell';
 import { DeliveryVerification } from '@/components/auth/delivery-verification';
 import { TermsCheckbox } from '@/components/auth/terms-checkbox';
 import { Button } from '@/components/ui/button';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { FormSection } from '@/components/ui/form-section';
-import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { Select } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
 import { useAppData } from '@/context/app-data';
-import { useAppTheme } from '@/context/app-theme';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
 import { useSession } from '@/hooks/use-session';
@@ -46,7 +43,6 @@ type Role = 'client' | 'delivery';
 export default function CompleteRegistrationScreen() {
   const colors = useResolvedAppColors();
   const router = useRouter();
-  const { isDark } = useAppTheme();
   const params = useLocalSearchParams<{ role?: Role }>();
   const session = useSession();
 
@@ -267,296 +263,285 @@ export default function CompleteRegistrationScreen() {
   }
 
   return (
-    <View className="flex-1 bg-card">
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <KeyboardAwareScroll>
-        <AuthHeader
-          compact
-          subtitle="Completa tu registro"
-          onBack={handleExit}
-        />
+    <AuthShell compact subtitle="Completa tu registro" onBack={handleExit}>
+      <Text className="text-[26px] font-extrabold text-ink">
+        ¡Hola
+        {session?.user.fullName
+          ? `, ${session.user.fullName.split(' ')[0]}`
+          : ''}
+        !
+      </Text>
+      <Text className="mb-6 mt-1 text-sm leading-5 text-muted">
+        Tu cuenta de Google quedó lista. Completa estos datos para empezar
+        a usar Mandalo.
+      </Text>
 
-        <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
-          <Text className="text-[26px] font-extrabold text-ink">
-            ¡Hola
-            {session?.user.fullName
-              ? `, ${session.user.fullName.split(' ')[0]}`
-              : ''}
-            !
-          </Text>
-          <Text className="mb-6 mt-1 text-sm leading-5 text-muted">
-            Tu cuenta de Google quedó lista. Completa estos datos para empezar
-            a usar Mandalo.
-          </Text>
+      {/* Paso 1: elegir rol (solo si no vino fijo desde el registro). */}
+      {!params.role && (
+        <View className="mb-6 flex-row gap-3">
+          <RoleCard
+            icon="bag-handle-outline"
+            label="Quiero pedir"
+            caption="Usuario"
+            active={role === 'client'}
+            onPress={() => setRole('client')}
+          />
+          <RoleCard
+            icon="bicycle-outline"
+            label="Quiero repartir"
+            caption="Domiciliario"
+            active={role === 'delivery'}
+            onPress={() => setRole('delivery')}
+          />
+        </View>
+      )}
 
-          {/* Paso 1: elegir rol (solo si no vino fijo desde el registro). */}
-          {!params.role && (
-            <View className="mb-6 flex-row gap-3">
-              <RoleCard
-                icon="bag-handle-outline"
-                label="Quiero pedir"
-                caption="Usuario"
-                active={role === 'client'}
-                onPress={() => setRole('client')}
+      {role && (
+        <>
+          <FormSection label="Tus datos" />
+          <TextField
+            label="Nombre de usuario"
+            icon="at-outline"
+            format="username"
+            value={username}
+            onChangeText={bind('username', setUsername)}
+            error={errors.username}
+            placeholder="juanp"
+          />
+          <TextField
+            label="Celular"
+            icon="call-outline"
+            format="phone"
+            value={phone}
+            onChangeText={bind('phone', setPhone)}
+            error={errors.phone}
+            placeholder="+57 - 310 210 366 0"
+          />
+
+          <FormSection label="Tu ubicación" />
+          <Select
+            label="Departamento"
+            icon="map-outline"
+            placeholder="Selecciona tu departamento"
+            options={departmentOptions}
+            value={muni.departmentId}
+            onSelect={(id) => {
+              clearError('departmentId');
+              muni.onSelectDepartment(id);
+            }}
+            error={errors.departmentId}
+          />
+          <Select
+            label="Municipio"
+            icon="location-outline"
+            placeholder={
+              muni.departmentId
+                ? 'Selecciona tu municipio'
+                : 'Elige un departamento primero'
+            }
+            options={municipalityOptions}
+            value={muni.municipalityId}
+            onSelect={(id) => {
+              muni.setMunicipalityId(id);
+              clearError('municipalityId');
+            }}
+            disabled={!muni.departmentId || muni.loadingMuns}
+            loading={muni.loadingMuns}
+            error={errors.municipalityId}
+          />
+
+          {/* Repartidor: solo lectura — debe corresponder exacto al GPS
+              (verificación de identidad). Cliente: prellenada por el mapa
+              pero editable. */}
+          <TextField
+            label={
+              isDelivery ? 'Dirección (se llena con tu ubicación)' : 'Dirección'
+            }
+            icon="home-outline"
+            format="text"
+            value={address}
+            onChangeText={isDelivery ? undefined : bind('address', setAddress)}
+            error={errors.address}
+            placeholder={
+              isDelivery ? 'Toca «Usar mi ubicación actual»' : 'Toca «Marcar en el mapa»'
+            }
+            editable={!isDelivery}
+          />
+          {isDelivery ? (
+            <Pressable
+              onPress={handleUseLocation}
+              disabled={locating}
+              className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+            >
+              {locating ? (
+                <ActivityIndicator size="small" color={colors.primaryColor} />
+              ) : (
+                <Ionicons
+                  name={coords ? 'checkmark-circle' : 'locate-outline'}
+                  size={16}
+                  color={colors.primaryColor}
+                />
+              )}
+              <Text className="text-[13px] font-bold text-primary">
+                {locating
+                  ? 'Obteniendo ubicación…'
+                  : coords
+                    ? 'Ubicación marcada — toca para actualizar'
+                    : 'Usar mi ubicación actual (obligatorio)'}
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => setMapVisible(true)}
+              className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+            >
+              <Ionicons
+                name={coords ? 'checkmark-circle' : 'map-outline'}
+                size={16}
+                color={colors.primaryColor}
               />
-              <RoleCard
-                icon="bicycle-outline"
-                label="Quiero repartir"
-                caption="Domiciliario"
-                active={role === 'delivery'}
-                onPress={() => setRole('delivery')}
-              />
-            </View>
+              <Text className="text-[13px] font-bold text-primary">
+                {coords ? 'Ubicación marcada — toca para cambiarla' : 'Marcar en el mapa (obligatorio)'}
+              </Text>
+            </Pressable>
+          )}
+          {!!errors.location && (
+            <Text className="-mt-2 mb-3 text-xs text-red-600">
+              {errors.location}
+            </Text>
           )}
 
-          {role && (
+          {!isDelivery && (
             <>
-              <FormSection label="Tus datos" />
-              <TextField
-                label="Nombre de usuario"
-                icon="at-outline"
-                format="username"
-                value={username}
-                onChangeText={bind('username', setUsername)}
-                error={errors.username}
-                placeholder="juanp"
-              />
-              <TextField
-                label="Celular"
-                icon="call-outline"
-                format="phone"
-                value={phone}
-                onChangeText={bind('phone', setPhone)}
-                error={errors.phone}
-                placeholder="+57 - 310 210 366 0"
-              />
-
-              <FormSection label="Tu ubicación" />
-              <Select
-                label="Departamento"
-                icon="map-outline"
-                placeholder="Selecciona tu departamento"
-                options={departmentOptions}
-                value={muni.departmentId}
-                onSelect={(id) => {
-                  clearError('departmentId');
-                  muni.onSelectDepartment(id);
+              <AddressMapPicker
+                visible={mapVisible}
+                initialCoords={coords}
+                onClose={() => setMapVisible(false)}
+                onConfirm={(result) => {
+                  void applyLocationResult(result);
+                  setMapVisible(false);
                 }}
-                error={errors.departmentId}
               />
-              <Select
-                label="Municipio"
-                icon="location-outline"
-                placeholder={
-                  muni.departmentId
-                    ? 'Selecciona tu municipio'
-                    : 'Elige un departamento primero'
-                }
-                options={municipalityOptions}
-                value={muni.municipalityId}
-                onSelect={(id) => {
-                  muni.setMunicipalityId(id);
-                  clearError('municipalityId');
-                }}
-                disabled={!muni.departmentId || muni.loadingMuns}
-                loading={muni.loadingMuns}
-                error={errors.municipalityId}
-              />
-
-              {/* Repartidor: solo lectura — debe corresponder exacto al GPS
-                  (verificación de identidad). Cliente: prellenada por el mapa
-                  pero editable. */}
               <TextField
-                label={
-                  isDelivery ? 'Dirección (se llena con tu ubicación)' : 'Dirección'
-                }
-                icon="home-outline"
+                label="Dirección específica"
+                icon="information-circle-outline"
                 format="text"
-                value={address}
-                onChangeText={isDelivery ? undefined : bind('address', setAddress)}
-                error={errors.address}
-                placeholder={
-                  isDelivery ? 'Toca «Usar mi ubicación actual»' : 'Toca «Marcar en el mapa»'
-                }
-                editable={!isDelivery}
+                value={details}
+                onChangeText={bind('details', setDetails)}
+                error={errors.details}
+                placeholder="Barrio Centro, casa esquinera, portón café"
               />
-              {isDelivery ? (
-                <Pressable
-                  onPress={handleUseLocation}
-                  disabled={locating}
-                  className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
-                >
-                  {locating ? (
-                    <ActivityIndicator size="small" color={colors.primaryColor} />
-                  ) : (
-                    <Ionicons
-                      name={coords ? 'checkmark-circle' : 'locate-outline'}
-                      size={16}
-                      color={colors.primaryColor}
-                    />
-                  )}
-                  <Text className="text-[13px] font-bold text-primary">
-                    {locating
-                      ? 'Obteniendo ubicación…'
-                      : coords
-                        ? 'Ubicación marcada — toca para actualizar'
-                        : 'Usar mi ubicación actual (obligatorio)'}
-                  </Text>
-                </Pressable>
-              ) : (
-                <Pressable
-                  onPress={() => setMapVisible(true)}
-                  className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
-                >
-                  <Ionicons
-                    name={coords ? 'checkmark-circle' : 'map-outline'}
-                    size={16}
-                    color={colors.primaryColor}
-                  />
-                  <Text className="text-[13px] font-bold text-primary">
-                    {coords ? 'Ubicación marcada — toca para cambiarla' : 'Marcar en el mapa (obligatorio)'}
-                  </Text>
-                </Pressable>
-              )}
-              {!!errors.location && (
-                <Text className="-mt-2 mb-3 text-xs text-red-600">
-                  {errors.location}
-                </Text>
-              )}
-
-              {!isDelivery && (
-                <>
-                  <AddressMapPicker
-                    visible={mapVisible}
-                    initialCoords={coords}
-                    onClose={() => setMapVisible(false)}
-                    onConfirm={(result) => {
-                      void applyLocationResult(result);
-                      setMapVisible(false);
-                    }}
-                  />
-                  <TextField
-                    label="Dirección específica"
-                    icon="information-circle-outline"
-                    format="text"
-                    value={details}
-                    onChangeText={bind('details', setDetails)}
-                    error={errors.details}
-                    placeholder="Barrio Centro, casa esquinera, portón café"
-                  />
-                </>
-              )}
-
-              {isDelivery && (
-                <>
-                  <FormSection label="Identidad del domiciliario" />
-                  <Select
-                    label="Tipo de identificación"
-                    icon="card-outline"
-                    placeholder="Selecciona el tipo"
-                    options={identificationTypeOptions}
-                    value={identificationTypeId}
-                    onSelect={(id) => {
-                      setIdentificationTypeId(id);
-                      clearError('identificationTypeId');
-                    }}
-                    error={errors.identificationTypeId}
-                  />
-                  <TextField
-                    label="Número de identificación"
-                    icon="finger-print-outline"
-                    format="identification"
-                    maxLength={15}
-                    value={identificationNumber}
-                    onChangeText={bind(
-                      'identificationNumber',
-                      setIdentificationNumber,
-                    )}
-                    error={errors.identificationNumber}
-                    placeholder="1090123456"
-                  />
-                  <DeliveryVerification
-                    avatarUri={avatarUri}
-                    idFrontUri={idFrontUri}
-                    idBackUri={idBackUri}
-                    onAvatar={(uri) => {
-                      setAvatarUri(uri);
-                      clearError('avatar');
-                    }}
-                    onIdFront={(uri) => {
-                      setIdFrontUri(uri);
-                      clearError('idFront');
-                    }}
-                    onIdBack={(uri) => {
-                      setIdBackUri(uri);
-                      clearError('idBack');
-                    }}
-                    vehiclePlate={vehiclePlate}
-                    onVehiclePlate={bind('vehiclePlate', setVehiclePlate)}
-                    licenseFrontUri={licenseFrontUri}
-                    licenseBackUri={licenseBackUri}
-                    onLicenseFront={(uri) => {
-                      setLicenseFrontUri(uri);
-                      clearError('licenseFront');
-                    }}
-                    onLicenseBack={(uri) => {
-                      setLicenseBackUri(uri);
-                      clearError('licenseBack');
-                    }}
-                    soat={soat}
-                    onSoat={(value) => {
-                      setSoat(value);
-                      clearError('soat');
-                    }}
-                    technicalInspection={technicalInspection}
-                    onTechnicalInspection={(value) => {
-                      setTechnicalInspection(value);
-                      clearError('technicalInspection');
-                    }}
-                    errors={errors}
-                  />
-                </>
-              )}
-
-              <View className="mt-2">
-                <TermsCheckbox
-                  checked={acceptedTerms}
-                  onChange={(value) => {
-                    setAcceptedTerms(value);
-                    clearError('acceptedTerms');
-                  }}
-                  error={errors.acceptedTerms}
-                />
-                <Button
-                  label={isDelivery ? 'Enviar para revisión' : 'Empezar a pedir'}
-                  onPress={handleSave}
-                  loading={saving}
-                />
-              </View>
             </>
           )}
 
-          <Pressable
-            onPress={handleExit}
-            disabled={leaving}
-            className="mt-6 flex-row items-center justify-center gap-1.5"
-          >
-            {leaving ? (
-              <ActivityIndicator size="small" color={colors.mutedColor} />
-            ) : (
-              <Ionicons name="log-out-outline" size={16} color={colors.mutedColor} />
-            )}
-            <Text className="text-[13px] font-semibold text-muted">
-              Salir y continuar después
-            </Text>
-          </Pressable>
+          {isDelivery && (
+            <>
+              <FormSection label="Identidad del domiciliario" />
+              <Select
+                label="Tipo de identificación"
+                icon="card-outline"
+                placeholder="Selecciona el tipo"
+                options={identificationTypeOptions}
+                value={identificationTypeId}
+                onSelect={(id) => {
+                  setIdentificationTypeId(id);
+                  clearError('identificationTypeId');
+                }}
+                error={errors.identificationTypeId}
+              />
+              <TextField
+                label="Número de identificación"
+                icon="finger-print-outline"
+                format="identification"
+                maxLength={15}
+                value={identificationNumber}
+                onChangeText={bind(
+                  'identificationNumber',
+                  setIdentificationNumber,
+                )}
+                error={errors.identificationNumber}
+                placeholder="1090123456"
+              />
+              <DeliveryVerification
+                avatarUri={avatarUri}
+                idFrontUri={idFrontUri}
+                idBackUri={idBackUri}
+                onAvatar={(uri) => {
+                  setAvatarUri(uri);
+                  clearError('avatar');
+                }}
+                onIdFront={(uri) => {
+                  setIdFrontUri(uri);
+                  clearError('idFront');
+                }}
+                onIdBack={(uri) => {
+                  setIdBackUri(uri);
+                  clearError('idBack');
+                }}
+                vehiclePlate={vehiclePlate}
+                onVehiclePlate={bind('vehiclePlate', setVehiclePlate)}
+                licenseFrontUri={licenseFrontUri}
+                licenseBackUri={licenseBackUri}
+                onLicenseFront={(uri) => {
+                  setLicenseFrontUri(uri);
+                  clearError('licenseFront');
+                }}
+                onLicenseBack={(uri) => {
+                  setLicenseBackUri(uri);
+                  clearError('licenseBack');
+                }}
+                soat={soat}
+                onSoat={(value) => {
+                  setSoat(value);
+                  clearError('soat');
+                }}
+                technicalInspection={technicalInspection}
+                onTechnicalInspection={(value) => {
+                  setTechnicalInspection(value);
+                  clearError('technicalInspection');
+                }}
+                errors={errors}
+              />
+            </>
+          )}
 
-          <View className="mt-4">
-            <DeveloperCredit />
+          <View className="mt-2">
+            <TermsCheckbox
+              checked={acceptedTerms}
+              onChange={(value) => {
+                setAcceptedTerms(value);
+                clearError('acceptedTerms');
+              }}
+              error={errors.acceptedTerms}
+            />
+            <Button
+              label={isDelivery ? 'Enviar para revisión' : 'Empezar a pedir'}
+              onPress={handleSave}
+              loading={saving}
+            />
           </View>
-        </View>
-      </KeyboardAwareScroll>
-    </View>
+        </>
+      )}
+
+      <Pressable
+        onPress={handleExit}
+        disabled={leaving}
+        className="mt-6 flex-row items-center justify-center gap-1.5"
+      >
+        {leaving ? (
+          <ActivityIndicator size="small" color={colors.mutedColor} />
+        ) : (
+          <Ionicons name="log-out-outline" size={16} color={colors.mutedColor} />
+        )}
+        <Text className="text-[13px] font-semibold text-muted">
+          Salir y continuar después
+        </Text>
+      </Pressable>
+
+      <View className="mt-4">
+        <DeveloperCredit />
+      </View>
+    </AuthShell>
   );
 }
 

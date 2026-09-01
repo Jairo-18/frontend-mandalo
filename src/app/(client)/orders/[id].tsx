@@ -83,7 +83,12 @@ export default function ClientOrderDetailScreen() {
   const canCancel = order?.stateType?.code === 'PEND';
 
   return (
-    <SafeAreaView className="flex-1 bg-surface">
+    // Solo top/left/right: esta pantalla vive dentro del menú inferior de
+    // Tabs (client/_layout.tsx), que ya reserva el inset real de la barra de
+    // navegación del sistema en su propia altura — dejar que el SafeAreaView
+    // TAMBIÉN reserve el bottom (aunque sea del footer o del propio menú, no
+    // del dispositivo) duplicaba el espacio vacío debajo del botón.
+    <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 bg-surface">
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View className="flex-row items-center gap-3 bg-surface px-5 pb-2 pt-2">
@@ -115,6 +120,7 @@ export default function ClientOrderDetailScreen() {
         <>
           <ScrollView
             style={{ flex: 1 }}
+            contentContainerStyle={canCancel ? undefined : { paddingBottom: 16 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -132,7 +138,10 @@ export default function ClientOrderDetailScreen() {
           </ScrollView>
 
           {canCancel && (
-            <View className="border-t border-border bg-card px-5 pb-6 pt-3">
+            <View
+              className="border-t border-border bg-card px-5 pt-3"
+              style={{ paddingBottom: 16 }}
+            >
               <Pressable
                 onPress={() => setConfirmCancel(true)}
                 className="h-[52px] items-center justify-center rounded-2xl border border-red-200 active:opacity-70"

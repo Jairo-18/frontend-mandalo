@@ -429,7 +429,7 @@ export default function CheckoutScreen() {
             />
           )}
           <Row
-            label="Servicio"
+            label="Tarifa de servicio"
             value={loadingFee ? 'Calculando…' : formatPrice(serviceFee)}
           />
           <View className="my-2 h-px bg-border" />

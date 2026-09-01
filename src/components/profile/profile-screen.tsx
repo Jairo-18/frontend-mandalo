@@ -371,8 +371,11 @@ export function ProfileScreen({
       <View className="flex-1 bg-surface">
       <PanelHeader title="Mi cuenta" menu={menu} />
 
-      <KeyboardAwareScroll>
-        <View className="px-5 pb-10">
+      {/* safeBottom=false: esta pantalla vive dentro del menú inferior de
+          Tabs (cliente/repartidor), que ya reserva el inset real por su
+          cuenta — sumarlo acá también dejaba un espacio vacío de más. */}
+      <KeyboardAwareScroll safeBottom={false}>
+        <View className="px-5 pb-4">
           {/* ---- Datos personales ---- */}
           <View className="mt-5 rounded-2xl border border-border bg-card p-4">
             <View className="items-center">

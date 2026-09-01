@@ -38,6 +38,9 @@ type Item = {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   href: AdminRoute;
+  /** Solo visible para SUPERADMIN (pedido del usuario: un admin regional no
+   * administra etiquetas/categorías/alta masiva/config. de la app). */
+  superadminOnly?: boolean;
 };
 
 /** Secciones del panel de administración (orden del sidebar). */
@@ -48,10 +51,10 @@ const ITEMS: Item[] = [
   { label: 'Usuarios', icon: 'people-outline', href: '/admin/users' },
   { label: 'Domiciliarios', icon: 'bicycle-outline', href: '/admin/deliveries' },
   { label: 'Accidentes', icon: 'warning-outline', href: '/admin/accidents' },
-  { label: 'Etiquetas', icon: 'pricetags-outline', href: '/admin/tags' },
-  { label: 'Categorías', icon: 'grid-outline', href: '/admin/categories' },
-  { label: 'Alta masiva', icon: 'people-circle-outline', href: '/admin/bulk-invite' },
-  { label: 'Aplicación', icon: 'color-palette-outline', href: '/admin/app-settings' },
+  { label: 'Etiquetas', icon: 'pricetags-outline', href: '/admin/tags', superadminOnly: true },
+  { label: 'Categorías', icon: 'grid-outline', href: '/admin/categories', superadminOnly: true },
+  { label: 'Alta masiva', icon: 'people-circle-outline', href: '/admin/bulk-invite', superadminOnly: true },
+  { label: 'Aplicación', icon: 'color-palette-outline', href: '/admin/app-settings', superadminOnly: true },
 ];
 
 // Lo único que se usa de las props del drawer (evita el choque de tipos entre
@@ -81,6 +84,8 @@ export function AdminDrawerContent({ navigation }: Props) {
   // Reactivo: leer getSession() suelto en el render deja JSX viejo con
   // React Compiler (regla de NOTAS §23).
   const user = useSession()?.user;
+  const isSuperAdmin = user?.role?.code === 'SUPERADMIN';
+  const items = ITEMS.filter((item) => !item.superadminOnly || isSuperAdmin);
   const unreviewedAccidents = useUnreviewedAccidentsCount();
   const displayName = headerName ?? user?.fullName ?? 'Administrador';
   const avatarUrl =
@@ -188,7 +193,7 @@ export function AdminDrawerContent({ navigation }: Props) {
           contenido desbordaba un `flex-1` sin scroll y se montaba encima de
           "Cerrar sesión"/"¿Necesitas ayuda?" en vez de dejar hacer scroll. */}
       <ScrollView className="flex-1 px-3 pt-4" showsVerticalScrollIndicator={false}>
-        {ITEMS.map((item) => {
+        {items.map((item) => {
           const active = pathname === item.href;
           const badge = item.href === '/admin/accidents' ? unreviewedAccidents : 0;
           return (

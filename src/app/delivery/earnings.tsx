@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SettlementPeriodCard } from '@/components/admin/settlement-period-card';
 import { InactiveAccountNotice } from '@/components/delivery/inactive-account-notice';
@@ -26,7 +25,6 @@ const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
  * `admin/delivery-billing.tsx` pero self-scoped y sin botón de marcar.
  */
 export default function DeliveryEarningsScreen() {
-  const insets = useSafeAreaInsets();
   const session = useSession();
   // Cuenta en revisión: no puede haber pedidos entregados todavía — ni vale
   // la pena pedirlos (siempre saldría vacío) ni tiene sentido dejar
@@ -114,7 +112,10 @@ export default function DeliveryEarningsScreen() {
                 onPress={() => item.periodType !== 'quincena' && dd.drillInto(item.periodStart)}
               />
             )}
-            contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }}
+            // Fijo, sin sumar insets.bottom: esta pantalla vive dentro del
+            // menú inferior de Tabs (delivery/_layout.tsx), que ya reserva
+            // el inset real por su cuenta.
+            contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
             ListEmptyComponent={
               <ListEmpty icon="bicycle-outline" message="Aún no has entregado pedidos." />
             }

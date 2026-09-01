@@ -136,8 +136,12 @@ export function ProductDetailSheet({
           </Pressable>
         </View>
 
-        {/* Datos del producto */}
-        <ScrollView className="px-5 pt-4">
+        {/* Datos del producto: flex:1 explícito para que se quede acotado
+            entre el carrusel y el footer del carrito (ambos de alto fijo) y
+            haga scroll de verdad — sin esto, una descripción larga se
+            recortaba contra el `overflow-hidden` del contenedor en vez de
+            poder verse completa. */}
+        <ScrollView style={{ flex: 1 }} className="px-5 pt-4">
           <Text className="text-xl font-extrabold text-ink">
             {product?.name}
           </Text>

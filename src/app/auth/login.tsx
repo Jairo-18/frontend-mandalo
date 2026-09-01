@@ -1,18 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 
-import { AuthHeader } from '@/components/auth/auth-header';
+import { AuthShell } from '@/components/auth/auth-shell';
 import { GoogleButton } from '@/components/auth/google-button';
 import { SocialContactBar } from '@/components/auth/social-contact-bar';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
-import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
-import { useAppTheme } from '@/context/app-theme';
 import {
   clearCredentials,
   loadCredentials,
@@ -38,7 +35,6 @@ function isEmailNotVerified(e: unknown): boolean {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { isDark } = useAppTheme();
   const colors = useResolvedAppColors();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -132,125 +128,118 @@ export default function LoginScreen() {
   }
 
   return (
-    <View className="flex-1 bg-card">
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <KeyboardAwareScroll>
-        <AuthHeader />
+    <AuthShell>
+      <Text className="text-center text-[26px] font-extrabold text-ink">
+        ¡Bienvenido!
+      </Text>
+      <Text className="mb-6 mt-1.5 text-center text-sm text-muted">
+        Inicia sesión para pedir lo mejor de tu región
+      </Text>
 
-        <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
-          <Text className="text-center text-[26px] font-extrabold text-ink">
-            ¡Bienvenido!
+      <TextField
+        label="Correo electrónico"
+        icon="mail-outline"
+        format="email"
+        noAutofill
+        value={email}
+        onChangeText={(t) => {
+          setEmail(t);
+          clearError('email');
+        }}
+        error={errors.email}
+        placeholder="tu@correo.com"
+      />
+
+      <TextField
+        label="Contraseña"
+        icon="lock-closed-outline"
+        secure
+        value={password}
+        onChangeText={(t) => {
+          setPassword(t);
+          clearError('password');
+        }}
+        error={errors.password}
+        placeholder="••••••••"
+        returnKeyType="go"
+        onSubmitEditing={handleLogin}
+      />
+
+      <View className="mb-5 flex-row items-center justify-between">
+        <Checkbox
+          checked={remember}
+          onChange={setRemember}
+          label="Recordar mis datos"
+        />
+        <Pressable onPress={() => router.push('/auth/forgot-password')}>
+          <Text className="text-[13px] font-bold text-primary">
+            ¿Olvidaste tu contraseña?
           </Text>
-          <Text className="mb-6 mt-1.5 text-center text-sm text-muted">
-            Inicia sesión para pedir lo mejor de tu región
+        </Pressable>
+      </View>
+
+      {/* Aparece cuando el sign-in rechaza por correo sin verificar. */}
+      {showResend && (
+        <Pressable
+          onPress={handleResendVerification}
+          disabled={resending}
+          className="mb-4 flex-row items-center gap-2.5 rounded-2xl bg-primary-tint px-4 py-3 active:opacity-70"
+        >
+          <Ionicons
+            name={resending ? 'hourglass-outline' : 'mail-unread-outline'}
+            size={18}
+            color={colors.primaryColor}
+          />
+          <Text className="flex-1 text-[13px] font-bold text-primary">
+            {resending
+              ? 'Reenviando correo…'
+              : 'Reenviar correo de verificación'}
           </Text>
+        </Pressable>
+      )}
 
-          <TextField
-            label="Correo electrónico"
-            icon="mail-outline"
-            format="email"
-            noAutofill
-            value={email}
-            onChangeText={(t) => {
-              setEmail(t);
-              clearError('email');
-            }}
-            error={errors.email}
-            placeholder="tu@correo.com"
-          />
+      <Button
+        label="Iniciar sesión"
+        onPress={handleLogin}
+        loading={loading}
+      />
 
-          <TextField
-            label="Contraseña"
-            icon="lock-closed-outline"
-            secure
-            value={password}
-            onChangeText={(t) => {
-              setPassword(t);
-              clearError('password');
-            }}
-            error={errors.password}
-            placeholder="••••••••"
-            returnKeyType="go"
-            onSubmitEditing={handleLogin}
-          />
-
-          <View className="mb-5 flex-row items-center justify-between">
-            <Checkbox
-              checked={remember}
-              onChange={setRemember}
-              label="Recordar mis datos"
-            />
-            <Pressable onPress={() => router.push('/auth/forgot-password')}>
-              <Text className="text-[13px] font-bold text-primary">
-                ¿Olvidaste tu contraseña?
-              </Text>
-            </Pressable>
+      {/* El sign-in de Google es nativo — en la versión web no existe. */}
+      {Platform.OS !== 'web' && (
+        <>
+          <View className="my-[18px] flex-row items-center gap-3">
+            <View className="h-px flex-1 bg-border" />
+            <Text className="text-[13px] text-muted">o</Text>
+            <View className="h-px flex-1 bg-border" />
           </View>
 
-          {/* Aparece cuando el sign-in rechaza por correo sin verificar. */}
-          {showResend && (
-            <Pressable
-              onPress={handleResendVerification}
-              disabled={resending}
-              className="mb-4 flex-row items-center gap-2.5 rounded-2xl bg-primary-tint px-4 py-3 active:opacity-70"
-            >
-              <Ionicons
-                name={resending ? 'hourglass-outline' : 'mail-unread-outline'}
-                size={18}
-                color={colors.primaryColor}
-              />
-              <Text className="flex-1 text-[13px] font-bold text-primary">
-                {resending
-                  ? 'Reenviando correo…'
-                  : 'Reenviar correo de verificación'}
-              </Text>
-            </Pressable>
-          )}
+          <GoogleButton onPress={handleGoogle} loading={googleLoading} />
+        </>
+      )}
 
-          <Button
-            label="Iniciar sesión"
-            onPress={handleLogin}
-            loading={loading}
-          />
+      <View className="mt-[14px]">
+        <Button
+          label="Registrarse"
+          variant="outline"
+          onPress={() => router.push('/auth/register')}
+        />
+      </View>
 
-          {/* El sign-in de Google es nativo — en la versión web no existe. */}
-          {Platform.OS !== 'web' && (
-            <>
-              <View className="my-[18px] flex-row items-center gap-3">
-                <View className="h-px flex-1 bg-border" />
-                <Text className="text-[13px] text-muted">o</Text>
-                <View className="h-px flex-1 bg-border" />
-              </View>
+      <Pressable
+        onPress={() => router.push('/how-it-works')}
+        className="mt-5 flex-row items-center justify-center gap-1.5 self-center"
+      >
+        <Ionicons name="help-circle-outline" size={16} color={colors.mutedColor} />
+        <Text className="text-[13px] font-bold text-muted">
+          ¿Cómo funciona Mandalo?
+        </Text>
+      </Pressable>
 
-              <GoogleButton onPress={handleGoogle} loading={googleLoading} />
-            </>
-          )}
+      <SocialContactBar />
 
-          <View className="mt-[14px]">
-            <Button
-              label="Registrarse"
-              variant="outline"
-              onPress={() => router.push('/auth/register')}
-            />
-          </View>
-
-          <Pressable
-            onPress={() => router.push('/how-it-works')}
-            className="mt-5 flex-row items-center justify-center gap-1.5 self-center"
-          >
-            <Ionicons name="help-circle-outline" size={16} color={colors.mutedColor} />
-            <Text className="text-[13px] font-bold text-muted">
-              ¿Cómo funciona Mandalo?
-            </Text>
-          </Pressable>
-
-          <SocialContactBar />
-
-          <View className="mt-6">
-            <DeveloperCredit />
-          </View>
-        </View>
-      </KeyboardAwareScroll>
-    </View>
+      <View className="mt-6">
+        <DeveloperCredit />
+      </View>
+    </AuthShell>
   );
 }

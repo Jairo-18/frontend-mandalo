@@ -6,11 +6,11 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  ScrollView,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { AddressSheet } from '@/components/client/address-sheet';
@@ -57,7 +57,6 @@ import {
 export default function HomeScreen() {
   const colors = useResolvedAppColors();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const cart = useCart();
   // Grid responsivo: 2 columnas en celular, hasta 6 en web ancho/tablet
   // (mismo cálculo que store/[id].tsx, ver lib/grid-style.ts).
@@ -86,13 +85,17 @@ export default function HomeScreen() {
 
   // Cercanía: el explorar se limita al radio alrededor de la dirección
   // principal ("enviar a"). Sin dirección guardada (invitado, o usuario
-  // logueado que aún no eligió una) cae al GPS silencioso — si no, esos
-  // usuarios ven TODOS los negocios del país sin filtrar (§ver home bug).
-  // Primitivos en las deps (un objeto nuevo por render dispararía refetch
-  // infinito); sin coords no se filtra.
-  const gpsCoords = useNearGpsFallback(!loadingAddress && !defaultAddress);
-  const nearLat = defaultAddress?.latitude ?? gpsCoords?.latitude ?? null;
-  const nearLng = defaultAddress?.longitude ?? gpsCoords?.longitude ?? null;
+  // logueado que aún no eligió una) cae al GPS silencioso. Primitivos en las
+  // deps (un objeto nuevo por render dispararía refetch infinito).
+  const gpsFallback = useNearGpsFallback(!loadingAddress && !defaultAddress);
+  const nearLat = defaultAddress?.latitude ?? gpsFallback.coords?.latitude ?? null;
+  const nearLng = defaultAddress?.longitude ?? gpsFallback.coords?.longitude ?? null;
+  const hasLocationContext = nearLat != null && nearLng != null;
+  // Sin dirección Y sin GPS (negado/sin fix, ya resuelto): antes esto caía a
+  // "mostrar todo sin filtrar" (negocios de toda la región, no solo los de
+  // ≤10km) — ahora se pide activar la ubicación en vez de mezclar todo.
+  const needsLocation =
+    !loadingAddress && !defaultAddress && gpsFallback.resolved && !gpsFallback.coords;
 
   /** Feed de negocios: solo el chip "Todos" lo abre (navegar negocios sin filtrar). */
   const businessMode = allBusinesses;
@@ -112,8 +115,10 @@ export default function HomeScreen() {
       [nearLat, nearLng],
     ),
     // Perezoso: solo se fetchea al abrir "Todos los negocios" — por defecto
-    // el home muestra productos.
-    { enabled: businessMode },
+    // el home muestra productos. Además espera tener con qué filtrar por
+    // cercanía (dirección o GPS): sin eso se pide activar ubicación en vez
+    // de fetchear sin filtro.
+    { enabled: businessMode && hasLocationContext },
   );
 
   const productList = usePaginatedList<ExploreProduct>(
@@ -130,9 +135,11 @@ export default function HomeScreen() {
         }),
       [selectedCategoryId, selectedTagIds, nearLat, nearLng],
     ),
-    // Espera la dirección principal (caché instantánea salvo el primer
-    // arranque): evita fetchear sin coords y refetchear al llegar.
-    { enabled: !loadingAddress },
+    // Espera tener con qué filtrar por cercanía (dirección o GPS): antes
+    // solo esperaba `!loadingAddress` y fetcheaba sin coords mientras el GPS
+    // silencioso seguía en vuelo (o si el permiso quedaba negado, para
+    // siempre) — mostrando negocios de toda la región sin filtrar.
+    { enabled: !loadingAddress && hasLocationContext },
   );
   // Distancia/ETA al negocio de cada producto visible (estilo Rappi): un
   // solo fix de GPS (ver el hook) + se piden solo los ids nuevos que van
@@ -348,7 +355,26 @@ export default function HomeScreen() {
       </LinearGradient>
 
       <View className="flex-1 bg-surface">
-      {businessMode ? (
+      {needsLocation ? (
+        <ScrollView
+          style={{ flex: 1 }}
+          // Fijo, SIN sumar insets.bottom: esta pantalla vive dentro del menú
+          // inferior de Tabs (client/_layout.tsx), que ya reserva el inset
+          // real de la barra de navegación del sistema en su propia altura —
+          // sumarlo acá también dejaba un espacio vacío de más entre el
+          // contenido y esa barra.
+          contentContainerStyle={{ paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {listHeader}
+          <ListEmpty
+            icon="navigate-outline"
+            message="Activa tu ubicación para ver los negocios y productos cerca de ti."
+            actionLabel="Activar ubicación"
+            onAction={gpsFallback.retry}
+          />
+        </ScrollView>
+      ) : businessMode ? (
         <FlatList
           key={numColumns}
           data={businessList.items}
@@ -365,7 +391,7 @@ export default function HomeScreen() {
               />
             </View>
           )}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          contentContainerStyle={{ paddingBottom: 24 }}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={listHeader}
           refreshing={businessList.refreshing}
@@ -414,7 +440,7 @@ export default function HomeScreen() {
               />
             </View>
           )}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          contentContainerStyle={{ paddingBottom: 24 }}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={listHeader}
           refreshing={productList.refreshing}
@@ -444,11 +470,13 @@ export default function HomeScreen() {
       )}
 
       {/* Botón flotante del carrito: sin entrar a un negocio se ve y lleva al
-          checkout. Solo cuando hay algo en el carrito. */}
+          checkout. Solo cuando hay algo en el carrito. Flota por ENCIMA del
+          menú inferior de Tabs (que ya reserva el inset real abajo de todo),
+          así que su offset es un margen fijo, sin sumar insets.bottom. */}
       {cart.count > 0 && (
         <Pressable
           onPress={() => router.push('/checkout')}
-          style={{ bottom: insets.bottom + 20 }}
+          style={{ bottom: 20 }}
           className="absolute right-5 h-16 flex-row items-center gap-2.5 rounded-full bg-primary pl-4 pr-5 shadow-lg active:opacity-80"
         >
           <View className="relative">

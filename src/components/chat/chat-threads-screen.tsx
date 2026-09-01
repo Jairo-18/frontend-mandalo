@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ReactNode, useCallback } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
 import { ListEmpty } from '@/components/ui/list-empty';
@@ -37,7 +36,6 @@ function threadTime(iso: string): string {
 export function ChatThreadsScreen({ menu }: Props) {
   const colors = useResolvedAppColors();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const roleCode = useSession()?.user.role?.code;
 
   const list = usePaginatedList<ChatThreadItem>(
@@ -62,9 +60,12 @@ export function ChatThreadsScreen({ menu }: Props) {
           <FlatList
             data={list.items}
             keyExtractor={(item) => String(item.invoiceId)}
+            // Fijo, sin sumar insets.bottom: esta pantalla vive dentro del
+            // menú inferior de Tabs (cliente y repartidor comparten este
+            // componente), que ya reserva el inset real por su cuenta.
             contentContainerStyle={{
               padding: 16,
-              paddingBottom: insets.bottom + 24,
+              paddingBottom: 24,
             }}
             refreshing={list.refreshing}
             onRefresh={() => list.fetchPage(1, 'refresh')}

@@ -2,7 +2,6 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OrderCard } from '@/components/orders/order-card';
 import { PanelHeader, PanelSafeArea } from '@/components/ui/panel-header';
@@ -24,7 +23,6 @@ import { getAppColors } from '@/lib/app-colors';
  */
 export default function ClientOrdersScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<OrderFilter>('all');
   const [order, setOrder] = useState<'ASC' | 'DESC'>('DESC');
 
@@ -99,7 +97,9 @@ export default function ClientOrdersScreen() {
             }
           />
         )}
-        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24 }}
+        // Fijo, sin sumar insets.bottom: esta pantalla vive dentro del menú
+        // inferior de Tabs, que ya reserva el inset real por su cuenta.
+        contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
         refreshing={list.refreshing}
         onRefresh={() => list.fetchPage(1, 'refresh')}
         onEndReached={list.loadMore}

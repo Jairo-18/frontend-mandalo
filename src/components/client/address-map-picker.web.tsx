@@ -93,7 +93,10 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
           <View className="h-10 w-10" />
         </View>
 
-        <View className="flex-1 items-center justify-center px-8">
+        {/* `max-w` para que en escritorio el bloque no se estire de lado a
+            lado del monitor; en celular el ancho real es menor y no cambia
+            nada respecto a antes. */}
+        <View className="w-full max-w-[420px] flex-1 items-center justify-center self-center px-8">
           <View className="mb-4 h-16 w-16 items-center justify-center">
             <Ionicons name="location" size={36} color={colors.primaryColor} />
           </View>
@@ -120,7 +123,7 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
         </View>
 
         <View
-          className="px-5 pt-4"
+          className="w-full max-w-[420px] self-center px-5 pt-4"
           style={{ paddingBottom: insets.bottom + 16 }}
         >
           <Pressable

@@ -138,8 +138,10 @@ export function ResendDocumentsScreen() {
       {loading ? (
         <ActivityIndicator size="large" color={colors.primaryColor} style={{ marginTop: 48 }} />
       ) : locked ? (
-        <KeyboardAwareScroll>
-          <View className="px-5 pb-10">
+        // safeBottom=false: pantalla dentro del menú inferior de Tabs del
+        // repartidor, que ya reserva el inset real por su cuenta.
+        <KeyboardAwareScroll safeBottom={false}>
+          <View className="px-5 pb-4">
             <View className="mb-4 mt-2 flex-row items-center gap-2 rounded-xl bg-surface px-3.5 py-3">
               <Ionicons name="shield-checkmark-outline" size={20} color="#22C55E" />
               <Text className="flex-1 text-[13px] leading-5 text-muted">
@@ -203,8 +205,10 @@ export function ResendDocumentsScreen() {
           </View>
         </KeyboardAwareScroll>
       ) : (
-        <KeyboardAwareScroll>
-          <View className="px-5 pb-10">
+        // safeBottom=false: pantalla dentro del menú inferior de Tabs del
+        // repartidor, que ya reserva el inset real por su cuenta.
+        <KeyboardAwareScroll safeBottom={false}>
+          <View className="px-5 pb-4">
             <Text className="mb-1 mt-2 text-sm leading-5 text-muted">
               Toca solo el documento que quieras cambiar — lo demás queda como
               lo tenías. Un administrador revisará de nuevo tu cuenta.

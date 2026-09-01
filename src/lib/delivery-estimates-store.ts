@@ -21,6 +21,15 @@ export function sharedCoords(): Promise<DeviceCoords | null> {
   return coordsPromise;
 }
 
+/**
+ * Descarta el fix cacheado para forzar un reintento (botón "Activar
+ * ubicación" del home cuando el primer intento volvió sin coords: el usuario
+ * pudo haber aceptado el permiso recién, en el diálogo nativo o en Ajustes).
+ */
+export function resetSharedCoords(): void {
+  coordsPromise = null;
+}
+
 type Entry = { data: DeliveryEstimate; expiresAt: number };
 const cache = new Map<number, Entry>();
 const pending = new Map<number, Promise<void>>();

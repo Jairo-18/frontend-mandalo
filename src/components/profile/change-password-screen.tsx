@@ -87,8 +87,10 @@ export function ChangePasswordScreen() {
         <ThemeToggle />
       </View>
 
-      <KeyboardAwareScroll>
-        <View className="px-5 pb-10">
+      {/* safeBottom=false: mismo caso que profile-screen.tsx — pantalla
+          dentro del menú inferior de Tabs, que ya reserva el inset real. */}
+      <KeyboardAwareScroll safeBottom={false}>
+        <View className="px-5 pb-4">
           <View className="mt-2 rounded-2xl bg-card p-4">
             <TextField
               label="Contraseña actual"

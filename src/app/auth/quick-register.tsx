@@ -1,16 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 import { AddressMapPicker } from '@/components/client/address-map-picker';
-import { AuthHeader } from '@/components/auth/auth-header';
+import { AuthShell } from '@/components/auth/auth-shell';
 import { TermsCheckbox } from '@/components/auth/terms-checkbox';
 import { Button } from '@/components/ui/button';
-import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
-import { useAppTheme } from '@/context/app-theme';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { DeviceCoords } from '@/lib/location';
 import { setSession } from '@/lib/session';
@@ -26,7 +23,6 @@ import { getAppColors } from '@/lib/app-colors';
  */
 export default function QuickRegisterScreen() {
   const router = useRouter();
-  const { isDark } = useAppTheme();
   const { errors, clearError, bind, validate } = useFormErrors();
 
   const [fullName, setFullName] = useState('');
@@ -111,128 +107,119 @@ export default function QuickRegisterScreen() {
   }
 
   return (
-    <View className="flex-1 bg-card">
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <KeyboardAwareScroll>
-        <AuthHeader
-          compact
-          subtitle="Crea tu cuenta para pedir"
-          onBack={() =>
-            router.canGoBack() ? router.back() : router.replace('/home')
-          }
+    <AuthShell
+      compact
+      subtitle="Crea tu cuenta para pedir"
+      onBack={() => (router.canGoBack() ? router.back() : router.replace('/home'))}
+    >
+      <Text className="mb-1 text-center text-[22px] font-extrabold text-ink">
+        Últimos datos
+      </Text>
+      <Text className="mb-6 text-center text-sm leading-5 text-muted">
+        Es rápido y podrás confirmar tu pedido enseguida.
+      </Text>
+
+      <TextField
+        label="Nombre completo"
+        icon="person-outline"
+        format="name"
+        value={fullName}
+        onChangeText={bind('fullName', setFullName)}
+        error={errors.fullName}
+        placeholder="Juan Pérez"
+      />
+      <TextField
+        label="Nombre de usuario"
+        icon="at-outline"
+        format="username"
+        value={username}
+        onChangeText={bind('username', setUsername)}
+        error={errors.username}
+        placeholder="juanp"
+      />
+      <TextField
+        label="Correo electrónico"
+        icon="mail-outline"
+        format="email"
+        noAutofill
+        value={email}
+        onChangeText={bind('email', setEmail)}
+        error={errors.email}
+        placeholder="tu@correo.com"
+      />
+      <TextField
+        label="Contraseña"
+        icon="lock-closed-outline"
+        secure
+        value={password}
+        onChangeText={bind('password', setPassword)}
+        error={errors.password}
+        placeholder="Mínimo 8 caracteres"
+      />
+      <TextField
+        label="Celular"
+        icon="call-outline"
+        format="phone"
+        value={phone}
+        onChangeText={bind('phone', setPhone)}
+        error={errors.phone}
+        placeholder="+57 - 300 123 456 7"
+      />
+
+      {/* Dirección de entrega: se prellena con el mapa pero queda editable. */}
+      <TextField
+        label="Dirección"
+        icon="home-outline"
+        format="text"
+        value={address}
+        onChangeText={bind('address', setAddress)}
+        error={errors.location}
+        placeholder="Toca «Marcar en el mapa»"
+      />
+      <Pressable
+        onPress={() => setMapVisible(true)}
+        className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+      >
+        <Ionicons
+          name={coords ? 'checkmark-circle' : 'map-outline'}
+          size={16}
+          color={getAppColors().primaryColor}
         />
+        <Text className="text-[13px] font-bold text-primary">
+          {coords ? 'Ubicación lista — tócala para actualizar' : 'Marcar ubicación en el mapa'}
+        </Text>
+      </Pressable>
+      <AddressMapPicker
+        visible={mapVisible}
+        initialCoords={coords}
+        onClose={() => setMapVisible(false)}
+        onConfirm={handleMapConfirm}
+      />
 
-        <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
-          <Text className="mb-1 text-center text-[22px] font-extrabold text-ink">
-            Últimos datos
-          </Text>
-          <Text className="mb-6 text-center text-sm leading-5 text-muted">
-            Es rápido y podrás confirmar tu pedido enseguida.
-          </Text>
+      <TextField
+        label="Dirección específica (barrio, casa, referencias)"
+        icon="navigate-outline"
+        format="text"
+        value={details}
+        onChangeText={bind('details', setDetails)}
+        error={errors.details}
+        placeholder="Torre 2 apto 301, portón café"
+      />
 
-          <TextField
-            label="Nombre completo"
-            icon="person-outline"
-            format="name"
-            value={fullName}
-            onChangeText={bind('fullName', setFullName)}
-            error={errors.fullName}
-            placeholder="Juan Pérez"
-          />
-          <TextField
-            label="Nombre de usuario"
-            icon="at-outline"
-            format="username"
-            value={username}
-            onChangeText={bind('username', setUsername)}
-            error={errors.username}
-            placeholder="juanp"
-          />
-          <TextField
-            label="Correo electrónico"
-            icon="mail-outline"
-            format="email"
-            noAutofill
-            value={email}
-            onChangeText={bind('email', setEmail)}
-            error={errors.email}
-            placeholder="tu@correo.com"
-          />
-          <TextField
-            label="Contraseña"
-            icon="lock-closed-outline"
-            secure
-            value={password}
-            onChangeText={bind('password', setPassword)}
-            error={errors.password}
-            placeholder="Mínimo 8 caracteres"
-          />
-          <TextField
-            label="Celular"
-            icon="call-outline"
-            format="phone"
-            value={phone}
-            onChangeText={bind('phone', setPhone)}
-            error={errors.phone}
-            placeholder="+57 - 300 123 456 7"
-          />
+      <TermsCheckbox
+        checked={accepted}
+        onChange={(v) => {
+          setAccepted(v);
+          clearError('acceptedTerms');
+        }}
+        error={errors.acceptedTerms}
+      />
 
-          {/* Dirección de entrega: se prellena con el mapa pero queda editable. */}
-          <TextField
-            label="Dirección"
-            icon="home-outline"
-            format="text"
-            value={address}
-            onChangeText={bind('address', setAddress)}
-            error={errors.location}
-            placeholder="Toca «Marcar en el mapa»"
-          />
-          <Pressable
-            onPress={() => setMapVisible(true)}
-            className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
-          >
-            <Ionicons
-              name={coords ? 'checkmark-circle' : 'map-outline'}
-              size={16}
-              color={getAppColors().primaryColor}
-            />
-            <Text className="text-[13px] font-bold text-primary">
-              {coords ? 'Ubicación lista — tócala para actualizar' : 'Marcar ubicación en el mapa'}
-            </Text>
-          </Pressable>
-          <AddressMapPicker
-            visible={mapVisible}
-            initialCoords={coords}
-            onClose={() => setMapVisible(false)}
-            onConfirm={handleMapConfirm}
-          />
-
-          <TextField
-            label="Dirección específica (barrio, casa, referencias)"
-            icon="navigate-outline"
-            format="text"
-            value={details}
-            onChangeText={bind('details', setDetails)}
-            error={errors.details}
-            placeholder="Torre 2 apto 301, portón café"
-          />
-
-          <TermsCheckbox
-            checked={accepted}
-            onChange={(v) => {
-              setAccepted(v);
-              clearError('acceptedTerms');
-            }}
-            error={errors.acceptedTerms}
-          />
-
-          <Button
-            label="Crear cuenta y continuar"
-            onPress={handleSubmit}
-            loading={saving}
-          />
-        </View>
-      </KeyboardAwareScroll>
-    </View>
+      <Button
+        label="Crear cuenta y continuar"
+        onPress={handleSubmit}
+        loading={saving}
+      />
+    </AuthShell>
   );
 }

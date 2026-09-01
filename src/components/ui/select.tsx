@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useIsWideScreen } from '@/hooks/use-is-wide-screen';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 export type SelectOption<T extends string | number = number> = {
@@ -42,6 +43,7 @@ export function Select<T extends string | number = number>({
 }: Props<T>) {
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
+  const wide = useIsWideScreen();
   const colors = useResolvedAppColors();
   const selected = options.find((o) => o.value === value);
   const mutedColor = colors.mutedColor;
@@ -80,21 +82,32 @@ export function Select<T extends string | number = number>({
       <Modal
         visible={open}
         transparent
-        animationType="slide"
+        // En pantalla ancha es un diálogo centrado: deslizar desde abajo se
+        // ve raro en un monitor, se desvanece.
+        animationType={wide ? 'fade' : 'slide'}
         onRequestClose={() => setOpen(false)}
       >
         <Pressable
-          className="flex-1 justify-end bg-black/40"
+          className={`flex-1 bg-black/40 ${
+            wide ? 'items-center justify-center px-6' : 'justify-end'
+          }`}
           onPress={() => setOpen(false)}
         >
           <Pressable
-            className="max-h-[70%] rounded-t-3xl bg-card px-4 pt-4"
+            className={
+              wide
+                ? 'max-h-[70%] w-full max-w-[420px] rounded-3xl bg-card px-4 pb-4 pt-4'
+                : 'max-h-[70%] rounded-t-3xl bg-card px-4 pt-4'
+            }
             // Safe-area inferior: sin esto la hoja queda detrás de la barra de
-            // navegación del sistema (edge-to-edge de Android).
-            style={{ paddingBottom: insets.bottom + 16 }}
+            // navegación del sistema (edge-to-edge de Android). En el diálogo
+            // centrado no aplica — no toca el borde de la pantalla.
+            style={wide ? undefined : { paddingBottom: insets.bottom + 16 }}
             onPress={() => {}}
           >
-            <View className="mb-3 h-1 w-10 self-center rounded-full bg-border" />
+            {!wide && (
+              <View className="mb-3 h-1 w-10 self-center rounded-full bg-border" />
+            )}
             <Text className="mb-3 text-center text-base font-bold text-ink">
               {label}
             </Text>

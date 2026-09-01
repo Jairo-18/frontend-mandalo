@@ -1,13 +1,10 @@
-import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { AuthHeader } from '@/components/auth/auth-header';
+import { AuthShell } from '@/components/auth/auth-shell';
 import { Button } from '@/components/ui/button';
-import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
 import { TextField } from '@/components/ui/text-field';
-import { useAppTheme } from '@/context/app-theme';
 import { EMAIL_RE } from '@/lib/text-format';
 
 import { authService } from '@/services/auth';
@@ -22,7 +19,6 @@ type Errors = Record<string, string | undefined>;
  */
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const { isDark } = useAppTheme();
   const [step, setStep] = useState<'email' | 'reset'>('email');
 
   const [email, setEmail] = useState('');
@@ -93,109 +89,102 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <View className="flex-1 bg-card">
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <KeyboardAwareScroll>
-        <AuthHeader
-          onBack={() =>
-            router.canGoBack() ? router.back() : router.replace('/auth/login')
-          }
-        />
+    <AuthShell
+      onBack={() =>
+        router.canGoBack() ? router.back() : router.replace('/auth/login')
+      }
+    >
+      <Text className="text-center text-[22px] font-extrabold text-ink">
+        Recuperar contraseña
+      </Text>
 
-        <View className="-mt-7 flex-1 rounded-t-[28px] bg-card px-6 pb-10 pt-7">
-          <Text className="text-center text-[22px] font-extrabold text-ink">
-            Recuperar contraseña
+      {step === 'email' ? (
+        <>
+          <Text className="mb-6 mt-1.5 text-center text-sm text-muted">
+            Ingresa tu correo y te enviaremos un código para restablecerla
           </Text>
 
-          {step === 'email' ? (
-            <>
-              <Text className="mb-6 mt-1.5 text-center text-sm text-muted">
-                Ingresa tu correo y te enviaremos un código para restablecerla
-              </Text>
+          <TextField
+            label="Correo electrónico"
+            icon="mail-outline"
+            format="email"
+            value={email}
+            onChangeText={bind('email', setEmail)}
+            error={errors.email}
+            placeholder="tu@correo.com"
+          />
 
-              <TextField
-                label="Correo electrónico"
-                icon="mail-outline"
-                format="email"
-                value={email}
-                onChangeText={bind('email', setEmail)}
-                error={errors.email}
-                placeholder="tu@correo.com"
-              />
+          <Button
+            label="Enviar código"
+            onPress={handleSendCode}
+            loading={loading}
+          />
+        </>
+      ) : (
+        <>
+          <Text className="mb-6 mt-1.5 text-center text-sm text-muted">
+            Enviamos un código de 6 dígitos a{' '}
+            <Text className="font-bold text-ink">{email}</Text>. Vence en
+            15 minutos.
+          </Text>
 
-              <Button
-                label="Enviar código"
-                onPress={handleSendCode}
-                loading={loading}
-              />
-            </>
-          ) : (
-            <>
-              <Text className="mb-6 mt-1.5 text-center text-sm text-muted">
-                Enviamos un código de 6 dígitos a{' '}
-                <Text className="font-bold text-ink">{email}</Text>. Vence en
-                15 minutos.
-              </Text>
+          <TextField
+            label="Código"
+            icon="key-outline"
+            format="digits"
+            value={code}
+            onChangeText={bind('code', setCode)}
+            error={errors.code}
+            placeholder="123456"
+            maxLength={6}
+          />
+          <TextField
+            label="Nueva contraseña"
+            icon="lock-closed-outline"
+            secure
+            value={password}
+            onChangeText={bind('password', setPassword)}
+            error={errors.password}
+            placeholder="Mínimo 8 caracteres"
+          />
+          <TextField
+            label="Confirmar contraseña"
+            icon="lock-closed-outline"
+            secure
+            value={confirm}
+            onChangeText={bind('confirm', setConfirm)}
+            error={errors.confirm}
+            placeholder="Repite tu contraseña"
+          />
 
-              <TextField
-                label="Código"
-                icon="key-outline"
-                format="digits"
-                value={code}
-                onChangeText={bind('code', setCode)}
-                error={errors.code}
-                placeholder="123456"
-                maxLength={6}
-              />
-              <TextField
-                label="Nueva contraseña"
-                icon="lock-closed-outline"
-                secure
-                value={password}
-                onChangeText={bind('password', setPassword)}
-                error={errors.password}
-                placeholder="Mínimo 8 caracteres"
-              />
-              <TextField
-                label="Confirmar contraseña"
-                icon="lock-closed-outline"
-                secure
-                value={confirm}
-                onChangeText={bind('confirm', setConfirm)}
-                error={errors.confirm}
-                placeholder="Repite tu contraseña"
-              />
+          <Button
+            label="Cambiar contraseña"
+            onPress={handleReset}
+            loading={loading}
+          />
 
-              <Button
-                label="Cambiar contraseña"
-                onPress={handleReset}
-                loading={loading}
-              />
-
-              <View className="mt-4 flex-row justify-center">
-                <Text className="text-sm text-muted">¿No te llegó? </Text>
-                <Pressable onPress={handleResend} disabled={resending}>
-                  <Text
-                    className={`text-sm font-bold text-primary ${
-                      resending ? 'opacity-50' : ''
-                    }`}
-                  >
-                    Reenviar código
-                  </Text>
-                </Pressable>
-              </View>
-            </>
-          )}
-
-          <View className="mt-5 flex-row justify-center">
-            <Pressable onPress={() => router.replace('/auth/login')}>
-              <Text className="text-sm font-bold text-primary">
-                Volver a iniciar sesión
+          <View className="mt-4 flex-row justify-center">
+            <Text className="text-sm text-muted">¿No te llegó? </Text>
+            <Pressable onPress={handleResend} disabled={resending}>
+              <Text
+                className={`text-sm font-bold text-primary ${
+                  resending ? 'opacity-50' : ''
+                }`}
+              >
+                Reenviar código
               </Text>
             </Pressable>
           </View>
-        </View>
-      </KeyboardAwareScroll>
-    </View>
+        </>
+      )}
+
+      <View className="mt-5 flex-row justify-center">
+        <Pressable onPress={() => router.replace('/auth/login')}>
+          <Text className="text-sm font-bold text-primary">
+            Volver a iniciar sesión
+          </Text>
+        </Pressable>
+      </View>
+    </AuthShell>
   );
 }
