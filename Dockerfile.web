@@ -18,7 +18,7 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 # Misma versión de pnpm que generó el lockfile (patrón del backend)
-RUN npm install -g pnpm@11.5.0
+RUN npm install -g pnpm@11.15.1
 
 # pnpm-workspace.yaml es obligatorio (nodeLinker: hoisted + política de releases)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
