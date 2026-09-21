@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Pressable, Text, View } from 'react-native';
 
 import { formatDistance } from '@/lib/distance';
 import { finalPrice, formatPrice } from '@/lib/price';
@@ -47,20 +48,25 @@ export function ProductGridCard({
   return (
     <Pressable
       onPress={onPress}
-      // `flex-1`: sin esto, cada tarjeta medía solo lo que su PROPIO
-      // contenido necesitaba — si la del lado tenía nombre de 2 líneas o
-      // descuento, la fila se hacía más alta pero esta tarjeta (sin ese
-      // contenido) no crecía con ella y se veía "chica" sueltas dentro de su
-      // celda ya estirada. Con flex-1 la tarjeta llena toda la celda, que sí
-      // se estira sola al alto de la más alta de su fila (comportamiento
-      // default de flexbox).
-      className="mb-3 flex-1 overflow-hidden rounded-2xl border border-border bg-card active:opacity-80"
+      // SIN `flex-1` a propósito. La tarjeta tiene altura PROPIA: foto cuadrada
+      // (aspectRatio 1) + bloque de texto en alto fijo. Con `flex-1` su altura
+      // pasaba a depender de la celda, que a su vez es `flex: 1` — nadie
+      // aportaba una altura intrínseca y la única pista real (el aspectRatio)
+      // necesita el ancho ya medido. En las pasadas de layout donde ese ancho
+      // aún no está resuelto la tarjeta salía en CERO y solo se pintaba su
+      // borde: las "líneas rojas" que aparecían al hacer scroll brusco.
+      className="mb-3 overflow-hidden rounded-2xl border border-border bg-card active:opacity-80"
     >
       <View className="w-full bg-surface" style={{ aspectRatio: 1 }}>
         <Image
           source={img ? { uri: img } : DEFAULT_PRODUCT_IMAGE}
           style={{ width: '100%', height: '100%' }}
-          resizeMode="cover"
+          contentFit="cover"
+          // La celda se recicla al hacer scroll: sin `recyclingKey` la tarjeta
+          // nueva muestra por un frame la foto del producto anterior.
+          recyclingKey={String(product.id)}
+          cachePolicy="memory-disk"
+          transition={150}
         />
 
         {hasDiscount && (
@@ -112,16 +118,24 @@ export function ProductGridCard({
         )}
       </View>
 
-      <View className="flex-1 p-2.5">
+      {/* Alto FIJO, no mínimo: la foto ya mide siempre lo mismo (aspectRatio 1
+          sobre celdas de igual ancho), así que fijando este bloque todas las
+          tarjetas del grid miden idéntico, tengan o no descuento, negocio o
+          estimado de entrega.
+
+          Tiene que ser `h-` y no `min-h-`: con mínimos, una tarjeta cuyo texto
+          se pasaba por poco crecía y dejaba a las vecinas "chicas" dentro de su
+          celda ya estirada. Con alto fijo + `numberOfLines` topados nada puede
+          empujar. Suma de las partes: 10 padding + 26 nombre + 32 precio +
+          18 negocio + 17 entrega + 10 padding = 113, con 3px de holgura. */}
+      <View className="h-[116px] p-2.5">
         <Text
           numberOfLines={2}
-          className="min-h-[26px] text-[11px] font-bold leading-[13px] text-ink"
+          className="h-[26px] text-[11px] font-bold leading-[13px] text-ink"
         >
           {product.name}
         </Text>
-        {/* Alto fijo (quepa o no el tachado) para que todas las tarjetas del
-            grid midan lo mismo sin importar si el producto tiene descuento. */}
-        <View className="mt-1 min-h-[28px]">
+        <View className="mt-1 h-[32px]">
           {hasDiscount && (
             <Text className="text-[10px] text-muted line-through">
               {formatPrice(product.priceSale)}

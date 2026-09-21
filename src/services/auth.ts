@@ -169,6 +169,32 @@ export const authService = {
     }),
 
   /**
+   * Autenticación con Apple: manda el identityToken del Sign in with Apple
+   * nativo. `fullName` viaja aparte porque Apple SOLO lo entrega en el primer
+   * sign-in del usuario (después llega vacío y el backend conserva el guardado).
+   */
+  signInWithApple: (
+    identityToken: string,
+    fullName?: string,
+    role?: 'client' | 'delivery',
+  ) =>
+    http<{
+      data: {
+        tokens: Tokens;
+        user: AuthUser & { isNewUser?: boolean };
+        accessSessionId?: string;
+      };
+    }>('/auth/apple', {
+      method: 'POST',
+      body: {
+        identityToken,
+        ...(fullName ? { fullName } : {}),
+        ...(role ? { role } : {}),
+      },
+      toastSuccess: true,
+    }),
+
+  /**
    * Renueva los tokens con el refresh token guardado (restauración de sesión
    * al abrir la app). Sin toast de error: el arranque decide qué hacer si falla.
    */

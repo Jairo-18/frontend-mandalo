@@ -21,7 +21,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
-import { columnsForWidth, gridItemStyle } from '@/lib/grid-style';
+import { columnsForWidth, gridItemStyle, gridPerfProps } from '@/lib/grid-style';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { adminCategoriesService } from '@/services/admin-catalogs';
 import { BusinessProduct, businessService } from '@/services/business';
@@ -218,6 +218,7 @@ export function ProductCrudScreen() {
           data={list.items}
           keyExtractor={(item) => String(item.id)}
           numColumns={numColumns}
+          {...gridPerfProps}
           columnWrapperStyle={{ gap: 12 }}
           renderItem={renderItem}
           contentContainerStyle={{

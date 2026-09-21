@@ -9,13 +9,11 @@ import { useAppTheme } from '@/context/app-theme';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
+  DEFAULT_MAP_CENTER,
   DeviceCoords,
   getDeviceCoordsSilently,
   reverseGeocodeCoords,
 } from '@/lib/location';
-
-/** Centro del área de operación (Putumayo) si no hay GPS ni dirección previa. */
-const DEFAULT_CENTER: DeviceCoords = { latitude: 1.0865, longitude: -76.6325 };
 
 const DELTA = 0.01;
 
@@ -47,7 +45,7 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
   const { isDark } = useAppTheme();
   const mapRef = useRef<MapView>(null);
 
-  const [center, setCenter] = useState<DeviceCoords>(initialCoords ?? DEFAULT_CENTER);
+  const [center, setCenter] = useState<DeviceCoords>(initialCoords ?? DEFAULT_MAP_CENTER);
   const [address, setAddress] = useState<string | undefined>();
   const [city, setCity] = useState<string | undefined>();
   const [region, setRegion] = useState<string | undefined>();
@@ -73,10 +71,10 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
   // `initialRegion` solo aplica en el montaje inicial, no en reaperturas con
   // otras coords (p. ej. crear una dirección después de editar otra).
   //
-  // Sin dirección previa (crear): arranca en el centro fijo de Putumayo y,
+  // Sin dirección previa (crear): arranca en `DEFAULT_MAP_CENTER` (Mocoa) y,
   // apenas llega el GPS silencioso (si el usuario lo permite), se mueve ahí
-  // solo — antes se quedaba fijo en el centro hasta que el usuario tocaba
-  // "Usar mi ubicación" a mano, mostrando siempre Villagarzón de entrada.
+  // solo — antes se quedaba fijo hasta que el usuario tocaba "Usar mi
+  // ubicación" a mano.
   useEffect(() => {
     if (!visible) return;
     if (initialCoords) {
@@ -89,12 +87,12 @@ export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }:
       return;
     }
 
-    setCenter(DEFAULT_CENTER);
+    setCenter(DEFAULT_MAP_CENTER);
     mapRef.current?.animateToRegion(
-      { ...DEFAULT_CENTER, latitudeDelta: DELTA, longitudeDelta: DELTA },
+      { ...DEFAULT_MAP_CENTER, latitudeDelta: DELTA, longitudeDelta: DELTA },
       0,
     );
-    void resolve(DEFAULT_CENTER);
+    void resolve(DEFAULT_MAP_CENTER);
 
     let alive = true;
     getDeviceCoordsSilently().then((coords) => {

@@ -23,6 +23,35 @@ export function columnsForWidth(width: number, mobileColumns: 2 | 3 = 2): number
  * de la última fila incompleta se limitan a ~el ancho de una celda para que
  * no se estiren solos a lo ancho.
  */
+/**
+ * Props de virtualización compartidas por los grids de tarjetas (home, tienda,
+ * CRUD de productos). Se esparcen con `{...gridPerfProps}`.
+ *
+ * `removeClippedSubviews` viene en `true` por defecto en Android: la lista
+ * DESPRENDE las celdas que salen de pantalla y las remonta al entrar. Con
+ * tarjetas que llevan `overflow-hidden` + `rounded-2xl` (ProductGridCard),
+ * en scroll rápido la celda se repinta a medias y quedan franjas del borde
+ * y la foto cortada en bandas. Por eso va apagado.
+ *
+ * Apagarlo solo no basta: `windowSize` por defecto es 21 (~10 pantallas
+ * arriba y 10 abajo), así que sin recorte quedarían ~100 tarjetas con foto
+ * montadas. Con 11 (~5 pantallas a cada lado) el consumo queda por debajo del
+ * que había ANTES del arreglo.
+ *
+ * El número es un equilibrio, no un óptimo: `FlatList` reserva el espacio de
+ * las celdas fuera de la ventana pero no las renderiza, así que cuanto más
+ * baja, más probable es ver BLANCO en un fling largo (y ahí no se puede
+ * dibujar un esqueleto: la lista no expone esas celdas). Estuvo en 7 y se
+ * subió a 11 al notarse ese blanco; `expo-image` abarata cada celda porque
+ * reescala la foto al tamaño real y la cachea.
+ */
+export const gridPerfProps = {
+  removeClippedSubviews: false,
+  windowSize: 11,
+  initialNumToRender: 8,
+  maxToRenderPerBatch: 8,
+} as const;
+
 export function gridItemStyle(
   index: number,
   count: number,

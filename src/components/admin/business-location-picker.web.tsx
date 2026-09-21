@@ -9,11 +9,13 @@ import { TextField } from '@/components/ui/text-field';
 import { GOOGLE_MAPS_WEB_KEY } from '@/constants/api';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { loadGoogleMapsWeb } from '@/lib/google-maps-web-loader';
-import { DeviceCoords, getDeviceCoordsSilently } from '@/lib/location';
+import {
+  DEFAULT_MAP_CENTER,
+  DeviceCoords,
+  getDeviceCoordsSilently,
+} from '@/lib/location';
 import { extractCoordsFromMapsUrl } from '@/lib/maps-url';
 import { mapsService } from '@/services/maps';
-
-const DEFAULT_CENTER: DeviceCoords = { latitude: 1.0865, longitude: -76.6325 };
 
 export type BusinessLocationResult = { coords: DeviceCoords; label?: string };
 
@@ -49,7 +51,7 @@ export function BusinessLocationPicker({
   const markerInstanceRef = useRef<any>(null);
 
   const [center, setCenter] = useState<DeviceCoords>(
-    initialCoords ?? DEFAULT_CENTER,
+    initialCoords ?? DEFAULT_MAP_CENTER,
   );
   const [label, setLabel] = useState<string | undefined>();
   const [resolving, setResolving] = useState(false);
@@ -98,7 +100,7 @@ export function BusinessLocationPicker({
   useEffect(() => {
     if (!visible || !GOOGLE_MAPS_WEB_KEY) return;
     let cancelled = false;
-    const startRef = { current: initialCoords ?? DEFAULT_CENTER };
+    const startRef = { current: initialCoords ?? DEFAULT_MAP_CENTER };
     setCenter(startRef.current);
     setMapsUrl('');
     setLinkError(undefined);

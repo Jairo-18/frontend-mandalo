@@ -17,14 +17,12 @@ import { TextField } from '@/components/ui/text-field';
 import { useAppTheme } from '@/context/app-theme';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
+  DEFAULT_MAP_CENTER,
   DeviceCoords,
   getDeviceCoordsSilently,
   reverseGeocodeCoords,
 } from '@/lib/location';
 import { extractCoordsFromMapsUrl } from '@/lib/maps-url';
-
-/** Centro del área de operación (Putumayo) si no hay ubicación previa. */
-const DEFAULT_CENTER: DeviceCoords = { latitude: 1.0865, longitude: -76.6325 };
 
 const DELTA = 0.01;
 
@@ -60,7 +58,7 @@ export function BusinessLocationPicker({
   const mapRef = useRef<MapView>(null);
 
   const [center, setCenter] = useState<DeviceCoords>(
-    initialCoords ?? DEFAULT_CENTER,
+    initialCoords ?? DEFAULT_MAP_CENTER,
   );
   const [label, setLabel] = useState<string | undefined>();
   const [resolving, setResolving] = useState(false);
@@ -114,12 +112,12 @@ export function BusinessLocationPicker({
       return;
     }
 
-    setCenter(DEFAULT_CENTER);
+    setCenter(DEFAULT_MAP_CENTER);
     mapRef.current?.animateToRegion(
-      { ...DEFAULT_CENTER, latitudeDelta: DELTA, longitudeDelta: DELTA },
+      { ...DEFAULT_MAP_CENTER, latitudeDelta: DELTA, longitudeDelta: DELTA },
       0,
     );
-    void resolve(DEFAULT_CENTER);
+    void resolve(DEFAULT_MAP_CENTER);
 
     let alive = true;
     getDeviceCoordsSilently().then((coords) => {

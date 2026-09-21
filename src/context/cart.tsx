@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 
+import { haptics } from '@/lib/haptics';
 import { finalPrice } from '@/lib/price';
 import { ExploreBusiness, ExploreProduct } from '@/services/explore';
 
@@ -49,6 +50,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const add = useCallback((product: ExploreProduct, biz: CartBusiness) => {
+    // Acá y no en cada botón: cubre el "+" de la tarjeta del grid, el de la
+    // pantalla del negocio y el del stepper del checkout de una sola vez.
+    haptics.tap();
     // El "+" del stepper en checkout llama a `add` sin `detail` (no lo tiene
     // a mano) — sin este merge, borraría el detalle completo que store/[id]
     // sí cargó al agregar el primer producto.

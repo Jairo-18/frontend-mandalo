@@ -28,6 +28,7 @@ import {
   getDeviceLocation,
   samePlaceName,
 } from '@/lib/location';
+import { WebNotifyRow } from '@/components/ui/web-notify-row';
 import { getSession, setSession } from '@/lib/session';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { formatText, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
@@ -611,6 +612,9 @@ export function ProfileScreen({
                 <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
               </Pressable>
             )}
+
+            {/* Solo web: en nativo devuelve null (el push ya pide su permiso). */}
+            <WebNotifyRow />
 
             {/* Cambiar contraseña: pantalla propia */}
             <Pressable

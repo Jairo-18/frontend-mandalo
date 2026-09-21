@@ -8,10 +8,10 @@
     "scheme": "frontendmandalo",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.mandalo.app",
+      "bundleIdentifier": "com.mandaloputumayo.app",
       "supportsTablet": false,
       "config": {
-        "googleMapsApiKey": "AIzaSyDJN3PWMQ625JiMNaVRVueITd37BRZDqIo"
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -38,6 +38,7 @@
       "./plugins/withCmakeShortPath.js",
       "expo-router",
       "@react-native-google-signin/google-signin",
+      "expo-apple-authentication",
       [
         "expo-location",
         {
@@ -74,7 +75,18 @@
       "expo-image",
       "expo-secure-store",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "extraPods": [
+              { "name": "GoogleUtilities", "modular_headers": true },
+              { "name": "RecaptchaInterop", "modular_headers": true }
+            ]
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

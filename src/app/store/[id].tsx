@@ -26,7 +26,7 @@ import { useCart } from '@/context/cart';
 import { getAppColors } from '@/lib/app-colors';
 import { lightenHex } from '@/lib/color';
 import { formatDistance } from '@/lib/distance';
-import { columnsForWidth, gridItemStyle } from '@/lib/grid-style';
+import { columnsForWidth, gridItemStyle, gridPerfProps } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
 import { formatHour12 } from '@/lib/text-format';
 import { toast } from '@/lib/toast';
@@ -313,6 +313,7 @@ export default function StoreScreen() {
             data={list.items}
             keyExtractor={(item) => String(item.id)}
             numColumns={numColumns}
+            {...gridPerfProps}
             columnWrapperStyle={{ gap: 12 }}
             renderItem={({ item, index }) => (
               <View style={gridItemStyle(index, list.items.length, numColumns)}>

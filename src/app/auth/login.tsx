@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 
+import { AppleButton } from '@/components/auth/apple-button';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { GoogleButton } from '@/components/auth/google-button';
 import { SocialContactBar } from '@/components/auth/social-contact-bar';
@@ -15,6 +16,7 @@ import {
   loadCredentials,
   saveCredentials,
 } from '@/lib/credentials';
+import { signInWithApple } from '@/lib/apple-auth';
 import { signInWithGoogle } from '@/lib/google-auth';
 import { HttpError } from '@/lib/http';
 import { entryPathFor, getSession, setSession } from '@/lib/session';
@@ -41,6 +43,7 @@ export default function LoginScreen() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   // El sign-in rechazó por correo sin verificar: se ofrece reenviarlo.
   const [showResend, setShowResend] = useState(false);
   const [resending, setResending] = useState(false);
@@ -124,6 +127,22 @@ export default function LoginScreen() {
       }
     } finally {
       setGoogleLoading(false);
+    }
+  }
+
+  async function handleApple() {
+    try {
+      setAppleLoading(true);
+      const result = await signInWithApple();
+      if (result.ok) {
+        router.replace(
+          result.isNewUser
+            ? '/auth/complete-registration'
+            : entryPathFor(getSession()?.user),
+        );
+      }
+    } finally {
+      setAppleLoading(false);
     }
   }
 
@@ -214,6 +233,10 @@ export default function LoginScreen() {
           </View>
 
           <GoogleButton onPress={handleGoogle} loading={googleLoading} />
+
+          {/* Solo se pinta en iOS 13+; en Android el componente es null
+              (incluye su propio margen para no dejar hueco). */}
+          <AppleButton onPress={handleApple} loading={appleLoading} />
         </>
       )}
 

@@ -47,8 +47,25 @@ const PUTUMAYO_SEATS: Array<{ name: string } & DeviceCoords> = [
   { name: 'Santiago', latitude: 1.146, longitude: -77.002 },
 ];
 
+/**
+ * Centro inicial de CUALQUIER mapa cuando no hay ubicación previa ni ha llegado
+ * el GPS todavía (selector de direcciones del cliente y de ubicación de
+ * negocios del admin, nativo y web).
+ *
+ * Son las coordenadas de la cabecera de Mocoa. Antes cada selector tenía su
+ * propia copia de `1.0865, -76.6325`, un punto rural a medio camino entre Mocoa
+ * (~6,9 km) y Villagarzón (~6,7 km): el mapa abría sobre un potrero y, como
+ * caía 250 m más cerca de Villagarzón, el selector anunciaba "Villagarzón"
+ * aunque el usuario estuviera en Mocoa. Ese mismo punto es el que aparecía
+ * escrito como "Ubicación (1.08650, -76.63250)".
+ */
+export const DEFAULT_MAP_CENTER: DeviceCoords = { latitude: 1.1466, longitude: -76.6482 };
+
 /** Más lejos de esto de TODAS las cabeceras = fuera del área de operación. */
 const NEAREST_SEAT_MAX_KM = 80;
+
+/** Departamento donde opera la app: todas las cabeceras de arriba son suyas. */
+const OPERATING_REGION = 'Putumayo';
 
 /** Distancia haversine en kilómetros (igual que el backend para las ETAs). */
 function distanceKm(a: DeviceCoords, b: DeviceCoords): number {
@@ -78,7 +95,7 @@ export function nearestMunicipality(
     }
   }
   return best && bestKm <= NEAREST_SEAT_MAX_KM
-    ? { name: best.name, region: 'Putumayo' }
+    ? { name: best.name, region: OPERATING_REGION }
     : null;
 }
 
@@ -86,6 +103,22 @@ export function nearestMunicipality(
  * Detecta un Google Plus Code ("49P2+V6", "67Q5 49P2+V6"): alfabeto base-20
  * propio del formato + el '+' obligatorio antes de los últimos 2-3 caracteres.
  */
+/**
+ * Vía + número de placa. El geocoder los devuelve SEPARADOS (`street` =
+ * "Carrera 7", `streetNumber` = "5-30"), y quedarse solo con `street` deja al
+ * domiciliario con "Carrera 7, Mocoa": la cuadra entera. El texto se muestra
+ * en la tarjeta del pedido, en el detalle y como descripción del pin en su
+ * mapa, así que el número es justo lo que le falta para dar con la puerta.
+ */
+function streetWithNumber(place: Location.LocationGeocodedAddress): string | undefined {
+  const street = place.street?.trim();
+  if (!street) return undefined;
+  const number = place.streetNumber?.trim();
+  if (!number) return street;
+  // Formato colombiano ("Carrera 7 #5-30"), sin duplicar el '#' si ya viene.
+  return number.startsWith('#') ? `${street} ${number}` : `${street} #${number}`;
+}
+
 function isPlusCode(value?: string | null): boolean {
   if (!value) return false;
   return /^(?:[23456789CFGHJMPQRVWX]{4,8}\s)?[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}$/i.test(
@@ -110,16 +143,32 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
  */
 export function samePlaceName(a?: string, b?: string): boolean {
   if (!a || !b) return false;
-  const clean = (s: string) =>
-    Array.from(s.normalize('NFD'))
-      .filter((ch) => {
-        const code = ch.charCodeAt(0);
-        return code < 0x0300 || code > 0x036f;
-      })
-      .join('')
-      .trim()
-      .toLowerCase();
-  return clean(a) === clean(b);
+  return normalizePlaceName(a) === normalizePlaceName(b);
+}
+
+/** Sin tildes, sin espacios de sobra y en minúsculas. */
+function normalizePlaceName(s: string): string {
+  return Array.from(s.normalize('NFD'))
+    .filter((ch) => {
+      const code = ch.charCodeAt(0);
+      return code < 0x0300 || code > 0x036f;
+    })
+    .join('')
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * ¿El geocoder ubicó el punto en OTRO departamento? `false` si no respondió.
+ *
+ * Compara por INCLUSIÓN, no por igualdad: Google envuelve el nombre según el
+ * idioma del dispositivo ("Putumayo Department", "Departamento del Putumayo"),
+ * y exigir igualdad exacta daría "otro departamento" estando en el Putumayo —
+ * apagando justo el snap que corrige a Google dentro del área de operación.
+ */
+function isOutsideOperatingRegion(region?: string): boolean {
+  if (!region) return false;
+  return !normalizePlaceName(region).includes(normalizePlaceName(OPERATING_REGION));
 }
 
 /**
@@ -173,16 +222,14 @@ export async function reverseGeocodeCoords(
   let streetLine: string | undefined;
   let region: string | undefined;
   let city: string | undefined;
-  let geocoded = false;
   try {
     const [place] = await Location.reverseGeocodeAsync(coords);
     if (place) {
-      geocoded = true;
       // Cuando el punto no tiene dirección con nombre, Google devuelve un
       // Plus Code ("49P2+V6") como `name` — se descarta (mejor el barrio o
       // el fallback "Ubicación GPS (lat, lng)" del caller).
       const name = isPlusCode(place.name) ? undefined : place.name;
-      streetLine = place.street || name || place.district || undefined;
+      streetLine = streetWithNumber(place) || name || place.district || undefined;
       region = place.region ?? undefined;
       city = place.city ?? place.subregion ?? undefined;
     }
@@ -193,15 +240,31 @@ export async function reverseGeocodeCoords(
   // Municipio/departamento por DISTANCIA al punto dentro del área de
   // operación; el nombre del geocoder queda solo como fallback fuera de ella
   // (Google marcaba "Villagarzón" estando en Mocoa).
-  const nearest = nearestMunicipality(coords);
+  //
+  // Pero ese snap existe para corregir a Google DENTRO del Putumayo, no para
+  // anexarle los departamentos vecinos: `NEAREST_SEAT_MAX_KM` son 80 km y
+  // varias cabeceras están pegadas a la frontera — Pasto (Nariño) queda a
+  // ~32 km de Santiago, así que sin esta guarda alguien en Pasto se registraba
+  // como "Santiago, Putumayo". Si el geocoder respondió y dice otro
+  // departamento, le creemos a él. Cuando no respondió (`region` vacío, el caso
+  // rural sin red) el snap actúa igual que siempre.
+  const nearest = isOutsideOperatingRegion(region) ? null : nearestMunicipality(coords);
   if (nearest) {
     city = nearest.name;
     region = nearest.region;
   }
 
-  const address = geocoded
-    ? [streetLine, city].filter(Boolean).join(', ') || undefined
-    : undefined;
+  // El texto NO depende de que el geocoder haya respondido. En el Putumayo
+  // rural `reverseGeocodeAsync` devuelve vacío a menudo (sin calles con nombre,
+  // o sin red), y antes eso descartaba también el municipio que `nearest` ya
+  // había resuelto por pura distancia, offline: el registro terminaba
+  // escribiendo "Ubicación (1.08650, -76.63250)" y el mapa confirmaba
+  // `undefined` pese a estar MOSTRANDO el municipio en pantalla.
+  //
+  // Ahora el peor caso es el municipio más cercano ("Mocoa", "Villagarzón", el
+  // que toque), y si el punto cae fuera del área de operación `city` sigue
+  // vacío y el caller usa su propio fallback de coordenadas, igual que antes.
+  const address = [streetLine, city].filter(Boolean).join(', ') || undefined;
 
   return { address, region, city };
 }

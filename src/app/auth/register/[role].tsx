@@ -14,6 +14,7 @@ import { AuthShell } from '@/components/auth/auth-shell';
 import { DeveloperCredit } from '@/components/ui/developer-credit';
 import { FormSection } from '@/components/ui/form-section';
 import { DeliveryVerification } from '@/components/auth/delivery-verification';
+import { AppleButton } from '@/components/auth/apple-button';
 import { GoogleButton } from '@/components/auth/google-button';
 import { TermsCheckbox } from '@/components/auth/terms-checkbox';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import { UploadProgressBar } from '@/components/ui/upload-progress-bar';
 import { useAppData } from '@/context/app-data';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { useMunicipalities } from '@/hooks/use-municipalities';
+import { signInWithApple } from '@/lib/apple-auth';
 import { signInWithGoogle } from '@/lib/google-auth';
 import { DeviceCoords, getDeviceLocation, samePlaceName } from '@/lib/location';
 import { getSession, homePathFor } from '@/lib/session';
@@ -77,6 +79,7 @@ export default function RegisterForm() {
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   // Progreso real de la subida (solo repartidor: manda 7 fotos/documentos en
   // un solo POST) — null mientras no hay nada en curso.
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -288,6 +291,26 @@ export default function RegisterForm() {
       }
     } finally {
       setGoogleLoading(false);
+    }
+  }
+
+  /** Igual que `handleGoogle`, con Sign in with Apple (solo iOS). */
+  async function handleApple() {
+    try {
+      setAppleLoading(true);
+      const result = await signInWithApple(isDelivery ? 'delivery' : 'client');
+      if (result.ok) {
+        router.replace(
+          result.isNewUser
+            ? {
+                pathname: '/auth/complete-registration',
+                params: { role: isDelivery ? 'delivery' : 'client' },
+              }
+            : homePathFor(getSession()?.user),
+        );
+      }
+    } finally {
+      setAppleLoading(false);
     }
   }
 
@@ -596,6 +619,11 @@ export default function RegisterForm() {
             onPress={handleGoogle}
             loading={googleLoading}
           />
+
+          {/* Solo se pinta en iOS 13+; en Android el componente es null.
+              "Continuar con Apple" sirve para registro y para login: la
+              cuenta puede existir ya, igual que con el botón de Google. */}
+          <AppleButton onPress={handleApple} loading={appleLoading} />
         </>
       )}
 

@@ -20,6 +20,7 @@ import { FilterSheet } from '@/components/client/filter-sheet';
 import { HomeHeroCard } from '@/components/client/home-hero-card';
 import { ProductGridCard } from '@/components/client/product-grid-card';
 import { TagCards } from '@/components/client/tag-cards';
+import { GridSkeleton } from '@/components/ui/grid-skeleton';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { PanelSafeArea } from '@/components/ui/panel-header';
 import { SearchBar } from '@/components/ui/search-bar';
@@ -30,9 +31,8 @@ import { useDeliveryEstimates, useNearGpsFallback } from '@/hooks/use-delivery-e
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useExploreFilters, useUserAddresses } from '@/hooks/use-user-data';
 import { useSession } from '@/hooks/use-session';
-import { columnsForWidth, gridItemStyle } from '@/lib/grid-style';
+import { columnsForWidth, gridItemStyle, gridPerfProps } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
-import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
   ExploreBusiness,
@@ -286,12 +286,11 @@ export default function HomeScreen() {
     </View>
   );
 
-  const listFooter = (
-    <ActivityIndicator
-      size="small"
-      color={colors.primaryColor}
-      style={{ paddingVertical: 12 }}
-    />
+  // Una fila de tarjetas fantasma al traer la página siguiente, en vez de un
+  // spinner suelto: el hueco ya mide lo que va a llegar y nada salta después.
+  const productFooter = <GridSkeleton numColumns={numColumns} count={numColumns} />;
+  const businessFooter = (
+    <GridSkeleton numColumns={numColumns} count={numColumns} infoHeight={80} />
   );
 
   return (
@@ -380,6 +379,7 @@ export default function HomeScreen() {
           data={businessList.items}
           keyExtractor={(item) => `b-${item.id}`}
           numColumns={numColumns}
+          {...gridPerfProps}
           columnWrapperStyle={{ paddingHorizontal: 16, gap: 12 }}
           renderItem={({ item, index }) => (
             <View
@@ -398,14 +398,10 @@ export default function HomeScreen() {
           onRefresh={() => businessList.fetchPage(1, 'refresh')}
           onEndReached={businessList.loadMore}
           onEndReachedThreshold={0.4}
-          ListFooterComponent={businessList.loadingMore ? listFooter : null}
+          ListFooterComponent={businessList.loadingMore ? businessFooter : null}
           ListEmptyComponent={
             businessList.loading ? (
-              <ActivityIndicator
-                size="large"
-                color={colors.primaryColor}
-                style={{ paddingTop: 48 }}
-              />
+              <GridSkeleton numColumns={numColumns} infoHeight={80} />
             ) : (
               <ListEmpty
                 icon="storefront-outline"
@@ -420,6 +416,7 @@ export default function HomeScreen() {
           data={productList.items}
           keyExtractor={(item) => `p-${item.id}`}
           numColumns={numColumns}
+          {...gridPerfProps}
           columnWrapperStyle={{ paddingHorizontal: 16, gap: 12 }}
           renderItem={({ item, index }) => (
             <View
@@ -447,14 +444,10 @@ export default function HomeScreen() {
           onRefresh={() => productList.fetchPage(1, 'refresh')}
           onEndReached={productList.loadMore}
           onEndReachedThreshold={0.4}
-          ListFooterComponent={productList.loadingMore ? listFooter : null}
+          ListFooterComponent={productList.loadingMore ? productFooter : null}
           ListEmptyComponent={
             productList.loading ? (
-              <ActivityIndicator
-                size="large"
-                color={colors.primaryColor}
-                style={{ paddingTop: 48 }}
-              />
+              <GridSkeleton numColumns={numColumns} />
             ) : (
               <ListEmpty
                 icon={searching ? 'search-outline' : 'cube-outline'}
