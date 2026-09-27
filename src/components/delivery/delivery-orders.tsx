@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, Pressable, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/orders/action-button';
 import { OrderCard } from '@/components/orders/order-card';
@@ -62,9 +62,9 @@ export function DeliveryOrders() {
     getDeviceCoordsSilently().then(setDeviceCoords);
   }, []);
 
-  // Ubicación MANUAL (app en pruebas): mientras esté activa, reemplaza el GPS
-  // real al buscar "Disponibles" — deja simular estar en otra ciudad/zona sin
-  // depender de la posición real del dispositivo. Persistida por dispositivo.
+  // Ubicación MANUAL: mientras esté activa, reemplaza el GPS real al buscar
+  // "Disponibles" — el repartidor elige dónde quiere trabajar sin depender
+  // de la posición real del dispositivo. Persistida por dispositivo.
   const [override, setOverride] = useState<DeliveryLocationOverride | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
   useEffect(() => {
@@ -277,18 +277,19 @@ export function DeliveryOrders() {
         </View>
       )}
 
-      {/* App en pruebas: ubicación manual para "Disponibles" en vez del GPS
-          real (simular estar en otra ciudad/zona). */}
+      {/* Elegir a mano dónde "está" el repartidor para buscar "Disponibles",
+          en vez de depender solo del GPS real (útil si el GPS falla o si
+          quiere cubrir otra zona). */}
       {tab === 'available' && hasArl && (
         <Pressable
           onPress={() => setPickerVisible(true)}
           className="mx-4 mb-2 flex-row items-center gap-2 rounded-xl border border-dashed border-primary bg-primary-tint px-3 py-2 active:opacity-70"
         >
-          <Ionicons name="flask-outline" size={15} color={colors.primaryColor} />
+          <Ionicons name="navigate-outline" size={15} color={colors.primaryColor} />
           <Text numberOfLines={1} className="flex-1 text-xs font-semibold text-primary">
             {override
-              ? `Modo prueba: buscando cerca de ${override.label}`
-              : 'Buscando cerca de tu ubicación · Tocar para cambiar'}
+              ? `Buscando cerca de ${override.label} · Elige dónde quieres trabajar`
+              : 'Buscando cerca de tu ubicación · Elige dónde quieres trabajar'}
           </Text>
           {override && (
             <Pressable onPress={removeOverride} hitSlop={8}>
@@ -464,8 +465,8 @@ export function DeliveryOrders() {
         onCancel={() => setTakeTarget(null)}
       />
 
-      {/* App en pruebas: elegir a mano dónde "está" el repartidor para
-          probar Disponibles en otra ciudad/zona sin depender del GPS real. */}
+      {/* Elegir a mano dónde "está" el repartidor para buscar "Disponibles"
+          en otra zona, sin depender del GPS real. */}
       <AddressMapPicker
         visible={pickerVisible}
         initialCoords={coords ?? undefined}
@@ -515,18 +516,20 @@ export function DeliveryOrders() {
         Aviso PROPIO antes de pedir "Permitir todo el tiempo" al sistema
         (exigido por Google Play para el permiso de ubicación en segundo
         plano, ver NOTAS.md §47/§49): explica qué se recoge y para qué ANTES
-        de que aparezca el diálogo nativo. Si declina, sigue funcionando con
-        ubicación de primer plano (mientras tenga la app abierta).
+        de que aparezca el diálogo nativo. En Android puede declinar (sigue
+        funcionando con ubicación de primer plano). En iOS, Apple exige
+        (guideline 5.1.1(iv)) que este aviso SIEMPRE lleve al permiso nativo
+        del sistema — sin salida — así que ahí no se ofrece "Ahora no".
       */}
       <YesNoDialog
         visible={needsBackgroundDisclosure}
         icon="navigate-outline"
         title="Ubicación en segundo plano"
         message="Mientras tengas un pedido EN CAMINO, Mandalo recoge tu ubicación precisa incluso cuando la app está cerrada o no está en uso, y la comparte con el negocio y el cliente de ese pedido para que vean en vivo por dónde vas. No se comparte con nadie más. El seguimiento se activa solo con pedidos asignados a ti y se apaga al entregar."
-        confirmLabel="Activar ubicación"
-        cancelLabel="Ahora no"
+        confirmLabel="Continuar"
+        cancelLabel={Platform.OS === 'android' ? 'Ahora no' : undefined}
         onConfirm={grantBackgroundConsent}
-        onCancel={declineBackgroundConsent}
+        onCancel={Platform.OS === 'android' ? declineBackgroundConsent : undefined}
       />
     </View>
   );

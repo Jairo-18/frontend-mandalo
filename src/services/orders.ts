@@ -48,6 +48,10 @@ export type Order = {
   retryCount: number;
   /** Cuánto se cobró por el reintento (0 si nunca se reintentó). */
   retryFeeCharged: number;
+  /** Cargo del segundo intento vigente al crear el pedido (tarifa del municipio del negocio). */
+  retryFee: number;
+  /** Minutos de espera en el sitio vigentes al crear el pedido. */
+  deliveryWaitMinutes: number;
   /** Soporte del pago (foto/pantallazo) cuando el método no es efectivo. */
   paymentProofUrl: string | null;
   /** Si el negocio rechazó el comprobante: el motivo (el cliente re-sube). */

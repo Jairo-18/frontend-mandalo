@@ -11,6 +11,7 @@ import { RejectProofDialog } from '@/components/orders/reject-proof-dialog';
 import { VerificationCodeDialog } from '@/components/orders/verification-code-dialog';
 import { FilterChips } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
+import { NoPushNotice } from '@/components/ui/no-push-notice';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useOrderEvents } from '@/lib/orders-socket';
@@ -92,6 +93,11 @@ export default function BusinessOrdersScreen() {
           <ThemeToggle />
         </View>
       </View>
+
+      {/* Solo se pinta en un teléfono que no puede recibir push (Huawei sin
+          GMS): ahí el negocio tiene que dejar la app abierta para enterarse
+          de los pedidos. En el resto es null. */}
+      <NoPushNotice />
 
       <FlatList
         data={list.items}

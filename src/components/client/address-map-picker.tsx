@@ -4,9 +4,14 @@ import { ActivityIndicator, Modal, Platform, Pressable, Text, View } from 'react
 import MapView, { PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  AddressMapPickerFallback,
+  AddressPickerResult,
+} from '@/components/client/address-map-picker-fallback';
 import { Button } from '@/components/ui/button';
 import { useAppTheme } from '@/context/app-theme';
 import { getAppColors } from '@/lib/app-colors';
+import { useGoogleServices } from '@/hooks/use-google-services';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
   DEFAULT_MAP_CENTER,
@@ -22,12 +27,7 @@ type Props = {
   /** Punto de partida del pin (dirección en edición, o última posición conocida). */
   initialCoords?: DeviceCoords;
   onClose: () => void;
-  onConfirm: (result: {
-    coords: DeviceCoords;
-    address?: string;
-    city?: string;
-    region?: string;
-  }) => void;
+  onConfirm: (result: AddressPickerResult) => void;
 };
 
 /**
@@ -38,8 +38,21 @@ type Props = {
  * en Villagarzón, para mandar un pedido/regalo allá). Reverse-geocoding con
  * el mismo geocoder nativo que ya usa "Usar mi ubicación actual" — sin API
  * keys ni costo extra de Google Places.
+ *
+ * En un Android SIN Google Mobile Services (los Huawei de la AppGallery) el
+ * MapView de abajo pintaría un recuadro gris, así que ahí se cae a la misma
+ * pantalla sin mapa que usa la web. Ver `lib/google-services.ts`.
  */
-export function AddressMapPicker({ visible, initialCoords, onClose, onConfirm }: Props) {
+export function AddressMapPicker(props: Props) {
+  const googleServices = useGoogleServices();
+  if (!googleServices) {
+    return <AddressMapPickerFallback {...props} reason="no-google-services" />;
+  }
+  return <AddressMapPickerMap {...props} />;
+}
+
+/** El selector real con MapView (solo donde hay mapa de Google disponible). */
+function AddressMapPickerMap({ visible, initialCoords, onClose, onConfirm }: Props) {
   const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();

@@ -30,7 +30,13 @@ type Props = {
    * queda bloqueado hasta que termine (el padre decide cerrar en su estado).
    */
   onConfirm: () => void | Promise<void>;
-  onCancel: () => void;
+  /**
+   * Sin esto el diálogo queda de un solo botón (informativo, no Sí/No): no
+   * se puede cerrar tocando afuera ni con el botón atrás — solo confirmando.
+   * Lo exige Apple (guideline 5.1.1(iv)) para avisos previos a un permiso:
+   * no puede haber una salida que evite llegar al diálogo nativo del SO.
+   */
+  onCancel?: () => void;
 };
 
 /**
@@ -68,12 +74,12 @@ export function YesNoDialog({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={working ? undefined : onCancel}
+      onRequestClose={working || !onCancel ? undefined : onCancel}
       statusBarTranslucent
     >
       <Pressable
         className="flex-1 items-center justify-center bg-black/50 px-8"
-        onPress={working ? undefined : onCancel}
+        onPress={working || !onCancel ? undefined : onCancel}
       >
         <Pressable
           className="w-full max-h-[85%] rounded-3xl border border-border bg-card"
@@ -108,17 +114,19 @@ export function YesNoDialog({
             ) : null}
 
             <View className="mt-6 flex-row gap-3">
-              <Pressable
-                onPress={onCancel}
-                disabled={working}
-                className={`min-h-[48px] flex-1 items-center justify-center rounded-2xl border border-border px-2 py-3 active:opacity-70 ${
-                  working ? 'opacity-50' : ''
-                }`}
-              >
-                <Text className="text-center text-[15px] font-bold text-ink">
-                  {cancelLabel}
-                </Text>
-              </Pressable>
+              {onCancel && (
+                <Pressable
+                  onPress={onCancel}
+                  disabled={working}
+                  className={`min-h-[48px] flex-1 items-center justify-center rounded-2xl border border-border px-2 py-3 active:opacity-70 ${
+                    working ? 'opacity-50' : ''
+                  }`}
+                >
+                  <Text className="text-center text-[15px] font-bold text-ink">
+                    {cancelLabel}
+                  </Text>
+                </Pressable>
+              )}
 
               <Pressable
                 onPress={handleConfirm}

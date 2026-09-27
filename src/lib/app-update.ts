@@ -5,6 +5,8 @@ import SpInAppUpdates, {
   IAUInstallStatus,
 } from 'sp-react-native-in-app-updates';
 
+import { probeGoogleServices } from '@/lib/google-services';
+
 /**
  * Al abrir la app, revisa si hay una versión más nueva publicada en Google
  * Play y, si la hay, la descarga en segundo plano y muestra el aviso propio
@@ -26,33 +28,53 @@ export function useAppUpdateCheck(): void {
   useEffect(() => {
     if (Platform.OS !== 'android') return;
 
-    const inAppUpdates = new SpInAppUpdates(__DEV__);
+    let cancelled = false;
+    let detach: (() => void) | undefined;
 
-    const onStatusUpdate = (status: { status: IAUInstallStatus }) => {
-      // Ya se descargó: falta el paso final (reinicia la app con la
-      // versión nueva). Google ya le mostró su propia barra con el botón
-      // "Reiniciar" — instalar acá es el fallback si el tester la ignora.
-      if (status.status === IAUInstallStatus.DOWNLOADED) {
-        inAppUpdates.installUpdate();
-      }
-    };
-    inAppUpdates.addStatusUpdateListener(onStatusUpdate);
-
-    inAppUpdates
-      .checkNeedsUpdate()
-      .then((result) => {
-        if (!result.shouldUpdate) return;
-        return inAppUpdates.startUpdate({
-          updateType: IAUUpdateKind.FLEXIBLE,
-        });
-      })
-      .catch(() => {
-        // Sin Play Store instalado/disponible (algunos emuladores), sin
-        // conexión, etc. — no es crítico, la app sigue funcionando igual.
-      });
+    // "In-App Updates" es API de Play Core: sin Google Mobile Services no
+    // existe (los Huawei de la AppGallery). Además ahí la app NO se instaló
+    // desde Play, así que preguntarle a Play por versiones nuevas no tiene
+    // sentido — esa tienda actualiza por su cuenta.
+    void probeGoogleServices().then((available) => {
+      if (!available || cancelled) return;
+      detach = startUpdateCheck();
+    });
 
     return () => {
-      inAppUpdates.removeStatusUpdateListener(onStatusUpdate);
+      cancelled = true;
+      detach?.();
     };
   }, []);
+}
+
+/** Arranca la consulta a Play y devuelve cómo soltar el listener. */
+function startUpdateCheck(): () => void {
+  const inAppUpdates = new SpInAppUpdates(__DEV__);
+
+  const onStatusUpdate = (status: { status: IAUInstallStatus }) => {
+    // Ya se descargó: falta el paso final (reinicia la app con la versión
+    // nueva). Google ya le mostró su propia barra con el botón "Reiniciar" —
+    // instalar acá es el fallback si el tester la ignora.
+    if (status.status === IAUInstallStatus.DOWNLOADED) {
+      inAppUpdates.installUpdate();
+    }
+  };
+  inAppUpdates.addStatusUpdateListener(onStatusUpdate);
+
+  inAppUpdates
+    .checkNeedsUpdate()
+    .then((result) => {
+      if (!result.shouldUpdate) return;
+      return inAppUpdates.startUpdate({
+        updateType: IAUUpdateKind.FLEXIBLE,
+      });
+    })
+    .catch(() => {
+      // Sin Play Store instalado/disponible (algunos emuladores), sin
+      // conexión, etc. — no es crítico, la app sigue funcionando igual.
+    });
+
+  return () => {
+    inAppUpdates.removeStatusUpdateListener(onStatusUpdate);
+  };
 }

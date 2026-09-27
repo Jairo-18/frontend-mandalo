@@ -82,6 +82,7 @@ export default function AdminLayout() {
           options={{ title: 'Pagos al domiciliario' }}
         />
         <Drawer.Screen name="accidents" options={{ title: 'Accidentes' }} />
+        <Drawer.Screen name="pricing" options={{ title: 'Tarifas' }} />
         <Drawer.Screen name="tags" options={{ title: 'Etiquetas' }} />
         <Drawer.Screen name="categories" options={{ title: 'Categorías' }} />
         <Drawer.Screen name="bulk-invite" options={{ title: 'Alta masiva' }} />

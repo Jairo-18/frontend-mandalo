@@ -179,7 +179,7 @@ function isOutsideOperatingRegion(region?: string): boolean {
  */
 export async function getDeviceCoordsSilently(): Promise<DeviceCoords | null> {
   try {
-    if (!(await ensureLocationConsent())) return null;
+    await ensureLocationConsent();
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') return null;
     if (!(await Location.hasServicesEnabledAsync())) return null;
@@ -270,10 +270,7 @@ export async function reverseGeocodeCoords(
 }
 
 export async function getDeviceLocation(): Promise<DeviceLocation | null> {
-  if (!(await ensureLocationConsent())) {
-    toast.error('Debes aceptar el uso de ubicación en la app para marcar tu dirección.');
-    return null;
-  }
+  await ensureLocationConsent();
 
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {

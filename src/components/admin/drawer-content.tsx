@@ -29,6 +29,7 @@ type AdminRoute =
   | '/admin/users'
   | '/admin/deliveries'
   | '/admin/accidents'
+  | '/admin/pricing'
   | '/admin/tags'
   | '/admin/categories'
   | '/admin/bulk-invite'
@@ -51,6 +52,8 @@ const ITEMS: Item[] = [
   { label: 'Usuarios', icon: 'people-outline', href: '/admin/users' },
   { label: 'Domiciliarios', icon: 'bicycle-outline', href: '/admin/deliveries' },
   { label: 'Accidentes', icon: 'warning-outline', href: '/admin/accidents' },
+  // Admin regional: solo su municipio; superadmin: general + todos.
+  { label: 'Tarifas', icon: 'pricetag-outline', href: '/admin/pricing' },
   { label: 'Etiquetas', icon: 'pricetags-outline', href: '/admin/tags', superadminOnly: true },
   { label: 'Categorías', icon: 'grid-outline', href: '/admin/categories', superadminOnly: true },
   { label: 'Alta masiva', icon: 'people-circle-outline', href: '/admin/bulk-invite', superadminOnly: true },

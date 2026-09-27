@@ -3,10 +3,9 @@ import { DeviceCoords } from '@/lib/location';
 
 /**
  * Ubicación MANUAL del repartidor para "Disponibles" (reemplaza su GPS real
- * al buscar pedidos cerca): mientras la app está en pruebas, deja simular
- * estar en otra ciudad/zona sin depender de la posición real del
- * dispositivo. Persistida por dispositivo — sigue activa entre aperturas de
- * la app hasta que el repartidor la quite.
+ * al buscar pedidos cerca): el repartidor elige dónde quiere trabajar sin
+ * depender de la posición real del dispositivo. Persistida por dispositivo —
+ * sigue activa entre aperturas de la app hasta que el repartidor la quite.
  */
 const KEY = 'mandalo:delivery-location-override';
 

@@ -25,11 +25,9 @@ export function LocationConsentHost() {
       visible={visible}
       title="Necesitamos tu ubicación"
       message="La usamos para mostrarte los negocios cerca de la dirección que elijas, calcular la ruta y el costo del domicilio. A continuación tu teléfono te va a pedir el permiso — puedes aceptarlo o rechazarlo ahí."
-      confirmLabel="Entendido"
-      cancelLabel="Ahora no"
+      confirmLabel="Continuar"
       icon="location-outline"
-      onConfirm={() => resolveLocationConsent(true)}
-      onCancel={() => resolveLocationConsent(false)}
+      onConfirm={resolveLocationConsent}
     />
   );
 }

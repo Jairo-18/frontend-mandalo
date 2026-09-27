@@ -6,6 +6,7 @@ import { Text, View } from 'react-native';
 
 import { DeliveryOrders } from '@/components/delivery/delivery-orders';
 import { Button } from '@/components/ui/button';
+import { NoPushNotice } from '@/components/ui/no-push-notice';
 import { PanelHeader, PanelSafeArea } from '@/components/ui/panel-header';
 import { QuickAction } from '@/components/ui/quick-action';
 import { useSession } from '@/hooks/use-session';
@@ -130,6 +131,10 @@ export default function DeliveryScreen() {
               onPress={() => router.navigate('/delivery/profile')}
             />
           </View>
+          {/* Solo se pinta en un teléfono que no puede recibir push (Huawei
+              sin GMS): ahí el repartidor tiene que dejar la app abierta para
+              ver los pedidos disponibles. En el resto es null. */}
+          <NoPushNotice />
           <DeliveryOrders />
         </View>
       </PanelSafeArea>

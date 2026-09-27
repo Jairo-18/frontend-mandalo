@@ -23,6 +23,7 @@ import { TextField } from '@/components/ui/text-field';
 import { UploadProgressBar } from '@/components/ui/upload-progress-bar';
 import { useAppData } from '@/context/app-data';
 import { useFormErrors } from '@/hooks/use-form-errors';
+import { useGoogleServices } from '@/hooks/use-google-services';
 import { useMunicipalities } from '@/hooks/use-municipalities';
 import { signInWithApple } from '@/lib/apple-auth';
 import { signInWithGoogle } from '@/lib/google-auth';
@@ -77,6 +78,9 @@ export default function RegisterForm() {
   const [locating, setLocating] = useState(false);
   const [mapVisible, setMapVisible] = useState(false);
 
+  // Android sin Google Mobile Services (Huawei): sin botón de Google, queda
+  // el registro por correo. Ver `lib/google-services.ts`.
+  const googleServices = useGoogleServices();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -601,8 +605,9 @@ export default function RegisterForm() {
         />
       </View>
 
-      {/* El sign-in de Google es nativo — en la versión web no existe. */}
-      {Platform.OS !== 'web' && (
+      {/* El sign-in de Google es nativo — en la versión web no existe, y en
+          un Android sin GMS tampoco. */}
+      {Platform.OS !== 'web' && googleServices && (
         <>
           <View className="my-[18px] flex-row items-center gap-3">
             <View className="h-px flex-1 bg-border" />

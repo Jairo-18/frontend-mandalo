@@ -15,6 +15,7 @@ import { AddressSearchModal } from '@/components/admin/address-search-modal';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { useAppTheme } from '@/context/app-theme';
+import { useGoogleServices } from '@/hooks/use-google-services';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
   DEFAULT_MAP_CENTER,
@@ -55,6 +56,13 @@ export function BusinessLocationPicker({
   const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
+  // Sin Google Mobile Services (Huawei de la AppGallery) el MapView con
+  // PROVIDER_GOOGLE pinta un recuadro gris. Acá NO se cae a otra pantalla
+  // como en el selector del cliente: las dos vías principales de este modal
+  // —buscar la dirección (Nominatim) y pegar un link de Google Maps— no
+  // dependen del mapa, así que solo se reemplaza el lienzo y el resto del
+  // flujo queda igual. Lo único que se pierde es ajustar el pin a mano.
+  const googleServices = useGoogleServices();
   const mapRef = useRef<MapView>(null);
 
   const [center, setCenter] = useState<DeviceCoords>(
@@ -68,6 +76,11 @@ export function BusinessLocationPicker({
   const [mapsUrl, setMapsUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
   const [linkError, setLinkError] = useState<string | undefined>();
+  // ¿El usuario ya eligió un punto de verdad (buscador, link o GPS)? Solo
+  // importa cuando NO hay mapa: ahí `center` arranca en el centro de Mocoa y,
+  // sin nada que ver en pantalla, confirmar de una guardaría esa coordenada
+  // por accidente. Con mapa el punto se ve y el botón queda como siempre.
+  const [picked, setPicked] = useState(!!initialCoords);
   const resolveSeq = useRef(0);
 
   const resolve = useCallback(async (coords: DeviceCoords) => {
@@ -86,6 +99,7 @@ export function BusinessLocationPicker({
         400,
       );
       setCenter(coords);
+      setPicked(true);
       void resolve(coords);
     },
     [resolve],
@@ -101,6 +115,7 @@ export function BusinessLocationPicker({
     setMapsUrl('');
     setLinkError(undefined);
     setShowLinkInput(false);
+    setPicked(!!initialCoords);
 
     if (initialCoords) {
       setCenter(initialCoords);
@@ -168,31 +183,49 @@ export function BusinessLocationPicker({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View className="flex-1 bg-card">
-        <MapView
-          ref={mapRef}
-          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-          mapType="hybrid"
-          style={{ flex: 1 }}
-          initialRegion={{ ...center, latitudeDelta: DELTA, longitudeDelta: DELTA }}
-          onRegionChangeComplete={handleRegionChangeComplete}
-          userInterfaceStyle={isDark ? 'dark' : 'light'}
-        />
-
-        {/* Pin fijo al centro: el mapa se mueve por debajo. */}
-        <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
-          <View className="-mt-8 items-center">
-            <View
-              className="h-11 w-11 items-center justify-center rounded-full border-2 border-white"
-              style={{ backgroundColor: colors.primaryColor, elevation: 4 }}
-            >
-              <Ionicons name="storefront" size={20} color="#FFFFFF" />
-            </View>
-            <View
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: colors.darkColor, marginTop: -2 }}
+        {googleServices ? (
+          <>
+            <MapView
+              ref={mapRef}
+              provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+              mapType="hybrid"
+              style={{ flex: 1 }}
+              initialRegion={{ ...center, latitudeDelta: DELTA, longitudeDelta: DELTA }}
+              onRegionChangeComplete={handleRegionChangeComplete}
+              userInterfaceStyle={isDark ? 'dark' : 'light'}
             />
+
+            {/* Pin fijo al centro: el mapa se mueve por debajo. */}
+            <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
+              <View className="-mt-8 items-center">
+                <View
+                  className="h-11 w-11 items-center justify-center rounded-full border-2 border-white"
+                  style={{ backgroundColor: colors.primaryColor, elevation: 4 }}
+                >
+                  <Ionicons name="storefront" size={20} color="#FFFFFF" />
+                </View>
+                <View
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: colors.darkColor, marginTop: -2 }}
+                />
+              </View>
+            </View>
+          </>
+        ) : (
+          /* Sin mapa: el lienzo explica las vías que SÍ quedan (los botones
+             de buscar / pegar link / mi ubicación de la cabecera). */
+          <View className="flex-1 items-center justify-center bg-surface px-10">
+            <Ionicons name="map-outline" size={40} color={colors.mutedColor} />
+            <Text className="mb-2 mt-4 text-center text-[15px] font-bold text-ink">
+              Este dispositivo no puede mostrar el mapa
+            </Text>
+            <Text className="text-center text-[13px] leading-5 text-muted">
+              No tiene los servicios de Google que usa el mapa. Usa el buscador
+              de direcciones o pega un link de Google Maps con los botones de
+              arriba para fijar el punto del negocio.
+            </Text>
           </View>
-        </View>
+        )}
 
         {/* Cabecera */}
         <View
@@ -278,13 +311,16 @@ export function BusinessLocationPicker({
               </>
             ) : (
               <Text className="flex-1 text-[15px] font-semibold text-ink">
-                {label ?? 'Busca, pega un link o mueve el mapa para elegir el punto'}
+                {label ??
+                  (googleServices
+                    ? 'Busca, pega un link o mueve el mapa para elegir el punto'
+                    : 'Busca la dirección o pega un link de Google Maps para elegir el punto')}
               </Text>
             )}
           </View>
           <Button
             label="Confirmar esta ubicación"
-            disabled={resolving}
+            disabled={resolving || (!googleServices && !picked)}
             onPress={() => onConfirm({ coords: center, label })}
           />
         </View>

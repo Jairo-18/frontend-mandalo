@@ -22,6 +22,7 @@ import { HttpError } from '@/lib/http';
 import { entryPathFor, getSession, setSession } from '@/lib/session';
 import { EMAIL_RE } from '@/lib/text-format';
 import { authService } from '@/services/auth';
+import { useGoogleServices } from '@/hooks/use-google-services';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** ¿El sign-in falló porque el correo no está verificado? (code del backend). */
@@ -38,6 +39,11 @@ function isEmailNotVerified(e: unknown): boolean {
 export default function LoginScreen() {
   const router = useRouter();
   const colors = useResolvedAppColors();
+  // Android sin Google Mobile Services (Huawei de la AppGallery): el sign-in
+  // de Google devolvería DEVELOPER_ERROR/PLAY_SERVICES_NOT_AVAILABLE, así que
+  // el botón no se muestra en vez de dejar que el usuario se estrelle contra
+  // un error. Queda el login por correo. Ver `lib/google-services.ts`.
+  const googleServices = useGoogleServices();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
@@ -223,8 +229,9 @@ export default function LoginScreen() {
         loading={loading}
       />
 
-      {/* El sign-in de Google es nativo — en la versión web no existe. */}
-      {Platform.OS !== 'web' && (
+      {/* El sign-in de Google es nativo — en la versión web no existe, y en
+          un Android sin GMS tampoco. */}
+      {Platform.OS !== 'web' && googleServices && (
         <>
           <View className="my-[18px] flex-row items-center gap-3">
             <View className="h-px flex-1 bg-border" />

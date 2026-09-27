@@ -5,28 +5,35 @@ import { formatCountdown, useCountdown } from '@/hooks/use-countdown';
 import { formatPrice } from '@/lib/price';
 import { getAppColors } from '@/lib/app-colors';
 
-const WAIT_MINUTES = 5;
-const RETRY_FEE = 6000;
-
 type Props = {
   arrivedAt: string;
   retryCount: number;
+  /** Minutos de espera congelados en el pedido (tarifa de su municipio). */
+  waitMinutes?: number | null;
+  /** Cargo del segundo intento congelado en el pedido. */
+  retryFee?: number | null;
   onRetry: () => void | Promise<void>;
   retrying?: boolean;
 };
 
 /**
- * Cronómetro de espera en el sitio (reunión con el cliente 2026-08-04): 5
- * minutos desde `arrivedAt`. Al agotarse (y si no se ha usado ya el único
- * segundo intento), ofrece "¿Deseas esperar 5 minutos más?" — lo comparten
- * la vista del repartidor y la del cliente (los dos pueden pedirlo).
+ * Cronómetro de espera en el sitio (reunión con el cliente 2026-08-04):
+ * `waitMinutes` desde `arrivedAt`. Al agotarse (y si no se ha usado ya el
+ * único segundo intento), ofrece "¿Deseas esperar N minutos más?" — lo
+ * comparten la vista del repartidor y la del cliente (los dos pueden
+ * pedirlo). Minutos y cargo vienen del pedido (tarifa del municipio del
+ * negocio, congelada al crearlo); los defaults solo cubren respuestas viejas.
  */
 export function ArrivalCountdown({
   arrivedAt,
   retryCount,
+  waitMinutes,
+  retryFee,
   onRetry,
   retrying,
 }: Props) {
+  const WAIT_MINUTES = waitMinutes && waitMinutes > 0 ? waitMinutes : 5;
+  const RETRY_FEE = retryFee ?? 0;
   const { remainingSeconds, expired } = useCountdown(arrivedAt, WAIT_MINUTES * 60);
   const usedRetry = retryCount >= 1;
 

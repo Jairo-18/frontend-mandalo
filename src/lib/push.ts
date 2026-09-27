@@ -1,10 +1,11 @@
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 
 import { http } from '@/lib/http';
+import { probeGoogleServices } from '@/lib/google-services';
 import { getSession } from '@/lib/session';
 import { useSession } from '@/hooks/use-session';
 import { getAppColors } from '@/lib/app-colors';
@@ -16,6 +17,13 @@ import { getAppColors } from '@/lib/app-colors';
  * ⚠️ En Android el token SOLO sale si el build trae un `google-services.json`
  * REAL (proyecto de Firebase). Con el placeholder del repo, `register` falla
  * en silencio y la app sigue normal (sin push). Ver tarea en NOTAS.
+ *
+ * ⚠️ FCM necesita Google Mobile Services. En un Android SIN GMS (los Huawei
+ * de la AppGallery) NO hay push posible: no es un fallo que se pueda
+ * reintentar ni degradar a notificación local — el token simplemente no
+ * existe. Ahí la app marca `pushUnavailable` para que el negocio y el
+ * repartidor sepan que tienen que mantenerla abierta (con la app en primer
+ * plano los eventos siguen llegando por el socket, ver `orders-socket.ts`).
  */
 
 // En web no hay push (expo-notifications no soporta el navegador): los
@@ -42,6 +50,41 @@ let registering = false;
 
 /** Última respuesta de notificación ya navegada (no repetir en cold start). */
 let handledResponseId: string | null = null;
+
+/**
+ * El dispositivo NO puede recibir push nunca (Android sin GMS). Distinto de
+ * "todavía no se registró" o "el usuario negó el permiso": esto no se
+ * reintenta ni se arregla desde Ajustes.
+ */
+let pushUnavailable = false;
+const availabilityListeners = new Set<() => void>();
+
+function markPushUnavailable(): void {
+  if (pushUnavailable) return;
+  pushUnavailable = true;
+  availabilityListeners.forEach((listener) => listener());
+}
+
+/** Snapshot para `useSyncExternalStore` (un booleano: referencia estable). */
+function getPushUnavailable(): boolean {
+  return pushUnavailable;
+}
+
+function subscribePushAvailability(listener: () => void): () => void {
+  availabilityListeners.add(listener);
+  return () => {
+    availabilityListeners.delete(listener);
+  };
+}
+
+/**
+ * `true` cuando este dispositivo no puede recibir push del todo. REACTIVO:
+ * se resuelve al registrar el token (después del login), así que la pantalla
+ * que lo muestre tiene que re-renderizar sola.
+ */
+export function usePushUnavailable(): boolean {
+  return useSyncExternalStore(subscribePushAvailability, getPushUnavailable);
+}
 
 async function ensurePermissionsAndChannel(): Promise<boolean> {
   if (Platform.OS === 'android') {
@@ -77,6 +120,15 @@ export async function registerPushToken(): Promise<void> {
   if (registering || registeredToken) return;
   registering = true;
   try {
+    // Sin GMS no hay FCM y por lo tanto no hay token. Se corta ANTES de pedir
+    // el permiso de notificaciones: no tiene sentido interrumpir al usuario
+    // con un diálogo por algo que jamás va a llegar (la app tampoco usa
+    // notificaciones locales, que sí funcionarían sin GMS).
+    if (Platform.OS === 'android' && !(await probeGoogleServices())) {
+      markPushUnavailable();
+      return;
+    }
+
     const granted = await ensurePermissionsAndChannel();
     if (!granted) return;
 

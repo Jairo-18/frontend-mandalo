@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Modal, Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getAppColors } from '@/lib/app-colors';
@@ -46,10 +47,22 @@ export function PhotoActionsSheet({
 }: Props) {
   const insets = useSafeAreaInsets();
   const colors = getAppColors();
+  const pendingAction = useRef<(() => void) | null>(null);
 
   function run(action: () => void) {
-    onClose();
-    action();
+    if (Platform.OS === 'ios') {
+      // En iPad, expo-image-picker (y la cámara) presentan su propio picker
+      // como popover del sistema: si el Modal de esta hoja todavía se está
+      // desmontando, iOS no logra montarlo encima y el botón queda "sin
+      // respuesta" (rechazo 2.1(a), Apple 2026-09-24). Se espera a que este
+      // Modal termine de cerrarse (`onDismiss`, solo iOS) antes de disparar
+      // la acción.
+      pendingAction.current = action;
+      onClose();
+    } else {
+      onClose();
+      action();
+    }
   }
 
   const actions: Action[] = [
@@ -93,6 +106,11 @@ export function PhotoActionsSheet({
       animationType="slide"
       onRequestClose={onClose}
       statusBarTranslucent
+      onDismiss={() => {
+        const action = pendingAction.current;
+        pendingAction.current = null;
+        action?.();
+      }}
     >
       {/* Backdrop: tocar afuera cierra */}
       <Pressable className="flex-1 bg-black/40" onPress={onClose} />

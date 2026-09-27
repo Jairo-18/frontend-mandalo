@@ -20,6 +20,7 @@ import { TextField } from '@/components/ui/text-field';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppData } from '@/context/app-data';
 import { useFormErrors } from '@/hooks/use-form-errors';
+import { useGoogleServices } from '@/hooks/use-google-services';
 import { useMunicipalities } from '@/hooks/use-municipalities';
 import { getGoogleIdToken } from '@/lib/google-auth';
 import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
@@ -103,7 +104,10 @@ export function ProfileScreen({
   // Valores con los que se prellenó el form: guardar se habilita solo si algo cambió.
   const [initial, setInitial] = useState<FormSnapshot | null>(null);
 
-  // Cuenta: vínculo con Google
+  // Cuenta: vínculo con Google (el botón de VINCULAR necesita el sign-in
+  // nativo, así que no aparece en un Android sin GMS — desvincular sí sigue,
+  // es una llamada normal al API. Ver `lib/google-services.ts`).
+  const googleServices = useGoogleServices();
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [confirmUnlink, setConfirmUnlink] = useState(false);
 
@@ -572,9 +576,10 @@ export function ProfileScreen({
                   </Text>
                 </Pressable>
               </View>
-            ) : Platform.OS !== 'web' ? (
-              // Vincular usa el sign-in NATIVO de Google → solo en la app.
-              // (Desvincular sí queda en web: es una llamada normal al API.)
+            ) : Platform.OS !== 'web' && googleServices ? (
+              // Vincular usa el sign-in NATIVO de Google → solo en la app y
+              // solo con GMS. (Desvincular sí queda en web: es una llamada
+              // normal al API.)
               <View className="mb-4">
                 <GoogleButton
                   label="Vincular con Google"

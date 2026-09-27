@@ -9,6 +9,8 @@ import {
 } from '@/lib/orders-socket';
 import { Order } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
+import { OrderMapFallback } from '@/components/orders/order-map-fallback';
+import { useGoogleServices } from '@/hooks/use-google-services';
 
 type LatLng = { latitude: number; longitude: number };
 
@@ -52,6 +54,18 @@ function regionFor(points: LatLng[]) {
  * Son líneas rectas (sin Directions API/costo extra) — no siguen calles.
  */
 export function OrderMap({ order, perspective }: Props) {
+  const googleServices = useGoogleServices();
+  // Sin Google Mobile Services (Huawei de la AppGallery) el MapView con
+  // PROVIDER_GOOGLE pinta un recuadro gris: se cae a la misma tarjeta de
+  // enlaces que usa la web. Ver `lib/google-services.ts`.
+  if (!googleServices) {
+    return <OrderMapFallback order={order} reason="no-google-services" />;
+  }
+  return <OrderMapView order={order} perspective={perspective} />;
+}
+
+/** El mapa real con MapView (solo donde hay mapa de Google disponible). */
+function OrderMapView({ order, perspective }: Props) {
   const mapRef = useRef<MapView>(null);
   const isOnRoute = order.stateType?.code === 'RUTA';
 

@@ -133,7 +133,7 @@ export function OrderDetailView({
     }
   }
 
-  // "¿Deseas esperar 5 minutos más?" — cliente y repartidor lo ven (reunión
+  // "¿Deseas esperar N minutos más?" — cliente y repartidor lo ven (reunión
   // 2026-08-04): se muestra mientras el pedido sigue EN RUTA con el
   // repartidor "En sitio" — nunca pasa visiblemente por FALL.
   const showArrivalCountdown =
@@ -188,13 +188,15 @@ export function OrderDetailView({
           />
         )}
 
-      {/* Cronómetro de espera "En sitio" + "¿esperar 5 min más?" (reunión
+      {/* Cronómetro de espera "En sitio" + "¿esperar N min más?" (reunión
           2026-08-04) — cliente y repartidor lo ven, nunca pasa por FALL. */}
       {showArrivalCountdown && (
         <View className="mb-5">
           <ArrivalCountdown
             arrivedAt={order.arrivedAt!}
             retryCount={order.retryCount}
+            waitMinutes={order.deliveryWaitMinutes}
+            retryFee={order.retryFee}
             retrying={retryingTimeout}
             onRetry={retryAfterTimeout}
           />
@@ -224,7 +226,7 @@ export function OrderDetailView({
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <Text className="text-[13px] font-bold text-white">
-                    Reintentar (+$6.000)
+                    Reintentar (+{formatPrice(order.retryFee ?? 0)})
                   </Text>
                 )}
               </Pressable>
