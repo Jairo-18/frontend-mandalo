@@ -14,7 +14,8 @@ import { ListEmpty } from '@/components/ui/list-empty';
 import { NoPushNotice } from '@/components/ui/no-push-notice';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
-import { useOrderEvents } from '@/lib/orders-socket';
+import { isAmbiguousFailure } from '@/lib/http';
+import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
 import { OrderStateCode } from '@/lib/order-status';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
@@ -47,7 +48,7 @@ export default function BusinessOrdersScreen() {
   // Despacho (RUTA): exige el código de recogida que dicta el repartidor.
   const [dispatchId, setDispatchId] = useState<number | null>(null);
   // reload del detalle abierto, para refrescarlo tras aceptar desde el diálogo.
-  const detailReload = useRef<(() => void) | null>(null);
+  const detailReload = useRef<((fresh?: Order) => void) | null>(null);
 
   const list = usePaginatedList<Order>(
     useCallback(
@@ -64,13 +65,41 @@ export default function BusinessOrdersScreen() {
   useOrderEvents(
     useCallback(() => list.fetchPage(1, 'refresh'), [list.fetchPage]),
   );
+  // Si el socket se cayó (wifi/datos) y volvió, pudo perderse algún evento
+  // mientras estuvo desconectado — se refresca la lista para no quedar
+  // desactualizado en silencio hasta el próximo evento nuevo.
+  useSocketReconnected(
+    useCallback(() => list.fetchPage(1, 'refresh'), [list.fetchPage]),
+  );
 
-  // `reload` (ctx del modal) ya refresca el listado vía su `onChanged`
+  // Actualización optimista: las mutaciones (`changeState`, `rejectPayment`…)
+  // ya devuelven el pedido actualizado — en vez de pedir la lista completa de
+  // nuevo, se reemplaza el item en memoria (o se saca si su nuevo estado ya
+  // no cumple el filtro activo). Cero round-trips extra por acción.
+  const applyOrderUpdate = useCallback(
+    (order: Order) => {
+      const stillMatches = filter === 'all' || order.stateType?.code === filter;
+      if (stillMatches) list.replaceItem(order.id, order);
+      else list.removeItem(order.id);
+    },
+    [filter, list.replaceItem, list.removeItem],
+  );
+
+  // `reload` (ctx del modal) ya notifica al listado vía su `onChanged`
   // (abajo) — llamarlo y ADEMÁS refrescar `list` acá era la misma petición
   // dos veces por un solo cambio de estado (auditoría de peticiones).
-  async function setState(id: number, code: OrderStateCode, reload: () => void) {
-    await ordersService.changeState(id, code);
-    reload();
+  async function setState(id: number, code: OrderStateCode, reload: (fresh?: Order) => void) {
+    try {
+      const res = await ordersService.changeState(id, code);
+      reload(res.data);
+    } catch (e) {
+      // Fallo ambiguo (timeout/corte justo después de que el backend ya
+      // procesó el cambio): se recarga igual, sin `fresh`, para que la
+      // pantalla muestre el estado REAL en vez de quedarse con el botón
+      // viejo si la acción en realidad sí funcionó del otro lado.
+      if (isAmbiguousFailure(e)) reload();
+      throw e;
+    }
   }
 
   // Le pide al cliente el comprobante del pago (no cambia el estado; el backend
@@ -137,7 +166,7 @@ export default function BusinessOrdersScreen() {
         orderId={selectedId}
         perspective="business"
         onClose={() => setSelectedId(null)}
-        onChanged={() => list.fetchPage(1, 'refresh')}
+        onChanged={(fresh) => (fresh ? applyOrderUpdate(fresh) : list.fetchPage(1, 'refresh'))}
         actions={({ order, reload }) => {
           const code = order.stateType?.code;
           if (code === 'PEND') {
@@ -146,7 +175,10 @@ export default function BusinessOrdersScreen() {
                 <ActionButton
                   label="Cancelar"
                   variant="danger-outline"
-                  onPress={() => setCancelId(order.id)}
+                  onPress={() => {
+                    detailReload.current = reload;
+                    setCancelId(order.id);
+                  }}
                 />
                 <ActionButton
                   label="Aceptar"
@@ -187,7 +219,10 @@ export default function BusinessOrdersScreen() {
                   <ActionButton
                     label="Cancelar"
                     variant="danger-outline"
-                    onPress={() => setCancelId(order.id)}
+                    onPress={() => {
+                    detailReload.current = reload;
+                    setCancelId(order.id);
+                  }}
                   />
                   {needsProof ? (
                     <ActionButton
@@ -237,7 +272,10 @@ export default function BusinessOrdersScreen() {
                     <ActionButton
                       label="Cancelar"
                       variant="danger-outline"
-                      onPress={() => setCancelId(order.id)}
+                      onPress={() => {
+                    detailReload.current = reload;
+                    setCancelId(order.id);
+                  }}
                     />
                     <ActionButton
                       label="Entregar al domiciliario"
@@ -260,75 +298,121 @@ export default function BusinessOrdersScreen() {
                 <ActionButton
                   label="Cancelar pedido"
                   variant="danger-outline"
-                  onPress={() => setCancelId(order.id)}
+                  onPress={() => {
+                    detailReload.current = reload;
+                    setCancelId(order.id);
+                  }}
                 />
               </View>
             );
           }
           return null;
         }}
-      />
+        // Los 4 diálogos de acción se pintan DENTRO de este mismo Modal (no
+        // como Modals propios apilados encima): un Modal de RN sobre OTRO
+        // Modal ya abierto es un bug conocido de Android que a veces no
+        // compone la segunda ventana hasta forzar un re-layout — por eso
+        // había que tocar "Aceptar"/"Entregar al domiciliario" varias veces,
+        // o salir a la lista y volver, para que el diálogo apareciera.
+        overlay={
+          <>
+            {/* Despacho verificado: el repartidor dicta su código de recogida. */}
+            <VerificationCodeDialog
+              visible={dispatchId != null}
+              title="Código de recogida"
+              message="Pídele al domiciliario el código que ve en su app y digítalo para entregarle el pedido."
+              onConfirm={async (verificationCode) => {
+                if (dispatchId == null) return;
+                try {
+                  const res = await ordersService.changeState(dispatchId, 'RUTA', {
+                    verificationCode,
+                  });
+                  setDispatchId(null);
+                  // reload(fresh) ya notifica a la lista vía onChanged (arriba).
+                  detailReload.current?.(res.data);
+                } catch (e) {
+                  // Timeout/corte justo después de que el backend ya despachó:
+                  // se reconcilia con la verdad. Un código incorrecto (400
+                  // normal) no es ambiguo — nada que reconciliar, el diálogo
+                  // sigue abierto para reintentar con el código correcto.
+                  if (isAmbiguousFailure(e)) detailReload.current?.();
+                  throw e;
+                } finally {
+                  detailReload.current = null;
+                }
+              }}
+              onCancel={() => setDispatchId(null)}
+            />
 
-      {/* Despacho verificado: el repartidor dicta su código de recogida. */}
-      <VerificationCodeDialog
-        visible={dispatchId != null}
-        title="Código de recogida"
-        message="Pídele al domiciliario el código que ve en su app y digítalo para entregarle el pedido."
-        onConfirm={async (verificationCode) => {
-          if (dispatchId == null) return;
-          await ordersService.changeState(dispatchId, 'RUTA', {
-            verificationCode,
-          });
-          setDispatchId(null);
-          // reload() ya dispara list.fetchPage vía onChanged (ver más abajo).
-          detailReload.current?.();
-          detailReload.current = null;
-        }}
-        onCancel={() => setDispatchId(null)}
-      />
+            {/* El negocio se compromete con un tiempo de preparación al aceptar. */}
+            <AcceptOrderDialog
+              visible={acceptId != null}
+              onConfirm={async (minutes) => {
+                if (acceptId == null) return;
+                try {
+                  const res = await ordersService.changeState(acceptId, 'ACEP', {
+                    prepEstimatedMinutes: minutes,
+                  });
+                  setAcceptId(null);
+                  // reload(fresh) ya notifica a la lista vía onChanged (arriba).
+                  detailReload.current?.(res.data);
+                } catch (e) {
+                  // Timeout/corte justo después de que el backend ya aceptó:
+                  // se reconcilia con la verdad en vez de dejar el botón
+                  // "Aceptar" pisando un pedido que en realidad ya cambió.
+                  if (isAmbiguousFailure(e)) detailReload.current?.();
+                  throw e;
+                } finally {
+                  detailReload.current = null;
+                }
+              }}
+              onCancel={() => setAcceptId(null)}
+            />
 
-      {/* El negocio se compromete con un tiempo de preparación al aceptar. */}
-      <AcceptOrderDialog
-        visible={acceptId != null}
-        onConfirm={async (minutes) => {
-          if (acceptId == null) return;
-          await ordersService.changeState(acceptId, 'ACEP', {
-            prepEstimatedMinutes: minutes,
-          });
-          setAcceptId(null);
-          // reload() ya dispara list.fetchPage vía onChanged (ver más abajo).
-          detailReload.current?.();
-          detailReload.current = null;
-        }}
-        onCancel={() => setAcceptId(null)}
-      />
+            <CancelOrderDialog
+              visible={cancelId != null}
+              onConfirm={async (reason) => {
+                if (cancelId == null) return;
+                try {
+                  const res = await ordersService.changeState(cancelId, 'CANC', {
+                    cancellationReason: reason,
+                  });
+                  setCancelId(null);
+                  setSelectedId(null);
+                  applyOrderUpdate(res.data);
+                } catch (e) {
+                  // Timeout/corte justo después de que el backend ya canceló:
+                  // se reconcilia el detalle abierto con la verdad.
+                  if (isAmbiguousFailure(e)) detailReload.current?.();
+                  throw e;
+                } finally {
+                  detailReload.current = null;
+                }
+              }}
+              onCancel={() => setCancelId(null)}
+            />
 
-      <CancelOrderDialog
-        visible={cancelId != null}
-        onConfirm={async (reason) => {
-          if (cancelId == null) return;
-          await ordersService.changeState(cancelId, 'CANC', {
-            cancellationReason: reason,
-          });
-          setCancelId(null);
-          setSelectedId(null);
-          list.fetchPage(1, 'refresh');
-        }}
-        onCancel={() => setCancelId(null)}
-      />
-
-      {/* Rechazo del comprobante: pide el motivo y el cliente vuelve a subir. */}
-      <RejectProofDialog
-        visible={rejectId != null}
-        onConfirm={async (reason) => {
-          if (rejectId == null) return;
-          await ordersService.rejectPayment(rejectId, reason);
-          setRejectId(null);
-          // reload() ya dispara list.fetchPage vía onChanged (ver más abajo).
-          detailReload.current?.();
-          detailReload.current = null;
-        }}
-        onCancel={() => setRejectId(null)}
+            {/* Rechazo del comprobante: pide el motivo y el cliente vuelve a subir. */}
+            <RejectProofDialog
+              visible={rejectId != null}
+              onConfirm={async (reason) => {
+                if (rejectId == null) return;
+                try {
+                  const res = await ordersService.rejectPayment(rejectId, reason);
+                  setRejectId(null);
+                  // reload(fresh) ya notifica a la lista vía onChanged (arriba).
+                  detailReload.current?.(res.data);
+                } catch (e) {
+                  if (isAmbiguousFailure(e)) detailReload.current?.();
+                  throw e;
+                } finally {
+                  detailReload.current = null;
+                }
+              }}
+              onCancel={() => setRejectId(null)}
+            />
+          </>
+        }
       />
     </View>
   );

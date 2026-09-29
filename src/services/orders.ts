@@ -105,6 +105,9 @@ export type CreateOrderPayload = {
   paidTypeCode: string;
   items: { productId: number; quantity: number }[];
   notes?: string;
+  /** Uno por intento de checkout — evita duplicar el pedido si se reintenta
+   * tras un fallo ambiguo de red (ver `invoice.service.ts` en el backend). */
+  idempotencyKey?: string;
 };
 
 type ListParams = {
@@ -253,9 +256,13 @@ export const ordersService = {
       toastSuccess: true,
     }),
 
-  /** El negocio rechaza el comprobante (con motivo); el cliente vuelve a subir. */
+  /**
+   * El negocio rechaza el comprobante (con motivo); el cliente vuelve a
+   * subir. Devuelve el pedido actualizado (`data`) para pintar el cambio sin
+   * pedirlo de nuevo (antes solo devolvía `message`).
+   */
   rejectPayment: (id: number, reason: string) =>
-    http<{ message?: string }>(`/invoice/${id}/reject-payment`, {
+    http<{ message?: string; data: Order }>(`/invoice/${id}/reject-payment`, {
       method: 'POST',
       body: { reason },
       auth: true,
@@ -264,7 +271,7 @@ export const ordersService = {
 
   /** El repartidor toma un pedido disponible. */
   take: (id: number) =>
-    http<{ message?: string }>(`/invoice/${id}/take`, {
+    http<{ message?: string; data: Order }>(`/invoice/${id}/take`, {
       method: 'POST',
       auth: true,
       toastSuccess: true,
@@ -272,7 +279,7 @@ export const ordersService = {
 
   /** El repartidor marca que llegó a la dirección de entrega (obligatorio antes de "Marcar entregado"). */
   arrive: (id: number) =>
-    http<{ message?: string }>(`/invoice/${id}/arrive`, {
+    http<{ message?: string; data: Order }>(`/invoice/${id}/arrive`, {
       method: 'POST',
       auth: true,
       toastSuccess: true,
@@ -284,7 +291,7 @@ export const ordersService = {
    * intento (Anexo I) y reinicia el cronómetro.
    */
   retryAfterTimeout: (id: number) =>
-    http<{ message?: string }>(`/invoice/${id}/retry-after-timeout`, {
+    http<{ message?: string; data: Order }>(`/invoice/${id}/retry-after-timeout`, {
       method: 'POST',
       auth: true,
       toastSuccess: true,
@@ -325,7 +332,7 @@ export const ordersService = {
       verificationCode?: string;
     },
   ) =>
-    http<{ message?: string }>(`/invoice/${id}/state`, {
+    http<{ message?: string; data: Order }>(`/invoice/${id}/state`, {
       method: 'PATCH',
       body: {
         stateCode,

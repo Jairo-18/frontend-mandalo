@@ -26,7 +26,8 @@ import {
   getDeliveryLocationOverride,
   setDeliveryLocationOverride,
 } from '@/lib/delivery-location-override';
-import { useOrderEvents } from '@/lib/orders-socket';
+import { isAmbiguousFailure } from '@/lib/http';
+import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
 import { useSession } from '@/hooks/use-session';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
@@ -152,6 +153,14 @@ export function DeliveryOrders() {
       [available.fetchPage, mine.fetchPage],
     ),
   );
+  // Si el socket se cayó (wifi/datos) y volvió, pudo perderse algún evento
+  // de cualquiera de las dos listas mientras estuvo desconectado.
+  useSocketReconnected(
+    useCallback(() => {
+      available.fetchPage(1, 'refresh');
+      mine.fetchPage(1, 'refresh');
+    }, [available.fetchPage, mine.fetchPage]),
+  );
 
   /**
    * Tomar un pedido disponible directo desde la tarjeta. Al tomarlo con
@@ -166,9 +175,12 @@ export function DeliveryOrders() {
     try {
       await ordersService.take(id);
       mine.fetchPage(1, 'refresh');
-    } catch {
-      // El interceptor ya mostró el error.
+    } catch (e) {
+      // El interceptor ya mostró el error. "Disponibles" se refresca siempre
+      // (pudo tomarlo otro). "Mis entregas" solo si el fallo fue ambiguo
+      // (timeout/corte) — pudo ser MI intento el que en realidad ganó.
       available.fetchPage(1, 'refresh');
+      if (isAmbiguousFailure(e)) mine.fetchPage(1, 'refresh');
     }
   }
 
@@ -177,8 +189,9 @@ export function DeliveryOrders() {
     try {
       await ordersService.arrive(id);
       mine.fetchPage(1, 'refresh');
-    } catch {
-      // El interceptor ya mostró el error.
+    } catch (e) {
+      // Timeout/corte justo después de que el backend ya lo marcó "en sitio".
+      if (isAmbiguousFailure(e)) mine.fetchPage(1, 'refresh');
     }
   }
 
@@ -447,6 +460,64 @@ export function DeliveryOrders() {
           }
           return null;
         }}
+        // Los 3 diálogos de abajo (entregar, no se pudo entregar, accidente)
+        // se pintan DENTRO de este mismo Modal, no como Modals propios
+        // apilados encima — apilar dos `<Modal>` de RN es un bug conocido de
+        // Android donde el segundo a veces no se compone hasta forzar un
+        // re-layout (salir y volver a la pantalla).
+        overlay={
+          <>
+            {/* Entrega verificada: el cliente dicta su código de entrega. Solo
+                "Mis entregas" cambia (el pedido nunca vuelve a "Disponibles"); el
+                detalle abierto (si lo hay) se autoactualiza con su propio socket. */}
+            <VerificationCodeDialog
+              visible={deliverTarget != null}
+              title="Código de entrega"
+              message="Pídele al cliente el código que ve en su app y digítalo para confirmar la entrega."
+              onConfirm={async (verificationCode) => {
+                if (!deliverTarget) return;
+                try {
+                  await ordersService.changeState(deliverTarget.id, 'ENTR', {
+                    verificationCode,
+                  });
+                  mine.fetchPage(1, 'refresh');
+                  setDeliverTarget(null);
+                } catch (e) {
+                  // Timeout/corte justo después de que el backend ya marcó
+                  // entregado — se reconcilia "Mis entregas" con la verdad.
+                  if (isAmbiguousFailure(e)) mine.fetchPage(1, 'refresh');
+                  throw e;
+                }
+              }}
+              onCancel={() => setDeliverTarget(null)}
+            />
+
+            {/* Reporte de entrega fallida: solo "Mis entregas" cambia (el pedido
+                queda esperando al cliente, no vuelve a "Disponibles"). */}
+            <ReportDeliveryFailureDialog
+              visible={failureTarget != null}
+              onConfirm={async (failureReason, photoUri) => {
+                if (!failureTarget) return;
+                try {
+                  await ordersService.reportFailure(failureTarget.id, photoUri, failureReason);
+                  mine.fetchPage(1, 'refresh');
+                  setFailureTarget(null);
+                } catch (e) {
+                  if (isAmbiguousFailure(e)) mine.fetchPage(1, 'refresh');
+                  throw e;
+                }
+              }}
+              onCancel={() => setFailureTarget(null)}
+            />
+
+            {/* Reporte de accidente (reunión 2026-08-04): seguridad, no toca el pedido. */}
+            <ReportAccidentDialog
+              visible={accidentTarget != null}
+              invoiceId={accidentTarget?.id ?? null}
+              onClose={() => setAccidentTarget(null)}
+            />
+          </>
+        }
       />
 
       {/* Confirmación antes de comprometerse con un pedido disponible. */}
@@ -472,44 +543,6 @@ export function DeliveryOrders() {
         initialCoords={coords ?? undefined}
         onClose={() => setPickerVisible(false)}
         onConfirm={confirmOverride}
-      />
-
-      {/* Entrega verificada: el cliente dicta su código de entrega. Solo
-          "Mis entregas" cambia (el pedido nunca vuelve a "Disponibles"); el
-          detalle abierto (si lo hay) se autoactualiza con su propio socket. */}
-      <VerificationCodeDialog
-        visible={deliverTarget != null}
-        title="Código de entrega"
-        message="Pídele al cliente el código que ve en su app y digítalo para confirmar la entrega."
-        onConfirm={async (verificationCode) => {
-          if (!deliverTarget) return;
-          await ordersService.changeState(deliverTarget.id, 'ENTR', {
-            verificationCode,
-          });
-          mine.fetchPage(1, 'refresh');
-          setDeliverTarget(null);
-        }}
-        onCancel={() => setDeliverTarget(null)}
-      />
-
-      {/* Reporte de entrega fallida: solo "Mis entregas" cambia (el pedido
-          queda esperando al cliente, no vuelve a "Disponibles"). */}
-      <ReportDeliveryFailureDialog
-        visible={failureTarget != null}
-        onConfirm={async (failureReason, photoUri) => {
-          if (!failureTarget) return;
-          await ordersService.reportFailure(failureTarget.id, photoUri, failureReason);
-          mine.fetchPage(1, 'refresh');
-          setFailureTarget(null);
-        }}
-        onCancel={() => setFailureTarget(null)}
-      />
-
-      {/* Reporte de accidente (reunión 2026-08-04): seguridad, no toca el pedido. */}
-      <ReportAccidentDialog
-        visible={accidentTarget != null}
-        invoiceId={accidentTarget?.id ?? null}
-        onClose={() => setAccidentTarget(null)}
       />
 
       {/*

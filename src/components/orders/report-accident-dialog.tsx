@@ -4,15 +4,14 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  Modal,
   Pressable,
   ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
+import { DialogOverlay } from '@/components/ui/dialog-overlay';
 import { Select, SelectOption } from '@/components/ui/select';
 import { toast } from '@/lib/toast';
 import { getAppColors } from '@/lib/app-colors';
@@ -129,89 +128,79 @@ export function ReportAccidentDialog({ visible, invoiceId, onClose }: Props) {
 
   if (step === 'confirm') {
     return (
-      <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-        <Pressable className="flex-1 items-center justify-center bg-black/50 px-8" onPress={onClose}>
-          <Pressable className="w-full rounded-3xl border border-border bg-card p-6" onPress={() => {}}>
-            <View className="mb-4 h-14 w-14 self-center items-center justify-center rounded-full bg-red-50">
-              <Ionicons name="warning-outline" size={26} color="#DC2626" />
-            </View>
-            <Text className="text-center text-lg font-extrabold text-ink">
-              ¿Tuviste un accidente?
-            </Text>
-            <Text className="mt-2 text-center text-sm leading-5 text-muted">
-              Si fue sin querer, toca "Cancelar". Si de verdad tuviste un
-              accidente, repórtalo para que Mandalo te ayude.
-            </Text>
-            <View className="mt-6 flex-row gap-3">
-              <Pressable
-                onPress={onClose}
-                className="h-[48px] flex-1 items-center justify-center rounded-2xl border border-border active:opacity-70"
-              >
-                <Text className="text-[15px] font-bold text-ink">Cancelar</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setStep('form')}
-                className="h-[48px] flex-1 items-center justify-center rounded-2xl bg-red-600 active:opacity-80"
-              >
-                <Text className="text-[15px] font-bold text-white">Reportar</Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <DialogOverlay visible={visible} onBackdropPress={onClose} keyboardAvoiding={false}>
+        <View className="rounded-3xl border border-border bg-card p-6">
+          <View className="mb-4 h-14 w-14 self-center items-center justify-center rounded-full bg-red-50">
+            <Ionicons name="warning-outline" size={26} color="#DC2626" />
+          </View>
+          <Text className="text-center text-lg font-extrabold text-ink">
+            ¿Tuviste un accidente?
+          </Text>
+          <Text className="mt-2 text-center text-sm leading-5 text-muted">
+            Si fue sin querer, toca "Cancelar". Si de verdad tuviste un
+            accidente, repórtalo para que Mandalo te ayude.
+          </Text>
+          <View className="mt-6 flex-row gap-3">
+            <Pressable
+              onPress={onClose}
+              className="h-[48px] flex-1 items-center justify-center rounded-2xl border border-border active:opacity-70"
+            >
+              <Text className="text-[15px] font-bold text-ink">Cancelar</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setStep('form')}
+              className="h-[48px] flex-1 items-center justify-center rounded-2xl bg-red-600 active:opacity-80"
+            >
+              <Text className="text-[15px] font-bold text-white">Reportar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </DialogOverlay>
     );
   }
 
   if (step === 'done') {
     return (
-      <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-        <View className="flex-1 items-center justify-center bg-black/50 px-8">
-          <View className="w-full rounded-3xl border border-border bg-card p-6">
-            <View className="mb-4 h-14 w-14 self-center items-center justify-center rounded-full bg-emerald-50">
-              <Ionicons name="checkmark-circle-outline" size={28} color="#16A34A" />
-            </View>
-            <Text className="text-center text-lg font-extrabold text-ink">
-              Ya avisamos a los administradores
-            </Text>
-            <Text className="mt-2 text-center text-sm leading-5 text-muted">
-              Usa este código de ARL para que te atiendan:
-            </Text>
-            <View className="mt-3 gap-1 rounded-xl bg-surface p-3.5">
-              <Text className="text-[13px] text-ink">
-                <Text className="font-bold">Compañía: </Text>
-                {arl?.arlCompanyName || 'Sin definir aún — pregúntale al admin'}
-              </Text>
-              <Text className="text-[13px] text-ink">
-                <Text className="font-bold">Póliza: </Text>
-                {arl?.arlPolicyNumber || 'Sin definir aún'}
-              </Text>
-              <Text className="text-[13px] text-ink">
-                <Text className="font-bold">Tu número individual: </Text>
-                {arl?.arlIndividualNumber || 'Sin definir aún'}
-              </Text>
-            </View>
-            <Pressable
-              onPress={onClose}
-              className="mt-5 h-[48px] items-center justify-center rounded-2xl bg-primary active:opacity-80"
-            >
-              <Text className="text-[15px] font-bold text-white">Listo</Text>
-            </Pressable>
+      <DialogOverlay visible={visible} keyboardAvoiding={false}>
+        <View className="rounded-3xl border border-border bg-card p-6">
+          <View className="mb-4 h-14 w-14 self-center items-center justify-center rounded-full bg-emerald-50">
+            <Ionicons name="checkmark-circle-outline" size={28} color="#16A34A" />
           </View>
+          <Text className="text-center text-lg font-extrabold text-ink">
+            Ya avisamos a los administradores
+          </Text>
+          <Text className="mt-2 text-center text-sm leading-5 text-muted">
+            Usa este código de ARL para que te atiendan:
+          </Text>
+          <View className="mt-3 gap-1 rounded-xl bg-surface p-3.5">
+            <Text className="text-[13px] text-ink">
+              <Text className="font-bold">Compañía: </Text>
+              {arl?.arlCompanyName || 'Sin definir aún — pregúntale al admin'}
+            </Text>
+            <Text className="text-[13px] text-ink">
+              <Text className="font-bold">Póliza: </Text>
+              {arl?.arlPolicyNumber || 'Sin definir aún'}
+            </Text>
+            <Text className="text-[13px] text-ink">
+              <Text className="font-bold">Tu número individual: </Text>
+              {arl?.arlIndividualNumber || 'Sin definir aún'}
+            </Text>
+          </View>
+          <Pressable
+            onPress={onClose}
+            className="mt-5 h-[48px] items-center justify-center rounded-2xl bg-primary active:opacity-80"
+          >
+            <Text className="text-[15px] font-bold text-white">Listo</Text>
+          </Pressable>
         </View>
-      </Modal>
+      </DialogOverlay>
     );
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={saving ? undefined : onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-        <Pressable className="flex-1 items-center justify-center bg-black/50 px-8" onPress={saving ? undefined : onClose}>
-          <Pressable
-            className="w-full rounded-3xl border border-border bg-card p-6"
-            style={{ maxHeight: '88%' }}
-            onPress={() => {}}
-          >
-            <ScrollView showsVerticalScrollIndicator={false}>
+    <DialogOverlay visible={visible} onBackdropPress={saving ? undefined : onClose}>
+      <View className="rounded-3xl border border-border bg-card p-6" style={{ maxHeight: '88%' }}>
+        <ScrollView showsVerticalScrollIndicator={false}>
               <Text className="text-lg font-extrabold text-ink">Reportar accidente</Text>
               <Text className="mt-1 text-sm leading-5 text-muted">
                 Cuéntanos qué pasó. Es un reporte de seguridad — no cambia tu
@@ -309,9 +298,7 @@ export function ReportAccidentDialog({ visible, invoiceId, onClose }: Props) {
                 </Pressable>
               </View>
             </ScrollView>
-          </Pressable>
-        </Pressable>
-      </KeyboardAvoidingView>
-    </Modal>
+      </View>
+    </DialogOverlay>
   );
 }

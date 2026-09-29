@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { DialogOverlay } from '@/components/ui/dialog-overlay';
 import { getAppColors } from '@/lib/app-colors';
 
 type Props = {
@@ -38,19 +39,9 @@ export function AcceptOrderDialog({ visible, onConfirm, onCancel }: Props) {
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={working ? undefined : onCancel}
-      statusBarTranslucent
-    >
-      <Pressable
-        className="flex-1 items-center justify-center bg-black/50 px-8"
-        onPress={working ? undefined : onCancel}
-      >
-        <Pressable className="w-full rounded-3xl border border-border bg-card p-6" onPress={() => {}}>
-          <View className="mb-4 h-14 w-14 self-center items-center justify-center">
+    <DialogOverlay visible={visible} onBackdropPress={working ? undefined : onCancel} keyboardAvoiding={false}>
+      <View className="rounded-3xl border border-border bg-card p-6">
+        <View className="mb-4 h-14 w-14 self-center items-center justify-center">
             <Ionicons name="time-outline" size={30} color={getAppColors().primaryColor} />
           </View>
 
@@ -111,8 +102,7 @@ export function AcceptOrderDialog({ visible, onConfirm, onCancel }: Props) {
               )}
             </Pressable>
           </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      </View>
+    </DialogOverlay>
   );
 }

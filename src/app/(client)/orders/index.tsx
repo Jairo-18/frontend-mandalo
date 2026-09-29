@@ -12,7 +12,7 @@ import {
 } from '@/components/orders/order-filters';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
-import { useOrderEvents } from '@/lib/orders-socket';
+import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
 import { businessDisplayName } from '@/services/explore';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
@@ -60,6 +60,11 @@ export default function ClientOrdersScreen() {
 
   // En vivo: cambios de estado de mis pedidos refrescan la lista.
   useOrderEvents(
+    useCallback(() => list.fetchPage(1, 'refresh'), [list.fetchPage]),
+  );
+  // Si el socket se cayó (wifi/datos) y volvió, pudo perderse algún evento
+  // mientras estuvo desconectado.
+  useSocketReconnected(
     useCallback(() => list.fetchPage(1, 'refresh'), [list.fetchPage]),
   );
 

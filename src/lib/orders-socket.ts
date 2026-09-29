@@ -17,6 +17,15 @@ const ORDER_EVENTS = [
 
 let socket: Socket | null = null;
 
+// Si el socket se cae (wifi/datos) y vuelve, socket.io reconecta solo pero
+// NO reenvía lo que pasó mientras estuvo desconectado (p. ej. el cliente
+// subió el comprobante mientras el negocio no tenía señal) — sin esto, la
+// pantalla se queda desactualizada hasta el próximo evento nuevo o un
+// pull-to-refresh manual. `hasConnectedOnce` distingue la conexión inicial
+// (no hay nada que "recuperar" todavía) de una reconexión real.
+let hasConnectedOnce = false;
+const reconnectListeners = new Set<() => void>();
+
 /**
  * Socket singleton al namespace `/orders` (autenticado con el accessToken de
  * la sesión). Se conecta perezosamente la primera vez que una pantalla se
@@ -32,6 +41,12 @@ function getOrdersSocket(): Socket | null {
       auth: { token },
       autoConnect: true,
     });
+    socket.on('connect', () => {
+      if (hasConnectedOnce) {
+        reconnectListeners.forEach((l) => l());
+      }
+      hasConnectedOnce = true;
+    });
   }
   return socket;
 }
@@ -40,6 +55,24 @@ function getOrdersSocket(): Socket | null {
 export function disconnectOrdersSocket(): void {
   socket?.disconnect();
   socket = null;
+  hasConnectedOnce = false;
+}
+
+/**
+ * Se dispara cuando el socket se RECONECTA tras haberse caído (no en la
+ * conexión inicial) — la pantalla debe refrescarse porque pudo perderse
+ * algún evento mientras estuvo desconectada. El handler debe venir
+ * memoizado (useCallback).
+ */
+export function useSocketReconnected(handler: () => void): void {
+  useEffect(() => {
+    const s = getOrdersSocket();
+    if (!s) return;
+    reconnectListeners.add(handler);
+    return () => {
+      reconnectListeners.delete(handler);
+    };
+  }, [handler]);
 }
 
 /** Posición en vivo del repartidor de un pedido (relay del gateway). */

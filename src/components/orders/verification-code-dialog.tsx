@@ -1,14 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { DialogOverlay } from '@/components/ui/dialog-overlay';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { HttpError } from '@/lib/http';
@@ -68,24 +61,9 @@ export function VerificationCodeDialog({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={working ? undefined : onCancel}
-      statusBarTranslucent
-    >
-      {/* Sube la tarjeta cuando el teclado numérico la taparía. */}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-        <Pressable
-          className="flex-1 items-center justify-center bg-black/50 px-8"
-          onPress={working ? undefined : onCancel}
-        >
-          <Pressable
-            className="w-full rounded-3xl border border-border bg-card p-6"
-            onPress={() => {}}
-          >
-            <View className="mb-4 h-14 w-14 items-center justify-center self-center">
+    <DialogOverlay visible={visible} onBackdropPress={working ? undefined : onCancel}>
+      <View className="rounded-3xl border border-border bg-card p-6">
+        <View className="mb-4 h-14 w-14 items-center justify-center self-center">
               <Ionicons name="keypad-outline" size={30} color={colors.primaryColor} />
             </View>
 
@@ -147,9 +125,7 @@ export function VerificationCodeDialog({
                 )}
               </Pressable>
             </View>
-          </Pressable>
-        </Pressable>
-      </KeyboardAvoidingView>
-    </Modal>
+      </View>
+    </DialogOverlay>
   );
 }

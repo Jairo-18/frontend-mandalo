@@ -1,16 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { DialogOverlay } from '@/components/ui/dialog-overlay';
 import { DocumentPhotoField } from '@/components/ui/document-photo-field';
 import { Select, SelectOption } from '@/components/ui/select';
 import { getAppColors } from '@/lib/app-colors';
@@ -80,24 +72,9 @@ export function ReportDeliveryFailureDialog({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={working ? undefined : onCancel}
-      statusBarTranslucent
-    >
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-        <Pressable
-          className="flex-1 items-center justify-center bg-black/50 px-8"
-          onPress={working ? undefined : onCancel}
-        >
-          <Pressable
-            className="w-full rounded-3xl border border-border bg-card p-6"
-            style={{ maxHeight: '88%' }}
-            onPress={() => {}}
-          >
-            <ScrollView showsVerticalScrollIndicator={false}>
+    <DialogOverlay visible={visible} onBackdropPress={working ? undefined : onCancel}>
+      <View className="rounded-3xl border border-border bg-card p-6" style={{ maxHeight: '88%' }}>
+        <ScrollView showsVerticalScrollIndicator={false}>
               <View className="mb-4 h-14 w-14 self-center items-center justify-center rounded-full bg-amber-50">
                 <Ionicons name="alert-circle-outline" size={26} color="#B45309" />
               </View>
@@ -173,9 +150,7 @@ export function ReportDeliveryFailureDialog({
                 </Pressable>
               </View>
             </ScrollView>
-          </Pressable>
-        </Pressable>
-      </KeyboardAvoidingView>
-    </Modal>
+      </View>
+    </DialogOverlay>
   );
 }

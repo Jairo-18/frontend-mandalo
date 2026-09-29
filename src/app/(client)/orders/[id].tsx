@@ -16,7 +16,8 @@ import { OrderDetailView } from '@/components/orders/order-detail-view';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
-import { useOrderEvents } from '@/lib/orders-socket';
+import { isAmbiguousFailure } from '@/lib/http';
+import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
@@ -72,12 +73,24 @@ export default function ClientOrderDetailScreen() {
     ),
   );
 
+  // Si el socket se cayó (wifi/datos) y volvió, pudo perderse algún evento
+  // de ESTE pedido mientras estuvo desconectado.
+  useSocketReconnected(useCallback(() => load('refresh'), [load]));
+
   async function cancel() {
-    await ordersService.changeState(orderId, 'CANC', {
-      cancellationReason: 'Cancelado por el cliente',
-    });
-    setConfirmCancel(false);
-    load('refresh');
+    try {
+      await ordersService.changeState(orderId, 'CANC', {
+        cancellationReason: 'Cancelado por el cliente',
+      });
+      setConfirmCancel(false);
+      load('refresh');
+    } catch (e) {
+      // Timeout/corte justo después de que el backend ya canceló: se
+      // reconcilia con la verdad en vez de dejar el botón "Cancelar" pisando
+      // un pedido que en realidad ya se canceló.
+      if (isAmbiguousFailure(e)) load('refresh');
+      throw e;
+    }
   }
 
   const canCancel = order?.stateType?.code === 'PEND';

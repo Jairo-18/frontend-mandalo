@@ -103,6 +103,23 @@ export function usePaginatedList<T>(
     fetchPage(meta.page + 1, 'more');
   }, [fetchPage, loading, refreshing, loadingMore, meta]);
 
+  /**
+   * Actualización optimista: reemplaza UN item en memoria por su versión
+   * fresca (la que ya devolvió la mutación) en vez de pedir la página
+   * completa de nuevo — evita el round-trip extra de `reload()` cuando quien
+   * llama ya tiene el dato actualizado a mano.
+   */
+  const replaceItem = useCallback((id: unknown, next: T) => {
+    setItems((prev) =>
+      prev.map((item) => ((item as { id?: unknown }).id === id ? next : item)),
+    );
+  }, []);
+
+  /** Saca un item de la lista en memoria (p. ej. ya no cumple el filtro activo). */
+  const removeItem = useCallback((id: unknown) => {
+    setItems((prev) => prev.filter((item) => (item as { id?: unknown }).id !== id));
+  }, []);
+
   return {
     items,
     meta,
@@ -118,5 +135,7 @@ export function usePaginatedList<T>(
     query,
     fetchPage,
     reload,
+    replaceItem,
+    removeItem,
   };
 }

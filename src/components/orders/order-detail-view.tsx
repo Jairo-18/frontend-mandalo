@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { Image as ExpoImage } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -18,6 +19,7 @@ import { OrderTimeline } from '@/components/orders/order-timeline';
 import { Avatar } from '@/components/ui/avatar';
 import { PhotoActionsSheet } from '@/components/ui/photo-actions-sheet';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
+import { isAmbiguousFailure } from '@/lib/http';
 import { pickPhoto } from '@/lib/pick-photo';
 import { formatPrice } from '@/lib/price';
 import { toast } from '@/lib/toast';
@@ -91,8 +93,11 @@ export function OrderDetailView({
     try {
       await ordersService.uploadPaymentProof(order.id, uri);
       onPaymentProofChanged?.();
-    } catch {
-      // El interceptor HTTP ya mostró el error.
+    } catch (e) {
+      // Timeout/corte justo después de que el backend ya guardó la foto: se
+      // reconcilia para no dejar el botón de "subir" pisando un comprobante
+      // que en realidad sí llegó.
+      if (isAmbiguousFailure(e)) onPaymentProofChanged?.();
     } finally {
       setUploadingProof(false);
     }
@@ -112,8 +117,8 @@ export function OrderDetailView({
     try {
       await ordersService.changeState(order.id, 'RUTA');
       onOrderChanged?.();
-    } catch {
-      // El interceptor HTTP ya mostró el error.
+    } catch (e) {
+      if (isAmbiguousFailure(e)) onOrderChanged?.();
     } finally {
       setDecidingFailure(false);
     }
@@ -126,8 +131,8 @@ export function OrderDetailView({
         cancellationReason: 'El cliente decidió no reintentar la entrega.',
       });
       onOrderChanged?.();
-    } catch {
-      // El interceptor HTTP ya mostró el error.
+    } catch (e) {
+      if (isAmbiguousFailure(e)) onOrderChanged?.();
     } finally {
       setDecidingFailure(false);
     }
@@ -146,8 +151,8 @@ export function OrderDetailView({
     try {
       await ordersService.retryAfterTimeout(order.id);
       onOrderChanged?.();
-    } catch {
-      // El interceptor HTTP ya mostró el error.
+    } catch (e) {
+      if (isAmbiguousFailure(e)) onOrderChanged?.();
     } finally {
       setRetryingTimeout(false);
     }
@@ -436,10 +441,13 @@ export function OrderDetailView({
                 onPress={() => setProofViewerOpen(true)}
                 className="h-44 overflow-hidden rounded-xl border border-border bg-card active:opacity-80"
               >
-                <Image
+                {/* expo-image (no el Image plano de RN): cachea en disco —
+                    reabrir el mismo comprobante no vuelve a descargarlo. */}
+                <ExpoImage
                   source={{ uri: order.paymentProofUrl }}
                   style={{ width: '100%', height: '100%' }}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  cachePolicy="disk"
                 />
                 <View className="absolute bottom-2 right-2 flex-row items-center gap-1 rounded-full bg-dark/70 px-2.5 py-1">
                   <Ionicons name="expand-outline" size={12} color="#FFFFFF" />
@@ -490,10 +498,11 @@ export function OrderDetailView({
       >
         <View className="flex-1 items-center justify-center bg-black/90">
           {!!order.paymentProofUrl && (
-            <Image
+            <ExpoImage
               source={{ uri: order.paymentProofUrl }}
               style={{ width: '100%', height: '80%' }}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="disk"
             />
           )}
           <Pressable

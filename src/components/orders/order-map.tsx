@@ -1,16 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import {
   DeliveryPosition,
   useDeliveryPosition,
 } from '@/lib/orders-socket';
+import { useSharedTick } from '@/hooks/use-shared-tick';
 import { Order } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 import { OrderMapFallback } from '@/components/orders/order-map-fallback';
 import { useGoogleServices } from '@/hooks/use-google-services';
+
+/** Sin una posición nueva en más de esto, se avisa que puede haber perdido señal. */
+const STALE_MS = 45_000;
 
 type LatLng = { latitude: number; longitude: number };
 
@@ -87,6 +91,10 @@ function OrderMapView({ order, perspective }: Props) {
 
   // Moto del repartidor en vivo (solo llega si el pedido va EN RUTA).
   const [courier, setCourier] = useState<LatLng | null>(null);
+  // Cuándo llegó el último reporte de posición — si pasa mucho sin uno
+  // nuevo, lo más probable es que el repartidor se quedó sin señal (no que
+  // esté literalmente inmóvil), y el punto en el mapa lo disimula.
+  const [courierUpdatedAt, setCourierUpdatedAt] = useState<number | null>(null);
   useDeliveryPosition(
     useCallback(
       (position: DeliveryPosition) => {
@@ -95,10 +103,17 @@ function OrderMapView({ order, perspective }: Props) {
           latitude: position.latitude,
           longitude: position.longitude,
         });
+        setCourierUpdatedAt(Date.now());
       },
       [order.id],
     ),
   );
+  const now = useSharedTick();
+  const courierStale =
+    isOnRoute &&
+    !!courier &&
+    courierUpdatedAt != null &&
+    now - courierUpdatedAt > STALE_MS;
 
   const points = [business, destination, courier].filter(
     (p): p is LatLng => p != null,
@@ -177,11 +192,27 @@ function OrderMapView({ order, perspective }: Props) {
             coordinate={courier}
             title="Domiciliario"
             anchor={{ x: 0.5, y: 0.5 }}
+            opacity={courierStale ? 0.5 : 1}
           >
-            <PinBubble icon="bicycle" color="#22C55E" />
+            <PinBubble icon="bicycle" color={courierStale ? '#9CA3AF' : '#22C55E'} />
           </Marker>
         )}
       </MapView>
+
+      {/* Sin reporte de posición hace rato: probablemente perdió señal, no
+          que esté literalmente detenido — se avisa en vez de dejar el punto
+          congelado sin explicación. */}
+      {courierStale && (
+        <View
+          pointerEvents="none"
+          className="absolute bottom-3 left-3 right-3 flex-row items-center justify-center gap-1.5 rounded-xl bg-dark/85 px-3 py-2"
+        >
+          <Ionicons name="cloud-offline-outline" size={14} color="#FFFFFF" />
+          <Text className="text-[12px] font-semibold text-white">
+            Sin señal reciente del domiciliario
+          </Text>
+        </View>
+      )}
     </View>
   );
 }

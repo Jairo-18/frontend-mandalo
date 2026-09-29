@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -47,6 +48,13 @@ export default function CheckoutScreen() {
   // Caché compartida: la dirección llega al instante.
   const { defaultAddress, loading: loadingAddr } = useUserAddresses();
   const [sheetVisible, setSheetVisible] = useState(false);
+
+  // UNA sola clave por visita a esta pantalla — se mantiene igual entre
+  // reintentos del MISMO carrito (si "Confirmar" falla de forma ambigua, el
+  // backend detecta la clave repetida y devuelve el pedido ya creado en vez
+  // de duplicarlo). Volver a entrar a checkout con un carrito nuevo remonta
+  // la pantalla y genera una clave nueva.
+  const [idempotencyKey] = useState(() => Crypto.randomUUID());
 
   // Domicilio EN VIVO por distancia (negocio ↔ dirección elegida) — no es un
   // dato global cacheable como antes, cambia con cada negocio/dirección. La
@@ -228,6 +236,7 @@ export default function CheckoutScreen() {
           quantity: i.quantity,
         })),
         notes: notes.trim() || undefined,
+        idempotencyKey,
       });
       const orderId = res.data.rowId;
       cart.clear();

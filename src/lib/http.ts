@@ -1,6 +1,11 @@
 import { apiUrl, CLIENT_API_KEY } from '@/constants/api';
+import { isKnownOffline } from '@/lib/network-status';
 import { getSession } from '@/lib/session';
 import { toast } from '@/lib/toast';
+
+/** Mensaje cuando NetInfo ya confirmó que no hay red (distinto de "el
+ * servidor no responde": acá el problema es del lado del teléfono). */
+const OFFLINE_MESSAGE = 'Sin conexión a internet. Revisa tu wifi o datos móviles.';
 
 export class HttpError extends Error {
   status: number;
@@ -10,6 +15,20 @@ export class HttpError extends Error {
     this.status = status;
     this.body = body;
   }
+}
+
+/**
+ * `true` cuando NO se sabe si la acción realmente pasó del otro lado —
+ * timeout, offline o corte de red (`status === 0`, ver `http()`/`httpUpload()`
+ * más abajo). Un 4xx/5xx real NO es ambiguo: el backend SÍ respondió con una
+ * decisión clara (código incorrecto, transición inválida, etc.), no hay nada
+ * que reconciliar. Se usa en las pantallas de pedidos para decidir si vale
+ * la pena recargar tras un error (evita una petición extra en el caso común
+ * de un rechazo normal, y sí recarga cuando de verdad puede haber quedado
+ * desincronizada la pantalla).
+ */
+export function isAmbiguousFailure(e: unknown): boolean {
+  return e instanceof HttpError && e.status === 0;
 }
 
 /**
@@ -101,6 +120,14 @@ export async function http<T = unknown>(
     throw new HttpError('Sesión cerrada', 401, null);
   }
 
+  // Falla al instante si ya sabemos que no hay red — sin esto, cada acción
+  // (aceptar, despachar…) se quedaba esperando el timeout completo (15-60s)
+  // sin ningún indicio de qué estaba pasando mientras tanto.
+  if (isKnownOffline()) {
+    if (toastError) toast.error(OFFLINE_MESSAGE);
+    throw new HttpError(OFFLINE_MESSAGE, 0, { cause: 'offline (NetInfo)' });
+  }
+
   // FormData (subida de archivos): fetch pone solo el Content-Type multipart
   // con su boundary; forzar application/json lo rompería.
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
@@ -136,9 +163,13 @@ export async function http<T = unknown>(
     if (__DEV__) console.error(`[http] ${method} ${path} falló:`, e);
     const isTimeout =
       timedOut || (e instanceof Error && e.name === 'AbortError');
+    // La red pudo caerse DURANTE la espera (NetInfo tarda un poco en
+    // enterarse) — se revisa de nuevo acá, no solo antes del fetch.
     const message = isTimeout
       ? 'El servidor tardó demasiado en responder'
-      : 'No se pudo conectar con el servidor';
+      : isKnownOffline()
+        ? OFFLINE_MESSAGE
+        : 'No se pudo conectar con el servidor';
     if (toastError) toast.error(message);
     // La causa cruda viaja en el body para poder diagnosticar en release
     // (p. ej. la pantalla de error del arranque la muestra en letra pequeña).
@@ -205,6 +236,15 @@ export function httpUpload<T = unknown>(
     return Promise.reject(new HttpError('Sesión cerrada', 401, null));
   }
 
+  // Mismo fail-fast que `http()`: sin esto, subir una foto sin red esperaba
+  // el timeout de subida completo (60s) sin avisar nada mientras tanto.
+  if (isKnownOffline()) {
+    if (toastError) toast.error(OFFLINE_MESSAGE);
+    return Promise.reject(
+      new HttpError(OFFLINE_MESSAGE, 0, { cause: 'offline (NetInfo)' }),
+    );
+  }
+
   return new Promise<T>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open(method, apiUrl(path));
@@ -244,7 +284,9 @@ export function httpUpload<T = unknown>(
     };
 
     xhr.onerror = () => {
-      const message = 'No se pudo conectar con el servidor';
+      const message = isKnownOffline()
+        ? OFFLINE_MESSAGE
+        : 'No se pudo conectar con el servidor';
       if (toastError) toast.error(message);
       reject(new HttpError(message, 0, null));
     };

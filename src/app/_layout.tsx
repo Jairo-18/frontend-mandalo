@@ -18,6 +18,7 @@ import { useEffect } from 'react';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { LocationConsentHost } from '@/components/ui/location-consent-host';
+import { OfflineBanner } from '@/components/ui/offline-banner';
 import { SigningOutOverlay } from '@/components/ui/signing-out-overlay';
 import { ToastHost } from '@/components/ui/toast';
 import { AppDataProvider } from '@/context/app-data';
@@ -83,6 +84,7 @@ export default function RootLayout() {
             </CartProvider>
             <SigningOutOverlay />
             <ToastHost />
+            <OfflineBanner />
             <LocationConsentHost />
           </AppDataProvider>
         </KeyboardProvider>

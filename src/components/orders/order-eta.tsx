@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { etaText, orderEta } from '@/lib/order-eta';
+import { useSharedTick } from '@/hooks/use-shared-tick';
 import { Order } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 
@@ -19,14 +19,8 @@ type Props = {
  * montado. No pinta nada si el estado no tiene estimado (PEND, ENTR, CANC).
  */
 export function OrderEta({ order, perspective, compact = false }: Props) {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const eta = orderEta(order, now);
+  const now = useSharedTick();
+  const eta = orderEta(order, new Date(now));
   if (!eta) return null;
 
   const icon = eta.kind === 'arrival' ? 'bicycle-outline' : 'time-outline';

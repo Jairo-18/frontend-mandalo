@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OrderDetailView } from '@/components/orders/order-detail-view';
 import { useAppTheme } from '@/context/app-theme';
-import { useOrderEvents } from '@/lib/orders-socket';
+import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
@@ -20,8 +20,12 @@ import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 /** Contexto que reciben los botones de acción (según el rol). */
 export type OrderActionCtx = {
   order: Order;
-  /** Recarga el detalle (tras cambiar de estado). */
-  reload: () => void;
+  /**
+   * Refresca el detalle tras una acción. Si se le pasa el pedido ya
+   * actualizado (la mutación ya lo devuelve en `data`), lo pinta directo sin
+   * pedirlo de nuevo; sin argumento, cae al `GET` de siempre.
+   */
+  reload: (fresh?: Order) => void;
   /** Cierra el modal. */
   close: () => void;
 };
@@ -31,10 +35,23 @@ type Props = {
   orderId: number | null;
   perspective: 'business' | 'delivery';
   onClose: () => void;
-  /** Un cambio de estado ocurrió (para que el listado detrás se refresque). */
-  onChanged?: () => void;
+  /**
+   * Un cambio de estado ocurrió (para que el listado detrás se refresque).
+   * Recibe el pedido fresco cuando lo hay, para actualizarlo en memoria en
+   * vez de recargar la página completa.
+   */
+  onChanged?: (fresh?: Order) => void;
   /** Botones de acción del rol (aceptar/preparar/tomar/entregar/cancelar…). */
   actions?: (ctx: OrderActionCtx) => ReactNode;
+  /**
+   * Diálogos secundarios (aceptar con tiempo, código de verificación,
+   * cancelar, reportar...) que este pedido puede abrir. Se pintan DENTRO de
+   * este mismo `Modal` -- nunca como un `Modal` propio apilado encima, que en
+   * Android a veces no se compone hasta forzar un re-layout (salir y volver
+   * a la pantalla) y obligaba a tocar el botón varias veces. Los componentes
+   * de diálogo deben usar `DialogOverlay`, no `Modal`.
+   */
+  overlay?: ReactNode;
 };
 
 /**
@@ -48,6 +65,7 @@ export function OrderDetailModal({
   onClose,
   onChanged,
   actions,
+  overlay,
 }: Props) {
   const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
@@ -89,9 +107,20 @@ export function OrderDetailModal({
     ),
   );
 
-  function reloadAndNotify() {
-    load();
-    onChanged?.();
+  // Si el socket se cayó y volvió mientras este pedido estaba abierto, pudo
+  // perderse un cambio (p. ej. el cliente subió el comprobante sin señal) —
+  // se recarga el detalle igual que si hubiera llegado un evento nuevo.
+  useSocketReconnected(load);
+
+  function reloadAndNotify(fresh?: Order) {
+    if (fresh) {
+      // Ya tenemos el pedido actualizado (la mutación lo devolvió) — pintarlo
+      // directo evita el GET /invoice/:id extra que hacía `load()`.
+      setOrder(fresh);
+    } else {
+      load();
+    }
+    onChanged?.(fresh);
   }
 
   return (
@@ -145,6 +174,8 @@ export function OrderDetailModal({
             );
           })()
         )}
+
+        {overlay}
       </View>
     </Modal>
   );
