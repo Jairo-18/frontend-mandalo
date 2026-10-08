@@ -27,6 +27,7 @@ import { CartProvider } from '@/context/cart';
 import { useAppUpdateCheck } from '@/lib/app-update';
 import { setUnauthorizedHandler } from '@/lib/http';
 import { useLiveNotifications } from '@/lib/live-notify';
+import { useInAppAlerts } from '@/lib/in-app-alerts';
 import { usePushNotifications } from '@/lib/push';
 import { signOutEverywhere } from '@/lib/sign-out';
 // Define la tarea de tracking en background del repartidor (import con efecto:
@@ -47,6 +48,9 @@ export default function RootLayout() {
   }, []);
   // Push: registra el token al haber sesión y navega al tocar notificaciones.
   usePushNotifications();
+  // Sonido/aviso con la app abierta para el chat (el backend no manda push
+  // si el destinatario está conectado) y para pedidos sin push (Huawei).
+  useInAppAlerts();
   // Web: avisos del navegador + contador en el título con la pestaña detrás
   // (en nativo es un no-op, ahí ya está el push de arriba).
   useLiveNotifications();

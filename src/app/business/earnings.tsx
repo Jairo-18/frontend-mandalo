@@ -16,8 +16,8 @@ const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
 
 /**
  * "Mis pagos" del negocio (§42): año → mes → quincena, SOLO LECTURA — lo que
- * ya vendió y cuánto de eso ya le PAGÓ a Mándalo (el negocio nos paga la
- * comisión). Espejo de `admin/billing.tsx` pero self-scoped y sin botón de
+ * ya vendió y cuánto debe entregar a Mándalo (comisión + tarifa de servicio +
+ * domicilio: el cliente le paga todo al negocio). Espejo de `admin/billing.tsx` pero self-scoped y sin botón de
  * marcar (el admin es quien marca el cobro, acá el negocio solo consulta).
  */
 export default function BusinessEarningsScreen() {
@@ -52,7 +52,7 @@ export default function BusinessEarningsScreen() {
           <Text className="text-lg font-extrabold text-white">Mis pagos</Text>
           <Text className="text-xs text-white/70">
             {dd.level === 'year'
-              ? 'Lo que vendiste y lo que ya le pagaste a Mandalo, por año'
+              ? 'Lo que vendiste y lo que debes entregar a Mandalo, por año'
               : dd.level === 'month'
                 ? `${dd.year} · por mes`
                 : `${dd.month} · quincenas`}
@@ -79,12 +79,15 @@ export default function BusinessEarningsScreen() {
               periodStart={item.periodStart}
               periodEnd={item.periodEnd}
               ordersCount={item.ordersCount}
-              primaryLabel="Vendiste"
-              primaryValue={formatPrice(item.salesTotal)}
-              secondaryLabel={`Comisión (${item.commissionRate}%)`}
-              secondaryValue={formatPrice(item.commissionTotal)}
-              tertiaryLabel="Tarifa de servicio a devolver"
-              tertiaryValue={formatPrice(item.serviceFeeTotal)}
+              primaryLabel="Debes entregar a Mandalo"
+              primaryValue={formatPrice(item.totalDue)}
+              secondaryLabel="Vendiste"
+              secondaryValue={formatPrice(item.salesTotal)}
+              breakdown={[
+                { label: `Comisión (${item.commissionRate}%)`, value: formatPrice(item.commissionTotal) },
+                { label: 'Tarifa de servicio', value: formatPrice(item.serviceFeeTotal) },
+                { label: 'Domicilio (para el repartidor y Mandalo)', value: formatPrice(item.deliveryTotal) },
+              ]}
               isPaid={item.settlement?.isPaid}
               paidLabel="Pagado"
               pendingLabel="Pendiente"

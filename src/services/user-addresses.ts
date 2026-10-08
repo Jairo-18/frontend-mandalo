@@ -1,4 +1,5 @@
 import { http } from '@/lib/http';
+import { filePart } from '@/lib/upload';
 
 /** Dirección de entrega del usuario autenticado (tabla `userAddress`). */
 export type UserAddress = {
@@ -9,6 +10,8 @@ export type UserAddress = {
   latitude: number | null;
   longitude: number | null;
   isDefault: boolean;
+  /** Foto de la fachada/portón (la ve el repartidor al entregar). */
+  photoUrl: string | null;
   createdAt: string | null;
 };
 
@@ -46,6 +49,23 @@ export const userAddressesService = {
       body: payload,
       auth: true,
       toastSuccess: true,
+    }),
+
+  /** Sube/reemplaza la foto de la dirección (el backend la optimiza a webp). */
+  uploadPhoto: async (id: number, uri: string) => {
+    const form = new FormData();
+    form.append('file', await filePart(uri));
+    return http<{ data: { photoUrl: string } }>(`/user-address/${id}/photo`, {
+      method: 'POST',
+      body: form,
+      auth: true,
+    });
+  },
+
+  removePhoto: (id: number) =>
+    http<{ message?: string }>(`/user-address/${id}/photo`, {
+      method: 'DELETE',
+      auth: true,
     }),
 
   /** Marca la dirección como principal (a donde se envía por defecto). */

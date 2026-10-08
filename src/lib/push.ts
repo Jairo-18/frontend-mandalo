@@ -86,7 +86,7 @@ export function usePushUnavailable(): boolean {
   return useSyncExternalStore(subscribePushAvailability, getPushUnavailable);
 }
 
-async function ensurePermissionsAndChannel(): Promise<boolean> {
+export async function ensurePermissionsAndChannel(): Promise<boolean> {
   if (Platform.OS === 'android') {
     // Canal que usa el backend (channelId: 'orders-v2').
     // Sin `sound`: usa el sonido de notificación del sistema ('default' acá

@@ -238,7 +238,13 @@ export function DeliveryOrders() {
       return {
         label: 'Marcar entregado',
         icon: 'checkmark-done-outline' as const,
-        onPress: () => setDeliverTarget({ id: order.id }),
+        // El diálogo del código vive DENTRO del modal de detalle (DialogOverlay),
+        // así que desde la tarjeta hay que abrir también ese modal — sin él el
+        // diálogo no tiene dónde pintarse y el botón parece muerto.
+        onPress: () => {
+          setSelectedId(order.id);
+          setDeliverTarget({ id: order.id });
+        },
         tone: 'success' as const,
       };
     }
@@ -339,6 +345,7 @@ export function DeliveryOrders() {
             order={item}
             title={bizName(item)}
             titleIcon="storefront-outline"
+            logoUri={item.organizational?.logoUrl ?? null}
             perspective="delivery"
             onPress={() => setSelectedId(item.id)}
             showAddress
@@ -387,6 +394,12 @@ export function DeliveryOrders() {
         orderId={selectedId}
         perspective="delivery"
         onClose={() => setSelectedId(null)}
+        // Una acción dentro del detalle (p. ej. esperar más en el sitio, que
+        // cambia el total) devuelve el pedido fresco: la tarjeta de atrás se
+        // actualiza sin esperar al socket.
+        onChanged={(fresh) =>
+          fresh ? mine.replaceItem(fresh.id, fresh) : mine.fetchPage(1, 'refresh')
+        }
         actions={({ order, close }) => {
           const code = order.stateType?.code;
           const isMine = order.deliveryUserId === myId;

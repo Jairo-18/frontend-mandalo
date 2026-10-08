@@ -136,6 +136,8 @@ export default function BusinessOrdersScreen() {
             order={item}
             title={item.user?.fullName ?? 'Cliente'}
             titleIcon="person-outline"
+            logoUri={item.user?.avatarUrl ?? null}
+            avatarKind="person"
             perspective="business"
             onPress={() => setSelectedId(item.id)}
           />

@@ -30,6 +30,8 @@ export type Order = {
   deliveryDetails: string | null;
   deliveryLatitude: number | null;
   deliveryLongitude: number | null;
+  /** Foto de la fachada/portón: solo la reciben el cliente dueño y el repartidor asignado. */
+  deliveryPhotoUrl?: string | null;
   subtotal: number;
   deliveryFee: number;
   /** Recargos del Anexo I (nocturno/clima/demanda + segundo intento) — 100% repartidor. */
@@ -94,9 +96,9 @@ export type Order = {
     bancolombiaQrUrl?: string | null;
   } | null;
   // El cliente (visible para negocio/repartidor/admin).
-  user?: { id: string; fullName: string; phone: string | null } | null;
+  user?: { id: string; fullName: string; phone: string | null; avatarUrl?: string | null } | null;
   // El repartidor asignado (visible para cliente/negocio).
-  deliveryUser?: { id: string; fullName: string; phone: string | null } | null;
+  deliveryUser?: { id: string; fullName: string; phone: string | null; avatarUrl?: string | null } | null;
 };
 
 export type CreateOrderPayload = {

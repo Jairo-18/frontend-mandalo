@@ -1,2 +1,3 @@
 # Los shell scripts van al contenedor Linux: siempre LF
 *.sh text eol=lf
+graphify-out/graph.json merge=graphify

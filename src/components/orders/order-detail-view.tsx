@@ -6,6 +6,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  ImageSourcePropType,
   Modal,
   Pressable,
   Text,
@@ -23,7 +24,11 @@ import { isAmbiguousFailure } from '@/lib/http';
 import { pickPhoto } from '@/lib/pick-photo';
 import { formatPrice } from '@/lib/price';
 import { toast } from '@/lib/toast';
-import { DEFAULT_BUSINESS_LOGO, DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
+import {
+  DEFAULT_BUSINESS_LOGO,
+  DEFAULT_PRODUCT_IMAGE,
+  DEFAULT_USER_AVATAR,
+} from '@/lib/default-images';
 import { businessDisplayName } from '@/services/explore';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
@@ -37,8 +42,12 @@ type Props = {
   perspective: Perspective;
   /** El cliente subió/cambió el soporte de pago (para recargar el pedido). */
   onPaymentProofChanged?: () => void;
-  /** El cliente decidió algo tras una entrega fallida (reintentar/cancelar). */
-  onOrderChanged?: () => void;
+  /**
+   * Una acción de esta vista cambió el pedido (reintentar/cancelar tras una
+   * entrega fallida, esperar más en el sitio). Recibe el pedido fresco cuando
+   * la mutación lo devuelve, para pintarlo sin otro GET.
+   */
+  onOrderChanged?: (fresh?: Order) => void;
 };
 
 /**
@@ -149,8 +158,8 @@ export function OrderDetailView({
   async function retryAfterTimeout() {
     setRetryingTimeout(true);
     try {
-      await ordersService.retryAfterTimeout(order.id);
-      onOrderChanged?.();
+      const res = await ordersService.retryAfterTimeout(order.id);
+      onOrderChanged?.(res.data);
     } catch (e) {
       if (isAmbiguousFailure(e)) onOrderChanged?.();
     } finally {
@@ -274,6 +283,9 @@ export function OrderDetailView({
       {perspective !== 'client' && order.user && (
         <ContactRow
           icon="person-outline"
+          avatarUri={order.user.avatarUrl ?? null}
+          fallbackSource={DEFAULT_USER_AVATAR}
+          shape="circle"
           label={order.user.fullName}
           detail={order.user.phone}
           caption="Cliente"
@@ -282,6 +294,9 @@ export function OrderDetailView({
       {order.deliveryUser && perspective !== 'delivery' && (
         <ContactRow
           icon="bicycle-outline"
+          avatarUri={order.deliveryUser.avatarUrl ?? null}
+          fallbackSource={DEFAULT_USER_AVATAR}
+          shape="circle"
           label={order.deliveryUser.fullName}
           detail={order.deliveryUser.phone}
           caption="Domiciliario"
@@ -318,6 +333,12 @@ export function OrderDetailView({
           )}
         </View>
       </View>
+
+      {/* Foto del lugar (la subió el cliente en su dirección): ayuda al
+          repartidor a reconocer la casa al entregar. */}
+      {!!order.deliveryPhotoUrl && perspective !== 'business' && (
+        <AddressPhoto uri={order.deliveryPhotoUrl} />
+      )}
 
       {/* Artículos */}
       <Text className="mb-2 text-sm font-bold text-ink">Artículos</Text>
@@ -527,8 +548,17 @@ export function OrderDetailView({
       <View className="rounded-2xl bg-card p-4">
         <TotalRow label="Subtotal" value={formatPrice(order.subtotal)} />
         <TotalRow label="Domicilio" value={formatPrice(order.deliveryFee)} />
-        {order.deliverySurcharge > 0 && (
-          <TotalRow label="Recargo" value={formatPrice(order.deliverySurcharge)} />
+        {order.deliverySurcharge - (order.retryFeeCharged ?? 0) > 0 && (
+          <TotalRow
+            label="Recargo"
+            value={formatPrice(order.deliverySurcharge - (order.retryFeeCharged ?? 0))}
+          />
+        )}
+        {(order.retryFeeCharged ?? 0) > 0 && (
+          <TotalRow
+            label="Segundo intento (espera adicional)"
+            value={formatPrice(order.retryFeeCharged)}
+          />
         )}
         <TotalRow label="Tarifa de servicio" value={formatPrice(order.serviceFee)} />
         <View className="my-2 h-px bg-border" />
@@ -570,13 +600,18 @@ function PayRow({ label, value }: { label: string; value: string }) {
 function ContactRow({
   icon,
   avatarUri,
+  fallbackSource = DEFAULT_BUSINESS_LOGO,
+  shape = 'rounded',
   label,
   detail,
   caption,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
-  /** Foto del negocio (logo) — si viene, reemplaza el ícono plano. */
+  /** Foto del contacto (logo del negocio, avatar de la persona) — si viene (aunque sea null), reemplaza el ícono plano. */
   avatarUri?: string | null;
+  /** Imagen por defecto cuando no hay foto (logo genérico o avatar genérico). */
+  fallbackSource?: ImageSourcePropType;
+  shape?: 'circle' | 'rounded';
   label: string;
   detail?: string | null;
   caption?: string;
@@ -593,10 +628,10 @@ function ContactRow({
           >
             <Avatar
               uri={avatarUri}
-              fallbackSource={DEFAULT_BUSINESS_LOGO}
+              fallbackSource={fallbackSource}
               icon={icon}
               size={40}
-              shape="rounded"
+              shape={shape}
             />
           </Pressable>
           <PhotoPreviewModal
@@ -625,6 +660,32 @@ function ContactRow({
         )}
       </View>
     </View>
+  );
+}
+
+/** Miniatura de la foto de la dirección; al tocarla se ve a pantalla completa. */
+function AddressPhoto({ uri }: { uri: string }) {
+  const [preview, setPreview] = useState(false);
+  return (
+    <>
+      <Text className="mb-2 text-sm font-bold text-ink">Foto del lugar</Text>
+      <Pressable
+        onPress={() => setPreview(true)}
+        className="mb-5 overflow-hidden rounded-2xl bg-surface active:opacity-80"
+      >
+        <ExpoImage
+          source={{ uri }}
+          style={{ width: '100%', height: 180 }}
+          contentFit="cover"
+          cachePolicy="disk"
+        />
+        <View className="absolute bottom-2 right-2 flex-row items-center gap-1 rounded-full bg-black/50 px-2.5 py-1">
+          <Ionicons name="expand-outline" size={13} color="#FFFFFF" />
+          <Text className="text-[11px] font-bold text-white">Ampliar</Text>
+        </View>
+      </Pressable>
+      <PhotoPreviewModal uri={preview ? uri : null} onClose={() => setPreview(false)} />
+    </>
   );
 }
 

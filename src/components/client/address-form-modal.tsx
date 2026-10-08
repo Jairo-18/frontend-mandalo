@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { AddressMapPicker } from '@/components/client/address-map-picker';
 import { FormModal } from '@/components/ui/form-modal';
+import { PhotoField } from '@/components/ui/photo-field';
 import { TextField } from '@/components/ui/text-field';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import {
@@ -32,6 +33,10 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
   const [address, setAddress] = useState('');
   const [details, setDetails] = useState('');
   const [coords, setCoords] = useState<DeviceCoords>();
+  // Foto de la fachada (opcional): `photoUri` es la recién elegida (local, aún
+  // sin subir); `photoRemoved` marca que se quitó la que ya estaba guardada.
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoRemoved, setPhotoRemoved] = useState(false);
   const [mapVisible, setMapVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -41,13 +46,14 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
 
   // En edición, guardar solo se habilita si algo cambió respecto a lo cargado
   // (evita PATCH inútiles); al crear siempre está habilitado.
-  const dirty =
-    !isEdit ||
+  const fieldsDirty =
     label !== (editing?.label ?? '') ||
     address !== (editing?.address ?? '') ||
     details !== (editing?.details ?? '') ||
     (coords?.latitude ?? null) !== (editing?.latitude ?? null) ||
     (coords?.longitude ?? null) !== (editing?.longitude ?? null);
+  const photoDirty = !!photoUri || photoRemoved;
+  const dirty = !isEdit || fieldsDirty || photoDirty;
 
   // Prellena (edición) o limpia (creación) cada vez que se abre.
   useEffect(() => {
@@ -56,6 +62,8 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
     setLabel(editing?.label ?? '');
     setAddress(editing?.address ?? '');
     setDetails(editing?.details ?? '');
+    setPhotoUri(null);
+    setPhotoRemoved(false);
     setCoords(
       editing?.latitude != null && editing?.longitude != null
         ? { latitude: editing.latitude, longitude: editing.longitude }
@@ -127,10 +135,25 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
 
     try {
       setSaving(true);
+      let addressId: number;
       if (isEdit) {
-        await userAddressesService.update(editing.id, payload);
+        addressId = editing.id;
+        // Solo cambió la foto: no hace falta un PATCH de campos.
+        if (fieldsDirty) await userAddressesService.update(addressId, payload);
       } else {
-        await userAddressesService.create(payload);
+        const created = await userAddressesService.create(payload);
+        addressId = Number(created.data.rowId);
+      }
+      // La foto va aparte (multipart): si falla, la dirección ya quedó
+      // guardada y el interceptor HTTP avisó — no se pierde lo demás.
+      try {
+        if (photoUri) {
+          await userAddressesService.uploadPhoto(addressId, photoUri);
+        } else if (photoRemoved) {
+          await userAddressesService.removePhoto(addressId);
+        }
+      } catch {
+        // Ya mostró el error.
       }
       onSaved();
     } catch {
@@ -238,6 +261,28 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
         error={errors.details}
         placeholder="Barrio Centro, casa esquinera, portón café"
       />
+
+      {/* Foto opcional del lugar: el repartidor la ve al entregar el pedido. */}
+      <View className="mt-2 items-center">
+        <PhotoField
+          label="Foto de la fachada o portón (opcional)"
+          shape="rounded"
+          placeholderIcon="home-outline"
+          imageUrl={photoRemoved ? null : editing?.photoUrl}
+          pendingUri={photoUri}
+          onChange={(uri) => {
+            setPhotoUri(uri);
+            setPhotoRemoved(false);
+          }}
+          onRemove={() => {
+            setPhotoUri(null);
+            setPhotoRemoved(!!editing?.photoUrl);
+          }}
+        />
+        <Text className="-mt-2 mb-2 px-4 text-center text-[11px] text-muted">
+          Ayuda al domiciliario a reconocer tu casa. Solo la ve quien lleve tu pedido.
+        </Text>
+      </View>
 
       <AddressMapPicker
         visible={mapVisible}

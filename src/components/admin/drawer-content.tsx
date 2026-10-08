@@ -195,7 +195,14 @@ export function AdminDrawerContent({ navigation }: Props) {
       {/* Navegación: ScrollView (no View) — en web con muchos ítems el
           contenido desbordaba un `flex-1` sin scroll y se montaba encima de
           "Cerrar sesión"/"¿Necesitas ayuda?" en vez de dejar hacer scroll. */}
-      <ScrollView className="flex-1 px-3 pt-4" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1 px-3 pt-4"
+        // Holgura al final: con SUPERADMIN (11 ítems) el último ("Aplicación")
+        // quedaba pegado a la línea de "Cerrar sesión"; con este padding, al
+        // llegar al fondo del scroll queda aire entre los dos.
+        contentContainerStyle={{ paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
         {items.map((item) => {
           const active = pathname === item.href;
           const badge = item.href === '/admin/accidents' ? unreviewedAccidents : 0;

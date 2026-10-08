@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { OrderEta } from '@/components/orders/order-eta';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
+import { DEFAULT_BUSINESS_LOGO, DEFAULT_USER_AVATAR } from '@/lib/default-images';
 import { formatPrice } from '@/lib/price';
 import { stateMeta } from '@/lib/order-status';
 import { Order } from '@/services/orders';
@@ -20,6 +20,8 @@ type Props = {
   titleIcon?: keyof typeof Ionicons.glyphMap;
   /** Foto/logo del negocio (perspectiva cliente) — para reconocer a quién le pidió. */
   logoUri?: string | null;
+  /** Qué foto es `logoUri`: logo de un negocio (default) o avatar de una persona (cliente/domiciliario). */
+  avatarKind?: 'business' | 'person';
   onPress: () => void;
   /** Rol que mira la lista: muestra el tiempo estimado vigente en la tarjeta. */
   perspective?: 'client' | 'business' | 'delivery';
@@ -56,6 +58,7 @@ export function OrderCard({
   title,
   titleIcon = 'storefront-outline',
   logoUri,
+  avatarKind = 'business',
   onPress,
   perspective,
   showAddress = false,
@@ -90,10 +93,12 @@ export function OrderCard({
           {logoUri !== undefined ? (
             <Avatar
               uri={logoUri}
-              fallbackSource={DEFAULT_BUSINESS_LOGO}
+              fallbackSource={
+                avatarKind === 'person' ? DEFAULT_USER_AVATAR : DEFAULT_BUSINESS_LOGO
+              }
               icon={titleIcon}
               size={28}
-              shape="rounded"
+              shape={avatarKind === 'person' ? 'circle' : 'rounded'}
             />
           ) : (
             <Ionicons name={titleIcon} size={16} color={colors.mutedColor} />

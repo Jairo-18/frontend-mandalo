@@ -33,6 +33,14 @@ export type SettlementPeriod = {
    * la comisión.
    */
   serviceFeeTotal: number;
+  /**
+   * Domicilio completo que pagó el cliente (tarifa + recargos): también termina
+   * en manos del negocio y se lo pide de vuelta. Mándalo lo reparte con el
+   * repartidor.
+   */
+  deliveryTotal: number;
+  /** Lo que el negocio entrega a Mándalo: comisión + tarifa de servicio + domicilio. */
+  totalDue: number;
   /** Solo quincena: el cobro real (se marca/desmarca). Null en mes/año. */
   settlement: SettlementSnapshot | null;
   /** Solo mes/año: cuántas de sus quincenas/meses ya están cobrados. */
@@ -48,7 +56,8 @@ export type SettlementPeriodsResponse = {
 /**
  * Cobros de la plataforma a los negocios (solo ADMIN). La comisión es % sobre
  * lo vendido (subtotal), la tasa propia de CADA negocio; los montos los
- * calcula SIEMPRE el backend. El domicilio no se cobra al negocio (§42).
+ * calcula SIEMPRE el backend. El negocio recibe todo el dinero del cliente, así
+ * que entrega a Mándalo comisión + tarifa de servicio + domicilio (`totalDue`).
  */
 export const adminSettlementsService = {
   periods: (organizationalId: number, periodType: SettlementPeriodType) =>

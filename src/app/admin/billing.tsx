@@ -114,12 +114,15 @@ export default function AdminBillingScreen() {
               periodStart={item.periodStart}
               periodEnd={item.periodEnd}
               ordersCount={item.ordersCount}
-              primaryLabel="Comisión"
-              primaryValue={formatPrice(item.commissionTotal)}
+              primaryLabel="Debe entregar a Mándalo"
+              primaryValue={formatPrice(item.totalDue)}
               secondaryLabel="Vendió"
               secondaryValue={formatPrice(item.salesTotal)}
-              tertiaryLabel="Tarifa de servicio"
-              tertiaryValue={formatPrice(item.serviceFeeTotal)}
+              breakdown={[
+                { label: `Comisión (${item.commissionRate}%)`, value: formatPrice(item.commissionTotal) },
+                { label: 'Tarifa de servicio', value: formatPrice(item.serviceFeeTotal) },
+                { label: 'Domicilio (repartidor + Mándalo)', value: formatPrice(item.deliveryTotal) },
+              ]}
               isPaid={item.settlement?.isPaid}
               paidLabel="Cobrado"
               pendingLabel="Pendiente"
@@ -177,9 +180,9 @@ export default function AdminBillingScreen() {
           toMark
             ? toMark.settlement?.isPaid
               ? `La quincena ${settlementPeriodLabel(toMark)} volverá a "Pendiente".`
-              : `Confirmas que el negocio ya te pagó ${formatPrice(
-                  toMark.commissionTotal,
-                )} de la quincena ${settlementPeriodLabel(toMark)}.`
+              : `Confirmas que el negocio ya te entregó ${formatPrice(
+                  toMark.totalDue,
+                )} (comisión + tarifa de servicio + domicilio) de la quincena ${settlementPeriodLabel(toMark)}.`
             : ''
         }
         confirmLabel={toMark?.settlement?.isPaid ? 'Deshacer' : 'Sí, cobrado'}

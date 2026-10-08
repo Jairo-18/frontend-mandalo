@@ -51,3 +51,6 @@ google-play-service-account.json
 *.keystore
 # llaves privadas de Firebase (service accounts) — JAMÁS al repo
 *firebase-adminsdk*.json
+
+# graphify
+graphify-out/

@@ -160,7 +160,12 @@ export function OrderDetailModal({
                     actionContent ? undefined : { paddingBottom: insets.bottom + 12 }
                   }
                 >
-                  <OrderDetailView order={order} perspective={perspective} />
+                  <OrderDetailView
+                    order={order}
+                    perspective={perspective}
+                    onOrderChanged={reloadAndNotify}
+                    onPaymentProofChanged={() => reloadAndNotify()}
+                  />
                 </ScrollView>
                 {actionContent && (
                   <View
