@@ -80,7 +80,11 @@ export function OrderDetailView({
   const state = order.stateType?.code ?? '';
   // El pago (y su comprobante) se hacen DESPUÉS de que el negocio acepte, así
   // que el cliente solo sube/paga en ACEP/PREP/RUTA (§44).
-  const paymentActionable = ['ACEP', 'PREP', 'RUTA'].includes(state);
+  // Desde PREP el negocio ya aprobó el comprobante (preparar lo exige):
+  // queda fijo y ya no se puede cambiar (el backend también lo bloquea).
+  const paymentActionable = state === 'ACEP';
+  const proofApproved =
+    !paidInCash && !!order.paymentProofUrl && ['PREP', 'RUTA', 'ENTR'].includes(state);
   const canAttachProof =
     perspective === 'client' && !paidInCash && paymentActionable;
   const rejected = !!order.paymentProofRejectedReason && !order.paymentProofUrl;
@@ -337,7 +341,38 @@ export function OrderDetailView({
       {/* Foto del lugar (la subió el cliente en su dirección): ayuda al
           repartidor a reconocer la casa al entregar. */}
       {!!order.deliveryPhotoUrl && perspective !== 'business' && (
-        <AddressPhoto uri={order.deliveryPhotoUrl} />
+        <PhotoCard title="Foto del lugar" uri={order.deliveryPhotoUrl} />
+      )}
+
+      {/* Evidencia de la entrega fallida (foto obligatoria que tomó el
+          repartidor + motivo + hora). La ven TODOS los roles (cliente,
+          negocio, repartidor y admin) para corroborar en un reclamo, y se
+          mantiene aunque después se reintente, entregue o cancele. */}
+      {(!!order.deliveryFailPhotoUrl || !!order.deliveryFailedAt) && (
+        <View className="mb-5">
+          <Text className="mb-2 text-sm font-bold text-ink">
+            Reporte de entrega fallida
+          </Text>
+          <View className="mb-2 rounded-2xl bg-amber-50 p-3.5">
+            <Text className="text-[13px] text-amber-700">
+              {order.deliveryFailReason
+                ? `Motivo: ${order.deliveryFailReason}`
+                : 'El repartidor no pudo entregar el pedido.'}
+            </Text>
+            {!!order.deliveryFailedAt && (
+              <Text className="mt-1 text-[12px] text-amber-700">
+                Reportado el {formatDateTime(order.deliveryFailedAt)}
+              </Text>
+            )}
+          </View>
+          {!!order.deliveryFailPhotoUrl && (
+            <PhotoCard
+              title="Foto que tomó el repartidor"
+              uri={order.deliveryFailPhotoUrl}
+              compact
+            />
+          )}
+        </View>
       )}
 
       {/* Artículos */}
@@ -446,7 +481,7 @@ export function OrderDetailView({
                     <View className="mt-2 items-center rounded-lg bg-card p-2.5">
                       <Image
                         source={{ uri: org.bancolombiaQrUrl }}
-                        style={{ width: 180, height: 180 }}
+                        style={{ width: 220, height: 220 }}
                         resizeMode="contain"
                       />
                       <Text className="mt-1 text-[11px] text-muted">
@@ -457,10 +492,20 @@ export function OrderDetailView({
                 </View>
               )}
 
+            {proofApproved && (
+              <View className="mb-2 flex-row items-center gap-1.5">
+                <Ionicons name="checkmark-circle" size={15} color="#059669" />
+                <Text className="text-[12px] font-semibold text-emerald-700">
+                  {perspective === 'business'
+                    ? 'Aprobaste este comprobante al pasar a preparación.'
+                    : 'El negocio aprobó el comprobante.'}
+                </Text>
+              </View>
+            )}
             {order.paymentProofUrl ? (
               <Pressable
                 onPress={() => setProofViewerOpen(true)}
-                className="h-44 overflow-hidden rounded-xl border border-border bg-card active:opacity-80"
+                className="h-56 overflow-hidden rounded-xl border border-border bg-card active:opacity-80"
               >
                 {/* expo-image (no el Image plano de RN): cachea en disco —
                     reabrir el mismo comprobante no vuelve a descargarlo. */}
@@ -663,15 +708,33 @@ function ContactRow({
   );
 }
 
-/** Miniatura de la foto de la dirección; al tocarla se ve a pantalla completa. */
-function AddressPhoto({ uri }: { uri: string }) {
+/**
+ * Miniatura de una foto del pedido (la de la dirección, la de la entrega
+ * fallida); al tocarla se ve a pantalla completa.
+ */
+function PhotoCard({
+  title,
+  uri,
+  compact = false,
+}: {
+  title: string;
+  uri: string;
+  /** Dentro de otra sección: título chico y sin margen inferior propio. */
+  compact?: boolean;
+}) {
   const [preview, setPreview] = useState(false);
   return (
     <>
-      <Text className="mb-2 text-sm font-bold text-ink">Foto del lugar</Text>
+      <Text
+        className={
+          compact ? 'mb-1.5 text-xs font-semibold text-muted' : 'mb-2 text-sm font-bold text-ink'
+        }
+      >
+        {title}
+      </Text>
       <Pressable
         onPress={() => setPreview(true)}
-        className="mb-5 overflow-hidden rounded-2xl bg-surface active:opacity-80"
+        className={`${compact ? '' : 'mb-5 '}overflow-hidden rounded-2xl bg-surface active:opacity-80`}
       >
         <ExpoImage
           source={{ uri }}
@@ -741,4 +804,18 @@ function CodeBanner({
       <Text className="mt-1 text-center text-xs text-muted">{caption}</Text>
     </View>
   );
+}
+
+/** "9 oct, 1:43 a. m." en la zona horaria del teléfono. */
+function formatDateTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('es-CO', {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
 }

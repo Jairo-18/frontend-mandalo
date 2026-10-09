@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
-import { useOrderEvents } from '@/lib/orders-socket';
+import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
 import { ordersService } from '@/services/orders';
 
 /**
@@ -37,9 +37,15 @@ function setCount(next: number): void {
 // Petición en curso (si hay una): deduplica llamadas casi simultáneas de
 // varios consumidores (badge del drawer + tarjeta del dashboard).
 let inFlight: Promise<void> | null = null;
+// Llegó un evento con una petición ya en vuelo: esa respuesta puede ser de
+// ANTES del pedido nuevo (el badge se quedaba sin sumarlo). Se repite al final.
+let dirty = false;
 
 function refresh(): Promise<void> {
-  if (inFlight) return inFlight;
+  if (inFlight) {
+    dirty = true;
+    return inFlight;
+  }
   inFlight = ordersService
     .pendingCount()
     .then(setCount)
@@ -48,6 +54,10 @@ function refresh(): Promise<void> {
     })
     .finally(() => {
       inFlight = null;
+      if (dirty) {
+        dirty = false;
+        void refresh();
+      }
     });
   return inFlight;
 }
@@ -60,6 +70,12 @@ export function usePendingOrdersCount(): number {
   }, []);
 
   useOrderEvents(
+    useCallback(() => {
+      void refresh();
+    }, []),
+  );
+  // Mientras el socket estuvo caído pudo entrar un pedido sin evento.
+  useSocketReconnected(
     useCallback(() => {
       void refresh();
     }, []),

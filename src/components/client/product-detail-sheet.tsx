@@ -136,12 +136,12 @@ export function ProductDetailSheet({
           </Pressable>
         </View>
 
-        {/* Datos del producto: flex:1 explícito para que se quede acotado
-            entre el carrusel y el footer del carrito (ambos de alto fijo) y
-            haga scroll de verdad — sin esto, una descripción larga se
-            recortaba contra el `overflow-hidden` del contenedor en vez de
-            poder verse completa. */}
-        <ScrollView style={{ flex: 1 }} className="px-5 pt-4">
+        {/* Datos del producto: mide lo que mide su contenido y, si no cabe en
+            la hoja (alto MÁXIMO 85%, no fijo), se encoge y hace scroll.
+            ⚠️ NO `flex: 1`: en RN eso es flexBasis 0 y, como la hoja no tiene
+            alto fijo, el bloque quedaba en 0 de alto — la descripción (y el
+            nombre/precio) no se veían. */}
+        <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} className="px-5 pt-4">
           <Text className="text-xl font-extrabold text-ink">
             {product?.name}
           </Text>

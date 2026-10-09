@@ -14,6 +14,7 @@ import { QuickAction } from '@/components/ui/quick-action';
 import { SectionTitle } from '@/components/ui/section-title';
 import { StatCard } from '@/components/ui/stat-card';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useLiveRefresh } from '@/hooks/use-live-refresh';
 import { useSession } from '@/hooks/use-session';
 import { AdminDashboardStats, dashboardService } from '@/services/dashboard';
 import { formatPrice } from '@/lib/price';
@@ -72,6 +73,9 @@ export default function AdminDashboardScreen() {
   useEffect(() => {
     load();
   }, [load]);
+  // El drawer no desmonta la pantalla: sin esto los totales quedaban
+  // congelados hasta cerrar sesión.
+  useLiveRefresh(load);
 
   return (
     <ScrollView

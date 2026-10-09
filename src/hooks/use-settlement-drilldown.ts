@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { useLiveRefresh } from '@/hooks/use-live-refresh';
 
 import { SettlementPeriodType } from '@/services/admin-settlements';
 
@@ -9,6 +11,10 @@ type Level = 'year' | 'month' | 'quincena';
  * (§42): negocios, repartidores (admin) y "Mis pedidos" (repartidor). Mes y
  * año no son unidades guardadas — se piden al backend con ese `periodType` y
  * acá se FILTRAN al año/mes elegido (el backend ya las devuelve resumidas).
+ *
+ * Se mantiene al día sola (`useLiveRefresh`): antes cargaba solo al montar y,
+ * como el drawer no desmonta la pantalla, los montos quedaban congelados
+ * hasta cerrar sesión.
  */
 export function useSettlementDrillDown<T extends { periodStart: string }>(
   fetcher: (periodType: SettlementPeriodType) => Promise<T[]>,
@@ -18,24 +24,37 @@ export function useSettlementDrillDown<T extends { periodStart: string }>(
   const [month, setMonth] = useState<string | null>(null);
   const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  // Solo la última petición pinta: una recarga lenta no pisa a la de otro nivel.
+  const requestRef = useRef(0);
 
+  /** `initial`: loader a pantalla completa; `refresh`: el del pull; `silent`: ninguno. */
   const load = useCallback(
-    (lvl: Level) => {
-      setLoading(true);
+    (lvl: Level, mode: 'initial' | 'refresh' | 'silent' = 'initial') => {
+      const id = ++requestRef.current;
+      if (mode === 'initial') setLoading(true);
+      if (mode === 'refresh') setRefreshing(true);
       fetcher(lvl)
-        .then(setItems)
+        .then((next) => {
+          if (id === requestRef.current) setItems(next);
+        })
         .catch(() => {
           // El interceptor HTTP ya mostró el error.
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+          if (id !== requestRef.current) return;
+          setLoading(false);
+          setRefreshing(false);
+        });
     },
     [fetcher],
   );
 
   useEffect(() => {
     load(level);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [level, load]);
+
+  useLiveRefresh(useCallback(() => load(level, 'silent'), [level, load]));
 
   const visibleItems = useMemo(() => {
     if (level === 'year') return items;
@@ -71,8 +90,9 @@ export function useSettlementDrillDown<T extends { periodStart: string }>(
     month,
     items: visibleItems,
     loading,
+    refreshing,
     drillInto,
     goBack,
-    refresh: () => load(level),
+    refresh: () => load(level, 'refresh'),
   };
 }

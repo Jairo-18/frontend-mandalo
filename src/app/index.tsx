@@ -59,8 +59,15 @@ export default function Index() {
           );
         }
       } catch (e) {
-        // status 0 = sin red / timeout: no invalidar la sesión por estar offline.
-        if (e instanceof HttpError && e.status === 0) {
+        // Solo un rechazo EXPLÍCITO del refreshToken (401/403) invalida la
+        // sesión. Todo lo demás (sin red, timeout, 5xx, 429 del throttle,
+        // portal cautivo de datos sin saldo que devuelve HTML) entra con la
+        // sesión guardada: antes un error cualquiera la borraba y el negocio
+        // terminaba en la vista de invitado. Si el token está vencido, `http()`
+        // lo renueva solo al volver la red.
+        const rejected =
+          e instanceof HttpError && (e.status === 401 || e.status === 403);
+        if (!rejected) {
           if (!cancelled) {
             setTarget(
               session.needsOnboarding

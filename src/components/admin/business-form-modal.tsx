@@ -745,6 +745,14 @@ export function BusinessFormModal({
         placeholder="@elsabor"
         autoCapitalize="none"
       />
+      {/* Una llave mal escrita manda la plata de los clientes a otra cuenta. */}
+      {!errors.nequiKey && (
+        <Text className="-mt-2 mb-3 text-xs text-muted">
+          ⚠️ Escríbela <Text className="font-bold text-ink">exactamente</Text> como
+          aparece en tu app Nequi (letras, números y símbolos iguales). Revísala
+          bien: si tiene un error, los clientes le transferirán a otra persona.
+        </Text>
+      )}
       <TextField
         label="Cuenta Bancolombia"
         icon="business-outline"

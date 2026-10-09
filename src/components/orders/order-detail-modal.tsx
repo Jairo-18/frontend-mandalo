@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OrderDetailView } from '@/components/orders/order-detail-view';
 import { useAppTheme } from '@/context/app-theme';
 import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
+import { toast } from '@/lib/toast';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
@@ -101,9 +102,16 @@ export function OrderDetailModal({
   useOrderEvents(
     useCallback(
       (payload) => {
-        if (payload.id === orderId) load();
+        if (payload.id !== orderId) return;
+        // Un admin lo eliminó: no hay nada que recargar (sería un 404).
+        if (payload.deleted) {
+          toast.info(`El pedido #${orderId} fue eliminado.`);
+          onClose();
+          return;
+        }
+        load();
       },
-      [orderId, load],
+      [orderId, load, onClose],
     ),
   );
 

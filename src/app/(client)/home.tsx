@@ -339,7 +339,9 @@ export default function HomeScreen() {
         </Pressable>
 
         <Pressable
-          onPress={() => router.push(isGuest ? '/auth/login' : '/orders')}
+          // navigate (no push): vuelve a la LISTA aunque la pestaña de pedidos
+          // haya quedado con un detalle abierto encima.
+          onPress={() => router.navigate(isGuest ? '/auth/login' : '/orders')}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-primary active:opacity-80"
         >

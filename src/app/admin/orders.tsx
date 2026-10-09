@@ -1,7 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { DeleteOrderDialog } from '@/components/orders/delete-order-dialog';
 import { OrderCard } from '@/components/orders/order-card';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
 import { FilterChips } from '@/components/ui/filter-chips';
@@ -26,15 +28,17 @@ const STATE_FILTERS: { value: StateFilter; label: string }[] = [
 ];
 
 /**
- * Pedidos de TODA la plataforma (rol ADMIN — el backend no filtra su scope).
- * Solo lectura: supervisar estados, tiempos y montos; las acciones son del
- * negocio/repartidor. Sin socket (el gateway no tiene room de admin):
- * pull-to-refresh.
+ * Pedidos de la plataforma (ADMIN/SUPERADMIN; el admin regional solo ve los
+ * de su municipio). Supervisar estados, tiempos y montos; las acciones del
+ * flujo son del negocio/repartidor. La única acción del admin es ELIMINAR un
+ * pedido (limpiar pruebas), con confirmación. Sin socket (el gateway no tiene
+ * room de admin): pull-to-refresh.
  */
 export default function AdminOrdersScreen() {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<StateFilter>('all');
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [toDelete, setToDelete] = useState<Order | null>(null);
 
   const list = usePaginatedList<Order>(
     useCallback(
@@ -106,11 +110,37 @@ export default function AdminOrdersScreen() {
         }
       />
 
-      {/* Detalle solo lectura (sin barra de acciones). */}
+      {/* Detalle de solo lectura + eliminar (con confirmación). */}
       <OrderDetailModal
         orderId={selectedId}
         perspective="business"
-        onClose={() => setSelectedId(null)}
+        onClose={() => {
+          setToDelete(null);
+          setSelectedId(null);
+        }}
+        actions={({ order }) => (
+          <Pressable
+            onPress={() => setToDelete(order)}
+            className="h-[48px] flex-row items-center justify-center gap-2 rounded-2xl border border-red-300 active:opacity-70"
+          >
+            <Ionicons name="trash-outline" size={18} color="#DC2626" />
+            <Text className="text-[15px] font-bold text-red-600">Eliminar pedido</Text>
+          </Pressable>
+        )}
+        overlay={
+          <DeleteOrderDialog
+            key={toDelete?.id ?? 'none'}
+            order={toDelete}
+            onCancel={() => setToDelete(null)}
+            onConfirm={async () => {
+              if (!toDelete) return;
+              await ordersService.remove(toDelete.id);
+              list.removeItem(toDelete.id);
+              setToDelete(null);
+              setSelectedId(null);
+            }}
+          />
+        }
       />
     </View>
   );

@@ -21,6 +21,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
+import { useProductChanges, useSocketReconnected } from '@/lib/orders-socket';
 import { columnsForWidth, gridItemStyle, gridPerfProps } from '@/lib/grid-style';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { adminCategoriesService } from '@/services/admin-catalogs';
@@ -44,6 +45,17 @@ export function ProductCrudScreen() {
   const list = usePaginatedList<BusinessProduct>(
     useCallback((params) => businessService.products.paginated(params), []),
   );
+
+  // En vivo: la misma cuenta del negocio abierta en otro teléfono creó,
+  // editó o borró un producto → se recarga la página actual (pedido de un
+  // cliente real). Al reconectar el socket también, por si se perdió el aviso.
+  const currentPage = list.meta?.page ?? 1;
+  const refreshCurrentPage = useCallback(
+    () => list.fetchPage(currentPage, 'refresh'),
+    [list.fetchPage, currentPage],
+  );
+  useProductChanges(refreshCurrentPage);
+  useSocketReconnected(refreshCurrentPage);
 
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<BusinessProduct | null>(null);

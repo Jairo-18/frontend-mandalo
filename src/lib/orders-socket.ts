@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 
 import { API_URL } from '@/constants/api';
@@ -38,21 +39,62 @@ function getOrdersSocket(): Socket | null {
   if (!socket) {
     socket = io(`${API_URL}/orders`, {
       transports: ['websocket'],
-      auth: { token },
+      // Función, no objeto: se evalúa en CADA (re)conexión con el token
+      // vigente. Con `{ token }` fijo, el socket reconectaba con el token del
+      // momento en que se creó (p. ej. el guardado de ayer, antes del refresh
+      // del arranque): el backend lo rechazaba y la app quedaba sin eventos
+      // en vivo (badge de pedidos, cobros, avisos) hasta cerrar sesión.
+      auth: (cb) => cb({ token: getSession()?.accessToken }),
       autoConnect: true,
     });
     socket.on('connect', () => {
+      reportAppState(AppState.currentState);
       if (hasConnectedOnce) {
         reconnectListeners.forEach((l) => l());
       }
       hasConnectedOnce = true;
     });
+    // Si el SERVIDOR cierra la conexión (token rechazado/vencido), socket.io
+    // NO reintenta solo. Se reintenta con el token que haya para entonces.
+    socket.on('disconnect', (reason) => {
+      if (reason === 'io server disconnect') scheduleReconnect();
+    });
   }
   return socket;
 }
 
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleReconnect(): void {
+  if (reconnectTimer) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (socket && !socket.connected && getSession()?.accessToken) socket.connect();
+  }, 5000);
+}
+
+/**
+ * Le dice al backend si la app está en primer o segundo plano. El socket
+ * sigue conectado un rato con la app minimizada y el backend decide con esto
+ * si el mensaje de chat necesita push (`chat.service.ts`).
+ */
+function reportAppState(state: AppStateStatus): void {
+  // 'inactive' (iOS: centro de control, llamada entrante) cuenta como abierta.
+  socket?.emit('app:state', {
+    state: state === 'background' ? 'background' : 'foreground',
+  });
+}
+
+AppState.addEventListener('change', (state) => {
+  reportAppState(state);
+  // Al volver a la app: si el socket quedó caído, reconectar ya.
+  if (state === 'active' && socket && !socket.connected) socket.connect();
+});
+
 /** Se llama al cerrar sesión: corta la conexión para reconectar con otro token. */
 export function disconnectOrdersSocket(): void {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = null;
   socket?.disconnect();
   socket = null;
   hasConnectedOnce = false;
@@ -138,6 +180,31 @@ export function useChatMessages(
     s.on('chat:message', cb);
     return () => {
       s.off('chat:message', cb);
+    };
+  }, [handler]);
+}
+
+/** El catálogo del negocio cambió (producto creado, editado, borrado o fotos). */
+export type ProductChangedEvent = {
+  productId: number;
+  action: 'created' | 'updated' | 'deleted';
+};
+
+/**
+ * Cambios del catálogo en vivo: llegan a TODOS los dispositivos con sesión del
+ * mismo negocio (room `org:{id}`), así la misma cuenta abierta en dos teléfonos
+ * ve al instante lo que se hizo en el otro. El handler debe venir memoizado.
+ */
+export function useProductChanges(
+  handler: (event: ProductChangedEvent) => void,
+): void {
+  useEffect(() => {
+    const s = getOrdersSocket();
+    if (!s) return;
+    const cb = (payload: ProductChangedEvent) => handler(payload);
+    s.on('product:changed', cb);
+    return () => {
+      s.off('product:changed', cb);
     };
   }, [handler]);
 }

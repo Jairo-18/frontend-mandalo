@@ -70,7 +70,9 @@
     "lint": "expo lint",
     "build:android": "powershell -ExecutionPolicy Bypass -File ./scripts/build-android.ps1",
     "fix-emulator": "powershell -ExecutionPolicy Bypass -File ./scripts/fix-emulator.ps1",
-    "open-all": "powershell -ExecutionPolicy Bypass -File ./scripts/open-all-emulators.ps1"
+    "open-all": "powershell -ExecutionPolicy Bypass -File ./scripts/open-all-emulators.ps1",
+    "reload-all": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/reload-all.ps1",
+    "kill-all": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/kill-all-emulators.ps1"
   },
   "private": true
 }

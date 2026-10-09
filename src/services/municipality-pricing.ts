@@ -32,10 +32,12 @@ export type PricingValues = {
   retryFee: number;
   /** Minutos de espera en el sitio antes del segundo intento. */
   waitMinutes: number;
-  /** % del subtotal cobrado como tarifa de servicio (solo superadmin). */
-  serviceFeePercent: number;
-  /** Tope de la tarifa de servicio, 0 = sin tope (solo superadmin). */
-  serviceFeeCap: number;
+  /** Tarifa de servicio: umbral del subtotal (solo superadmin). */
+  serviceFeeThreshold: number;
+  /** Tarifa de servicio si el subtotal es MENOR al umbral (solo superadmin). */
+  serviceFeeBelow: number;
+  /** Tarifa de servicio desde el umbral en adelante (solo superadmin). */
+  serviceFeeAbove: number;
 };
 
 export type PricingView = PricingValues & {

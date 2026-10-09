@@ -241,35 +241,17 @@ export default function BusinessOrdersScreen() {
               </View>
             );
           }
-          // El cliente puede subir/cambiar el comprobante mientras el pedido
-          // esté en ACEP/PREP/RUTA (ver `paymentActionable` en
-          // order-detail-view.tsx) — el negocio debe poder rechazarlo en
-          // cualquiera de esos 3 estados, no solo al aceptar.
+          // Desde PREP el comprobante ya quedó aprobado (pasar a preparar lo
+          // exige): ni el cliente lo cambia ni el negocio lo rechaza (el
+          // backend también lo bloquea, `isProofEditable`).
           if (code === 'PREP' || code === 'RUTA') {
-            const nonCash = order.paidType?.code !== 'EFEC';
-            const hasProof = nonCash && !!order.paymentProofUrl;
-            const rejectButton = hasProof && (
-              <ActionButton
-                label="Rechazar comprobante"
-                variant="danger-outline"
-                onPress={() => {
-                  detailReload.current = reload;
-                  setRejectId(order.id);
-                }}
-              />
-            );
-
-            if (code === 'RUTA') {
-              // Ya despachado: sin más acciones del negocio salvo rechazar el
-              // comprobante si detecta el problema tarde.
-              return rejectButton ? <View className="gap-2">{rejectButton}</View> : null;
-            }
+            // Ya despachado: sin más acciones del negocio.
+            if (code === 'RUTA') return null;
 
             // Con repartidor asignado, el negocio confirma la salida (despacha).
             if (order.deliveryUserId) {
               return (
                 <View className="gap-2">
-                  {rejectButton}
                   <View className="flex-row gap-3">
                     <ActionButton
                       label="Cancelar"
@@ -293,7 +275,6 @@ export default function BusinessOrdersScreen() {
             }
             return (
               <View className="gap-2">
-                {rejectButton}
                 <Text className="text-center text-xs text-muted">
                   Esperando que un domiciliario tome el pedido…
                 </Text>

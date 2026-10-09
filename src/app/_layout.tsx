@@ -18,6 +18,7 @@ import { useEffect } from 'react';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { LocationConsentHost } from '@/components/ui/location-consent-host';
+import { NotificationGate } from '@/components/ui/notification-gate';
 import { OfflineBanner } from '@/components/ui/offline-banner';
 import { SigningOutOverlay } from '@/components/ui/signing-out-overlay';
 import { ToastHost } from '@/components/ui/toast';
@@ -49,7 +50,7 @@ export default function RootLayout() {
   // Push: registra el token al haber sesión y navega al tocar notificaciones.
   usePushNotifications();
   // Sonido/aviso con la app abierta para el chat (el backend no manda push
-  // si el destinatario está conectado) y para pedidos sin push (Huawei).
+  // si el destinatario la tiene en primer plano) y para pedidos sin push (Huawei).
   useInAppAlerts();
   // Web: avisos del navegador + contador en el título con la pestaña detrás
   // (en nativo es un no-op, ahí ya está el push de arriba).
@@ -86,6 +87,9 @@ export default function RootLayout() {
                 <Stack screenOptions={{ headerShown: false }} />
               </ErrorBoundary>
             </CartProvider>
+            {/* Exige permitir notificaciones con sonido (bloqueante para
+                negocio y repartidor). Debajo del overlay de cerrar sesión. */}
+            <NotificationGate />
             <SigningOutOverlay />
             <ToastHost />
             <OfflineBanner />

@@ -107,6 +107,8 @@ export default function AdminBillingScreen() {
       ) : (
         <FlatList
           data={dd.items}
+          refreshing={dd.refreshing}
+          onRefresh={dd.refresh}
           keyExtractor={(item) => item.periodStart}
           renderItem={({ item }) => (
             <SettlementPeriodCard
@@ -220,7 +222,9 @@ function PeriodOrdersModal({
         period
           ? ordersService.paginated({
               ...listParams,
-              stateCodes: ['ENTR'],
+              // Entregados + fallidos (cancelados tras "No se pudo entregar");
+              // el backend solo trae los cancelados que tuvieron entrega fallida.
+              stateCodes: ['ENTR', 'CANC'],
               organizationalId,
               deliveredFrom: period.periodStart,
               deliveredTo: period.periodEnd,

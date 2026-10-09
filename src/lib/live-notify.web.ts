@@ -102,8 +102,9 @@ export function useLiveNotifications(): void {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
 
-  const onOrder = useCallback((payload: { id: number }, event: OrderEventName) => {
-    if (!isHidden()) return;
+  const onOrder = useCallback((payload: { id: number; deleted?: unknown }, event: OrderEventName) => {
+    // Un admin eliminó el pedido: no es una novedad que avisar.
+    if (payload.deleted || !isHidden()) return;
     bumpTitle();
     show('Mandalo', ORDER_TEXT[event], `order-${payload.id}`);
   }, []);

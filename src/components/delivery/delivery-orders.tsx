@@ -7,6 +7,7 @@ import { OrderCard } from '@/components/orders/order-card';
 import { OrderDetailModal } from '@/components/orders/order-detail-modal';
 import { ReportAccidentDialog } from '@/components/orders/report-accident-dialog';
 import { ReportDeliveryFailureDialog } from '@/components/orders/report-delivery-failure-dialog';
+import { formatCountdown, useCountdown } from '@/hooks/use-countdown';
 import { VerificationCodeDialog } from '@/components/orders/verification-code-dialog';
 import { AddressMapPicker } from '@/components/client/address-map-picker';
 import { useDeliveryPositionBroadcast } from '@/lib/delivery-tracker';
@@ -184,14 +185,22 @@ export function DeliveryOrders() {
     }
   }
 
-  /** "En sitio": obligatorio antes de poder marcar entregado (reunión 2026-08-04). */
-  async function arrive(id: number) {
+  /**
+   * "En sitio": obligatorio antes de poder marcar entregado (reunión
+   * 2026-08-04). Devuelve el pedido fresco: el backend NO le emite este
+   * cambio al propio repartidor (solo a cliente y negocio), así que el
+   * detalle abierto se actualiza con esto — antes seguía mostrando "En sitio"
+   * en vez de "Marcar entregado" hasta salir y volver a entrar.
+   */
+  async function arrive(id: number): Promise<Order | undefined> {
     try {
-      await ordersService.arrive(id);
-      mine.fetchPage(1, 'refresh');
+      const res = await ordersService.arrive(id);
+      mine.replaceItem(res.data.id, res.data);
+      return res.data;
     } catch (e) {
       // Timeout/corte justo después de que el backend ya lo marcó "en sitio".
       if (isAmbiguousFailure(e)) mine.fetchPage(1, 'refresh');
+      return undefined;
     }
   }
 
@@ -231,7 +240,9 @@ export function DeliveryOrders() {
         return {
           label: 'En sitio',
           icon: 'location-outline' as const,
-          onPress: () => arrive(order.id),
+          onPress: async () => {
+            await arrive(order.id);
+          },
           tone: 'primary' as const,
         };
       }
@@ -400,7 +411,7 @@ export function DeliveryOrders() {
         onChanged={(fresh) =>
           fresh ? mine.replaceItem(fresh.id, fresh) : mine.fetchPage(1, 'refresh')
         }
-        actions={({ order, close }) => {
+        actions={({ order, close, reload }) => {
           const code = order.stateType?.code;
           const isMine = order.deliveryUserId === myId;
 
@@ -446,7 +457,8 @@ export function DeliveryOrders() {
                   <ActionButton
                     label="En sitio (llegué a la dirección)"
                     onPress={async () => {
-                      await arrive(order.id);
+                      const fresh = await arrive(order.id);
+                      reload(fresh);
                     }}
                   />
                   {accidentLink}
@@ -456,9 +468,9 @@ export function DeliveryOrders() {
             return (
               <View>
                 <View className="flex-row gap-3">
-                  <ActionButton
-                    label="No se pudo entregar"
-                    variant="danger-outline"
+                  <FailureButton
+                    arrivedAt={order.arrivedAt}
+                    waitMinutes={order.deliveryWaitMinutes}
                     onPress={() => setFailureTarget({ id: order.id })}
                   />
                   <ActionButton
@@ -609,5 +621,38 @@ function TabButton({
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+/**
+ * "No se pudo entregar": solo cuando terminó la espera vigente en el sitio
+ * (los primeros N minutos desde "En sitio" o los N extra si el cliente pidió
+ * más tiempo — `retryAfterTimeout` reinicia `arrivedAt`). Mientras tanto se
+ * ve deshabilitado con la cuenta regresiva. El backend aplica la misma regla.
+ * "Marcar entregado" no espera: si el cliente sale tarde, se entrega igual.
+ */
+function FailureButton({
+  arrivedAt,
+  waitMinutes,
+  onPress,
+}: {
+  arrivedAt: string | null | undefined;
+  waitMinutes: number | null | undefined;
+  onPress: () => void;
+}) {
+  const minutes = waitMinutes && waitMinutes > 0 ? waitMinutes : 5;
+  const { remainingSeconds, expired } = useCountdown(arrivedAt ?? null, minutes * 60);
+  const waiting = !arrivedAt || !expired;
+  return (
+    <ActionButton
+      label={
+        waiting && arrivedAt
+          ? `No se pudo entregar (${formatCountdown(remainingSeconds)})`
+          : 'No se pudo entregar'
+      }
+      variant="danger-outline"
+      disabled={waiting}
+      onPress={onPress}
+    />
   );
 }

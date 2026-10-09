@@ -111,15 +111,27 @@ const SECTIONS: SectionDef[] = [
   },
   {
     title: 'Tarifa de servicio',
-    description: 'Ingreso de Mándalo, sobre el subtotal de los productos (sin el domicilio).',
+    description:
+      'Ingreso de Mándalo. Tarifa fija según el subtotal de los productos (sin el domicilio).',
     fields: [
-      { key: 'serviceFeePercent', label: '% del subtotal', icon: 'receipt-outline', kind: 'decimal' },
       {
-        key: 'serviceFeeCap',
-        label: 'Tope de la tarifa de servicio',
-        icon: 'shield-outline',
+        key: 'serviceFeeThreshold',
+        label: 'Umbral del subtotal',
+        icon: 'git-compare-outline',
         kind: 'cop',
-        hint: '0 = sin tope.',
+        hint: 'Separa la tarifa baja de la alta.',
+      },
+      {
+        key: 'serviceFeeBelow',
+        label: 'Tarifa si el pedido es menor al umbral',
+        icon: 'receipt-outline',
+        kind: 'cop',
+      },
+      {
+        key: 'serviceFeeAbove',
+        label: 'Tarifa desde el umbral en adelante',
+        icon: 'receipt-outline',
+        kind: 'cop',
       },
     ],
   },

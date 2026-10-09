@@ -240,7 +240,11 @@ export default function CheckoutScreen() {
       });
       const orderId = res.data.rowId;
       cart.clear();
-      router.replace({ pathname: '/orders/[id]', params: { id: orderId } });
+      // Con ancla: debajo del detalle queda la lista de "Mis pedidos".
+      router.replace(
+        { pathname: '/orders/[id]', params: { id: orderId } },
+        { withAnchor: true },
+      );
     } catch {
       // El interceptor HTTP ya mostró el error.
     } finally {

@@ -72,6 +72,8 @@ export default function BusinessEarningsScreen() {
       ) : (
         <FlatList
           data={dd.items}
+          refreshing={dd.refreshing}
+          onRefresh={dd.refresh}
           keyExtractor={(item) => item.periodStart}
           renderItem={({ item }) => (
             <SettlementPeriodCard

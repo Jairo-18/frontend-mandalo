@@ -77,6 +77,8 @@ export default function DeliveryEarningsScreen() {
         ) : (
           <FlatList
             data={dd.items}
+            refreshing={dd.refreshing}
+            onRefresh={dd.refresh}
             keyExtractor={(item) => item.periodStart}
             renderItem={({ item }) => (
               <SettlementPeriodCard

@@ -14,6 +14,8 @@ import { QuickAction } from '@/components/ui/quick-action';
 import { SectionTitle } from '@/components/ui/section-title';
 import { StatCard } from '@/components/ui/stat-card';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useLiveRefresh } from '@/hooks/use-live-refresh';
+import { useProductChanges } from '@/lib/orders-socket';
 import { useMyBusiness } from '@/hooks/use-my-business';
 import { usePendingOrdersCount } from '@/hooks/use-pending-orders-count';
 import { useSession } from '@/hooks/use-session';
@@ -73,6 +75,12 @@ export default function BusinessDashboardScreen() {
   useEffect(() => {
     load();
   }, [load]);
+  // El drawer no desmonta la pantalla: sin esto los totales quedaban
+  // congelados hasta cerrar sesión.
+  useLiveRefresh(load);
+  // El contador de "Productos" también cambia si otro teléfono del negocio
+  // crea o borra uno.
+  useProductChanges(useCallback(() => void load(), [load]));
 
   return (
     <ScrollView

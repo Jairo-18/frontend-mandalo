@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { usePathname } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { useSession } from '@/hooks/use-session';
 import {
@@ -12,16 +12,20 @@ import {
   useOrderEvents,
 } from '@/lib/orders-socket';
 import { stateMeta } from '@/lib/order-status';
-import { ensurePermissionsAndChannel, usePushUnavailable } from '@/lib/push';
+import { CHANNEL_ID, setActiveChatThread, usePushUnavailable } from '@/lib/push';
+
+// Módulo nativo local (raíz del repo, `modules/`), fuera del alias `@/`.
+import { playMessageSound } from '../../modules/notify-sound';
 
 /**
  * Sonido + aviso con la app ABIERTA, para lo que el push no cubre.
  *
- * - **Chat**: el backend manda el push SOLO si el destinatario no está
- *   conectado al socket (`chat.service.ts`). Con la app abierta el mensaje
- *   llegaba mudo, sin sonido ni aviso. Acá se dispara una notificación LOCAL
- *   (la reproduce el handler de `lib/push.ts`, con el sonido del sistema)
- *   salvo que el usuario ya esté mirando ese mismo hilo.
+ * - **Chat**: el backend manda el push SOLO si el destinatario no tiene la
+ *   app en primer plano (`chat.service.ts`, con el `app:state` que reporta
+ *   `orders-socket.ts`). Con la app abierta se dispara acá una notificación
+ *   LOCAL (la reproduce el handler de `lib/push.ts`, con el sonido de
+ *   notificación del teléfono) salvo que el usuario ya esté mirando ese hilo.
+ *   Con la app minimizada NO: ahí ya llega el push y sonaría dos veces.
  * - **Pedidos en un teléfono sin push (Huawei sin GMS)**: ahí no hay FCM, así
  *   que los eventos del socket son lo único que llega — se avisan igual con
  *   notificación local. Con push disponible NO se duplica: el backend ya lo
@@ -29,8 +33,6 @@ import { ensurePermissionsAndChannel, usePushUnavailable } from '@/lib/push';
  *
  * Montado UNA vez en el layout raíz. En web es un no-op (ver `.web.ts`).
  */
-
-const CHANNEL_ID = 'orders-v2';
 
 /** Notificación local inmediata (suena con el sonido del sistema del canal). */
 async function notifyLocal(
@@ -57,20 +59,27 @@ export function useInAppAlerts(): void {
   const pushUnavailable = usePushUnavailable();
   const pathname = usePathname();
 
-  // Sin GMS no hay push y `registerPushToken` ni siquiera pidió el permiso de
-  // notificaciones: se pide acá (y se crea el canal) para poder avisar local.
+  // El handler de primer plano silencia el push del hilo que está abierto.
   useEffect(() => {
-    if (!myId || !pushUnavailable) return;
-    void ensurePermissionsAndChannel();
-  }, [myId, pushUnavailable]);
+    const match = pathname.match(/^\/chat\/(\d+)$/);
+    setActiveChatThread(match ? Number(match[1]) : null);
+  }, [pathname]);
 
   const onChat = useCallback(
     (event: ChatSocketEvent) => {
       if (!myId || event.message.senderUserId === myId) return;
-      // Ya está mirando este hilo: el mensaje aparece solo, sin aviso.
-      if (pathname === `/chat/${event.invoiceId}`) return;
+      // Ya está mirando este hilo: sin notificación (el mensaje aparece
+      // solo), pero con el "pop" de mensaje recibido, como en las apps de chat.
+      if (pathname === `/chat/${event.invoiceId}`) {
+        if (AppState.currentState === 'active') void playMessageSound();
+        return;
+      }
+      // Minimizada (y con push): el aviso lo da el push del backend.
+      if (AppState.currentState === 'background' && !pushUnavailable) return;
+      // Id por mensaje: reemplazar una notificación ya visible no vuelve a
+      // sonar en algunos Android, y cada mensaje nuevo tiene que sonar.
       void notifyLocal(
-        `chat-${event.invoiceId}`,
+        `chat-${event.message.id}`,
         '💬 Nuevo mensaje',
         event.message.body.length > 120
           ? `${event.message.body.slice(0, 117)}…`
@@ -78,7 +87,7 @@ export function useInAppAlerts(): void {
         { type: 'chat', invoiceId: event.invoiceId },
       );
     },
-    [myId, pathname],
+    [myId, pathname, pushUnavailable],
   );
   useChatMessages(onChat);
 
@@ -112,7 +121,7 @@ export function useInAppAlerts(): void {
         // Cancelar es una acción del propio cliente/negocio; no se le avisa de lo que hizo.
         if (role === 'USER' && code !== 'CANC') {
           void notifyLocal(
-            `order-${payload.id}`,
+            `order-${payload.id}-${code}`,
             `Pedido ${num}: ${stateMeta(code).label}`,
             'Abre la app para ver el detalle.',
             data,

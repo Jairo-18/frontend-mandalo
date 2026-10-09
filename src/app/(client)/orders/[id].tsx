@@ -18,6 +18,7 @@ import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppTheme } from '@/context/app-theme';
 import { isAmbiguousFailure } from '@/lib/http';
 import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
+import { toast } from '@/lib/toast';
 import { Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
@@ -67,9 +68,16 @@ export default function ClientOrderDetailScreen() {
   useOrderEvents(
     useCallback(
       (payload) => {
-        if (payload.id === orderId) load('refresh');
+        if (payload.id !== orderId) return;
+        // Un admin lo eliminó: de vuelta a la lista (recargar daría 404).
+        if (payload.deleted) {
+          toast.info(`El pedido #${orderId} fue eliminado.`);
+          router.dismissTo('/orders');
+          return;
+        }
+        load('refresh');
       },
-      [orderId, load],
+      [orderId, load, router],
     ),
   );
 
@@ -106,7 +114,9 @@ export default function ClientOrderDetailScreen() {
 
       <View className="flex-row items-center gap-3 bg-surface px-5 pb-2 pt-2">
         <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/orders'))}
+          // Siempre a la lista de "Mis pedidos" (no a la pantalla anterior:
+          // tras pedir, eso era el checkout ya cerrado y el botón "no hacía nada").
+          onPress={() => router.dismissTo('/orders')}
           hitSlop={8}
           className="h-10 w-10 items-center justify-center rounded-full bg-card active:opacity-70"
         >

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
@@ -49,19 +49,24 @@ export function StatCard({
   );
 
   if (highlight) {
+    // El contenido va DIRECTO en la tarjeta (su alto sale de ahí) y el
+    // degradado es solo una capa de fondo absoluta, con el color de marca
+    // debajo de respaldo. Antes el contenido iba DENTRO del degradado: en el
+    // dashboard del negocio el degradado no se pintaba y quedaba una tarjeta
+    // vacía (texto blanco sobre blanco) justo cuando había pedidos pendientes.
     return (
       <Pressable
         onPress={onPress}
-        className="w-[48%] flex-grow overflow-hidden rounded-2xl active:opacity-80"
+        className="w-[48%] flex-grow overflow-hidden rounded-2xl p-4 active:opacity-80"
+        style={{ backgroundColor: colors.primaryColor }}
       >
         <LinearGradient
           colors={[colors.primaryColor, colors.darkColor]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{ padding: 16 }}
-        >
-          {inner}
-        </LinearGradient>
+          style={StyleSheet.absoluteFill}
+        />
+        {inner}
       </Pressable>
     );
   }

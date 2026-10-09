@@ -36,7 +36,7 @@ export type Order = {
   deliveryFee: number;
   /** Recargos del Anexo I (nocturno/clima/demanda + segundo intento) — 100% repartidor. */
   deliverySurcharge: number;
-  /** Tarifa de servicio: % del subtotal (sin domicilio). */
+  /** Tarifa de servicio: fija por tramos según el subtotal (sin domicilio). */
   serviceFee: number;
   total: number;
   notes: string | null;
@@ -166,7 +166,7 @@ export const ordersService = {
    * la tarifa de servicio (si se manda `subtotal`) y los recargos del Anexo I
    * (`deliverySurcharge`, con `surchargeReasons` para mostrarlos) — mismo
    * cálculo que hace el backend al crear el pedido, así el checkout no
-   * duplica el % ni el tope.
+   * duplica la regla de la tarifa de servicio.
    */
   deliveryFee: (params: {
     organizationalId: number;
@@ -233,6 +233,17 @@ export const ordersService = {
 
   get: (id: number) =>
     http<{ data: Order }>(`/invoice/${id}`, { auth: true }),
+
+  /**
+   * Elimina el pedido DEFINITIVAMENTE (solo admin/superadmin, para limpiar
+   * pruebas). El backend lo rechaza si cae en una quincena ya cobrada/pagada.
+   */
+  remove: (id: number) =>
+    http<{ message?: string }>(`/invoice/${id}`, {
+      method: 'DELETE',
+      auth: true,
+      toastSuccess: true,
+    }),
 
   /**
    * Sube/reemplaza el soporte de pago (solo el cliente dueño, métodos

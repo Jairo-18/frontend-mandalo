@@ -1,6 +1,6 @@
 import { apiUrl, CLIENT_API_KEY } from '@/constants/api';
 import { isKnownOffline } from '@/lib/network-status';
-import { getSession } from '@/lib/session';
+import { getSession, setSession } from '@/lib/session';
 import { toast } from '@/lib/toast';
 
 /** Mensaje cuando NetInfo ya confirmó que no hay red (distinto de "el
@@ -56,6 +56,70 @@ function notifyUnauthorized(): void {
   }, 3000);
 }
 
+/**
+ * Renovación del accessToken con el refreshToken guardado:
+ * - `ok`: hay tokens nuevos en la sesión → se reintenta la petición.
+ * - `rejected`: el backend rechazó el refreshToken (401/403) → sesión muerta.
+ * - `failed`: sin red, timeout, 5xx, 429… → NO se sabe; la sesión se conserva.
+ *
+ * Antes, cualquier 401 cerraba la sesión. El accessToken solo se renovaba al
+ * abrir la app, así que con la app abierta (o reabierta desde segundo plano)
+ * más tiempo que su vigencia, o tras arrancar sin red, el primer 401 sacaba
+ * al usuario a la vista de invitado.
+ */
+export type RefreshResult = 'ok' | 'rejected' | 'failed';
+
+/** Una sola renovación en vuelo aunque fallen varias peticiones a la vez. */
+let refreshing: Promise<RefreshResult> | null = null;
+
+export function refreshSessionTokens(): Promise<RefreshResult> {
+  if (refreshing) return refreshing;
+  refreshing = doRefresh().finally(() => {
+    refreshing = null;
+  });
+  return refreshing;
+}
+
+async function doRefresh(): Promise<RefreshResult> {
+  const session = getSession();
+  if (!session?.refreshToken) return 'rejected';
+  if (isKnownOffline()) return 'failed';
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    // fetch directo (no `http()`): evita el ciclo con `services/auth.ts`.
+    const res = await fetch(apiUrl('/auth/refresh-token'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(CLIENT_API_KEY ? { 'X-Client-Key': CLIENT_API_KEY } : {}),
+      },
+      body: JSON.stringify({ refreshToken: session.refreshToken }),
+      signal: controller.signal,
+    });
+    if (res.status === 401 || res.status === 403) return 'rejected';
+    if (!res.ok) return 'failed';
+    const json = (await res.json().catch(() => null)) as {
+      data?: {
+        tokens?: { accessToken: string; refreshToken: string };
+        user?: typeof session.user;
+      };
+    } | null;
+    const tokens = json?.data?.tokens;
+    if (!tokens?.accessToken) return 'failed';
+    // Cerró sesión (o cambió de cuenta) mientras tanto: no resucitarla.
+    if (getSession()?.refreshToken !== session.refreshToken) {
+      return getSession() ? 'ok' : 'rejected';
+    }
+    await setSession({ ...session, ...tokens, user: json?.data?.user ?? session.user });
+    return 'ok';
+  } catch {
+    return 'failed';
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 type Options = {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
@@ -73,6 +137,8 @@ type Options = {
   toastError?: boolean;
   /** Muestra un toast con el `message` del backend si sale bien (default: false). */
   toastSuccess?: boolean;
+  /** Interno: ya se reintentó tras renovar el token (no volver a intentarlo). */
+  retried?: boolean;
 };
 
 /** Tiempo máximo de espera de una petición (fetch en RN no trae timeout). */
@@ -106,6 +172,7 @@ export async function http<T = unknown>(
     authOptional = false,
     toastError = true,
     toastSuccess = false,
+    retried = false,
   } = options;
 
   const bearer =
@@ -184,13 +251,17 @@ export async function http<T = unknown>(
 
   if (!res.ok) {
     const message = pickMessage(json, 'Ocurrió un error inesperado');
-    if (toastError) toast.error(message);
-    // Solo dispara con el Bearer AUTOMÁTICO de la sesión (`auth`/`authOptional`).
+    // Solo con el Bearer AUTOMÁTICO de la sesión (`auth`/`authOptional`).
     // `signOut` manda un `token` explícito — si no se excluyera, un 401 ahí
     // (sesión ya muerta) volvería a llamarse a sí mismo sin parar.
-    if (res.status === 401 && (auth || authOptional) && bearer) {
-      notifyUnauthorized();
+    if (res.status === 401 && (auth || authOptional) && bearer && !token) {
+      // Token vencido: se renueva y se reintenta UNA vez. Solo se cierra la
+      // sesión si el backend rechaza también el refreshToken.
+      const outcome = retried ? 'rejected' : await refreshSessionTokens();
+      if (outcome === 'ok') return http<T>(path, { ...options, retried: true });
+      if (outcome === 'rejected') notifyUnauthorized();
     }
+    if (toastError) toast.error(message);
     throw new HttpError(message, res.status, json);
   }
 
@@ -203,6 +274,8 @@ export async function http<T = unknown>(
 
 type UploadOptions = {
   method?: 'POST' | 'PATCH' | 'PUT';
+  /** Interno: ya se reintentó tras renovar el token. */
+  retried?: boolean;
   auth?: boolean;
   toastError?: boolean;
   toastSuccess?: boolean;
@@ -229,6 +302,7 @@ export function httpUpload<T = unknown>(
     toastError = true,
     toastSuccess = false,
     onProgress,
+    retried = false,
   } = options;
 
   const bearer = auth ? getSession()?.accessToken : undefined;
@@ -275,11 +349,25 @@ export function httpUpload<T = unknown>(
         resolve(json as T);
       } else {
         const message = pickMessage(json, 'Ocurrió un error inesperado');
-        if (toastError) toast.error(message);
+        const fail = () => {
+          if (toastError) toast.error(message);
+          reject(new HttpError(message, xhr.status, json));
+        };
         if (xhr.status === 401 && auth && bearer) {
-          notifyUnauthorized();
+          // Igual que `http()`: renovar el token y reintentar una vez.
+          void (retried ? Promise.resolve<RefreshResult>('rejected') : refreshSessionTokens()).then(
+            (outcome) => {
+              if (outcome === 'ok') {
+                resolve(httpUpload<T>(path, form, { ...options, retried: true }));
+                return;
+              }
+              if (outcome === 'rejected') notifyUnauthorized();
+              fail();
+            },
+          );
+          return;
         }
-        reject(new HttpError(message, xhr.status, json));
+        fail();
       }
     };
 
