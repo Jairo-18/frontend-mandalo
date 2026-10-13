@@ -70,6 +70,7 @@ export function AddressSearchModal({ visible, onClose, onSelect }: Props) {
       transparent
       animationType="slide"
       onRequestClose={onClose}
+      statusBarTranslucent
     >
       <Pressable className="flex-1 justify-end bg-black/40" onPress={onClose}>
         <Pressable

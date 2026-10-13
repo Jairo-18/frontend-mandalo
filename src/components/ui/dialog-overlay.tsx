@@ -14,7 +14,11 @@ type Props = {
 const styles = StyleSheet.create({
   // Cubre TODO el `OrderDetailModal` que ya está abierto (no la pantalla del
   // sistema — este componente vive DENTRO de ese Modal, no en uno propio).
-  fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 50, elevation: 50 },
+  // Sin `elevation`: en Android una vista elevada proyecta sombra y, con el
+  // fondo semitransparente, esa sombra se veía como franjas oscuras a los
+  // lados y arriba del teléfono. Va al final del Modal, así que queda encima
+  // con `zIndex`.
+  fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 50 },
 });
 
 /**

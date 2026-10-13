@@ -14,6 +14,7 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AmountRow } from '@/components/ui/amount-row';
 import { AddressSheet } from '@/components/client/address-sheet';
 import { Avatar } from '@/components/ui/avatar';
 import { Select } from '@/components/ui/select';
@@ -114,7 +115,7 @@ export default function CheckoutScreen() {
   }, [cart.businessId, cart.businessDetail]);
   const bizPay = cart.businessDetail ?? fallbackBizPay;
 
-  const hasNequi = !!(bizPay?.nequiNumber || bizPay?.nequiKey);
+  const hasNequi = !!(bizPay?.nequiNumber || bizPay?.nequiKey || bizPay?.nequiQrUrl);
   const hasBancolombia = !!(
     bizPay?.bancolombiaAccount || bizPay?.bancolombiaQrUrl
   );
@@ -430,23 +431,23 @@ export default function CheckoutScreen() {
 
         {/* Totales */}
         <View className="rounded-2xl bg-surface p-4">
-          <Row label="Subtotal" value={formatPrice(cart.subtotal)} />
-          <Row
+          <AmountRow label="Subtotal" value={formatPrice(cart.subtotal)} />
+          <AmountRow
             label="Domicilio"
             value={loadingFee ? 'Calculando…' : formatPrice(deliveryFee)}
           />
           {!loadingFee && deliverySurcharge > 0 && (
-            <Row
+            <AmountRow
               label={`Recargo${surchargeReasons.length ? ` (${surchargeReasons.join(', ')})` : ''}`}
               value={formatPrice(deliverySurcharge)}
             />
           )}
-          <Row
+          <AmountRow
             label="Tarifa de servicio"
             value={loadingFee ? 'Calculando…' : formatPrice(serviceFee)}
           />
           <View className="my-2 h-px bg-border" />
-          <Row label="Total" value={formatPrice(total)} bold />
+          <AmountRow label="Total" value={formatPrice(total)} bold />
         </View>
       </KeyboardAwareScrollView>
 
@@ -485,36 +486,5 @@ export default function CheckoutScreen() {
         onClose={() => setSheetVisible(false)}
       />
     </SafeAreaView>
-  );
-}
-
-function Row({
-  label,
-  value,
-  bold,
-}: {
-  label: string;
-  value: string;
-  bold?: boolean;
-}) {
-  return (
-    <View className="flex-row items-center justify-between">
-      <Text
-        className={
-          bold ? 'text-base font-extrabold text-ink' : 'text-sm text-muted'
-        }
-      >
-        {label}
-      </Text>
-      <Text
-        className={
-          bold
-            ? 'text-base font-extrabold text-primary'
-            : 'text-sm font-semibold text-ink'
-        }
-      >
-        {value}
-      </Text>
-    </View>
   );
 }

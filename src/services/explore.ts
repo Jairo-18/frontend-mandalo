@@ -43,6 +43,7 @@ export type ExploreBusiness = {
   bancolombiaAccount?: string | null;
   bancolombiaAccountType?: 'AHORROS' | 'CORRIENTE' | null;
   bancolombiaQrUrl?: string | null;
+  nequiQrUrl?: string | null;
 };
 
 /** Producto activo de un negocio (vista del cliente). */

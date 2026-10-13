@@ -50,7 +50,6 @@ export function ProductFormModal({
   loadingCategories,
 }: Props) {
   const [name, setName] = useState('');
-  const [code, setCode] = useState('');
   const [price, setPrice] = useState('');
   const [discount, setDiscount] = useState('');
   const [categoryTypeId, setCategoryTypeId] = useState<number>(NO_CATEGORY);
@@ -84,7 +83,6 @@ export function ProductFormModal({
   const dirty =
     !isEdit ||
     name !== (editing?.name ?? '') ||
-    code !== (editing?.code ?? '') ||
     price !== formatText('cop', String(Math.round(editing?.priceSale ?? 0))) ||
     discount !== (editing && editing.discount > 0 ? String(editing.discount) : '') ||
     categoryTypeId !== (editing?.categoryTypeId ?? NO_CATEGORY) ||
@@ -98,7 +96,6 @@ export function ProductFormModal({
     if (!visible) return;
     setErrors({});
     setName(editing?.name ?? '');
-    setCode(editing?.code ?? '');
     // El precio guardado se muestra con puntos de miles ("25.000").
     setPrice(
       editing ? formatText('cop', String(Math.round(editing.priceSale))) : '',
@@ -136,7 +133,6 @@ export function ProductFormModal({
 
     const payload: BusinessProductPayload = {
       name: name.trim(),
-      code: code.trim() || null,
       description: description.trim() || null,
       categoryTypeId: categoryTypeId === NO_CATEGORY ? null : categoryTypeId,
       priceSale: copToNumber(price),
@@ -254,16 +250,6 @@ export function ProductFormModal({
         value={categoryTypeId}
         onSelect={setCategoryTypeId}
         loading={loadingCategories}
-      />
-
-      <TextField
-        label="Código / SKU (opcional)"
-        icon="key-outline"
-        autoCapitalize="characters"
-        autoCorrect={false}
-        value={code}
-        onChangeText={setCode}
-        placeholder="HAMB-002"
       />
 
       <TextField

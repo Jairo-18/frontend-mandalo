@@ -86,6 +86,7 @@ export function Select<T extends string | number = number>({
         // ve raro en un monitor, se desvanece.
         animationType={wide ? 'fade' : 'slide'}
         onRequestClose={() => setOpen(false)}
+        statusBarTranslucent
       >
         <Pressable
           className={`flex-1 bg-black/40 ${

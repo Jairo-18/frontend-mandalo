@@ -1,6 +1,10 @@
 import { http, httpUpload } from '@/lib/http';
 import { filePart, xhrFilePart } from '@/lib/upload';
-import { AdminBusiness, AdminBusinessPayload } from '@/services/admin-businesses';
+import {
+  AdminBusiness,
+  AdminBusinessPayload,
+  PaymentQrBank,
+} from '@/services/admin-businesses';
 import { CatalogRef, Paginated } from '@/services/admin-users';
 
 /** Producto tal como lo devuelve `/product` (siempre del negocio propio). */
@@ -64,12 +68,12 @@ export const businessService = {
     });
   },
 
-  /** Sube/reemplaza el QR de Bancolombia del negocio propio. */
-  uploadMyPaymentQr: async (uri: string) => {
+  /** Sube/reemplaza un QR de pago del negocio propio (Bancolombia o Nequi Bre-B). */
+  uploadMyPaymentQr: async (uri: string, bank: PaymentQrBank = 'bancolombia') => {
     const form = new FormData();
     form.append('file', await filePart(uri), 'payment-qr.jpg');
-    return http<{ data: { bancolombiaQrUrl: string } }>(
-      '/organizational/mine/payment-qr',
+    return http<{ data: { bancolombiaQrUrl?: string; nequiQrUrl?: string } }>(
+      `/organizational/mine/payment-qr?bank=${bank}`,
       { method: 'POST', body: form, auth: true },
     );
   },
@@ -81,9 +85,9 @@ export const businessService = {
       auth: true,
     }),
 
-  /** Quita el QR de Bancolombia del negocio propio (sin reemplazo). */
-  removeMyPaymentQr: () =>
-    http<{ message?: string }>('/organizational/mine/payment-qr', {
+  /** Quita un QR de pago del negocio propio (sin reemplazo). */
+  removeMyPaymentQr: (bank: PaymentQrBank = 'bancolombia') =>
+    http<{ message?: string }>(`/organizational/mine/payment-qr?bank=${bank}`, {
       method: 'DELETE',
       auth: true,
     }),

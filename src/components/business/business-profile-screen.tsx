@@ -101,6 +101,8 @@ export function BusinessProfileScreen() {
   const hasPayment =
     !!business.paymentHolderName ||
     !!business.nequiNumber ||
+    !!business.nequiKey ||
+    !!business.nequiQrUrl ||
     !!business.bancolombiaAccount ||
     !!business.bancolombiaQrUrl;
 
@@ -252,7 +254,13 @@ export function BusinessProfileScreen() {
                 {business.paymentHolderName || '—'}
               </InfoRow>
               <InfoRow icon="phone-portrait-outline" label="Nequi">
-                {business.nequiNumber || '—'}
+                {[
+                  business.nequiNumber,
+                  business.nequiKey && `Llave ${business.nequiKey}`,
+                  business.nequiQrUrl && 'QR Bre-B',
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || '—'}
               </InfoRow>
               <InfoRow icon="business-outline" label="Bancolombia" last>
                 {business.bancolombiaAccount

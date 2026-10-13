@@ -15,12 +15,12 @@ import { SectionTitle } from '@/components/ui/section-title';
 import { StatCard } from '@/components/ui/stat-card';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useLiveRefresh } from '@/hooks/use-live-refresh';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { useProductChanges } from '@/lib/orders-socket';
 import { useMyBusiness } from '@/hooks/use-my-business';
 import { usePendingOrdersCount } from '@/hooks/use-pending-orders-count';
 import { useSession } from '@/hooks/use-session';
 import { BusinessDashboardStats, dashboardService } from '@/services/dashboard';
-import { getAppColors } from '@/lib/app-colors';
 
 type Stats = {
   [K in keyof BusinessDashboardStats]: BusinessDashboardStats[K] | null;
@@ -42,6 +42,7 @@ const EMPTY: Stats = {
 export default function BusinessDashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const colors = useResolvedAppColors();
   const [stats, setStats] = useState<Stats>(EMPTY);
   // Primera carga: loader en vez de tarjetas vacías que "explotan" al llegar.
   const [loading, setLoading] = useState(true);
@@ -89,13 +90,13 @@ export default function BusinessDashboardScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => load('refresh')}
-          tintColor={getAppColors().primaryColor}
+          tintColor={colors.primaryColor}
         />
       }
     >
       {/* Héroe de marca: continúa el header de degradado del drawer */}
       <LinearGradient
-        colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+        colors={[colors.primaryColor, colors.darkColor]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
@@ -123,7 +124,7 @@ export default function BusinessDashboardScreen() {
       {loading && (
         <ActivityIndicator
           size="large"
-          color={getAppColors().primaryColor}
+          color={colors.primaryColor}
           style={{ paddingTop: 48 }}
         />
       )}

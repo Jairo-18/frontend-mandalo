@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 
+import { AmountRow } from '@/components/ui/amount-row';
 import { Badge } from '@/components/ui/badge';
 import { settlementPeriodLabel } from '@/lib/settlement-period-label';
 import { getAppColors } from '@/lib/app-colors';
@@ -90,21 +91,23 @@ export function SettlementPeriodCard({
         {ordersCount} {ordersCount === 1 ? 'pedido' : 'pedidos'}
       </Text>
 
-      <View className="mt-2.5 flex-row items-end justify-between">
-        <View>
+      <View className="mt-2.5 flex-row items-end justify-between gap-3">
+        <View className="flex-1">
           <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
             {primaryLabel}
           </Text>
-          <Text className="text-lg font-extrabold text-primary">
+          <Text numberOfLines={1} className="text-lg font-extrabold text-primary">
             {primaryValue}
           </Text>
         </View>
         {secondaryLabel && secondaryValue ? (
-          <View className="items-end">
+          // Ancho mínimo en vez de flex-1: la columna principal (etiqueta
+          // larga, p. ej. "Debes entregar a Mandalo") se queda con el resto.
+          <View className="items-end" style={{ minWidth: '32%' }}>
             <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
               {secondaryLabel}
             </Text>
-            <Text className="text-sm font-semibold text-ink">
+            <Text numberOfLines={1} className="text-right text-sm font-semibold text-ink">
               {secondaryValue}
             </Text>
           </View>
@@ -112,21 +115,25 @@ export function SettlementPeriodCard({
       </View>
 
       {tertiaryLabel && tertiaryValue ? (
-        <View className="mt-2 flex-row items-center justify-between border-t border-border pt-2">
-          <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
-            {tertiaryLabel}
-          </Text>
-          <Text className="text-sm font-semibold text-ink">{tertiaryValue}</Text>
+        <View className="mt-2 border-t border-border pt-2">
+          <AmountRow
+            label={tertiaryLabel}
+            value={tertiaryValue}
+            labelClassName="text-[11px] font-bold uppercase tracking-wide text-muted"
+          />
         </View>
       ) : null}
 
       {breakdown && breakdown.length > 0 ? (
         <View className="mt-2 gap-1 border-t border-border pt-2">
           {breakdown.map((row) => (
-            <View key={row.label} className="flex-row items-center justify-between">
-              <Text className="text-xs text-muted">{row.label}</Text>
-              <Text className="text-xs font-semibold text-ink">{row.value}</Text>
-            </View>
+            <AmountRow
+              key={row.label}
+              label={row.label}
+              value={row.value}
+              labelClassName="text-xs text-muted"
+              valueClassName="text-xs font-semibold text-ink"
+            />
           ))}
         </View>
       ) : null}

@@ -146,6 +146,9 @@ export function BusinessFormModal({
   // QR de Bancolombia pendiente de subir (se sube al guardar, como el logo).
   const [pendingQr, setPendingQr] = useState<string | null>(null);
   const [qrRemoved, setQrRemoved] = useState(false);
+  // QR Bre-B de Nequi (mismo flujo que el de Bancolombia).
+  const [pendingNequiQr, setPendingNequiQr] = useState<string | null>(null);
+  const [nequiQrRemoved, setNequiQrRemoved] = useState(false);
 
   // Etiquetas disponibles para los chips.
   const [allTags, setAllTags] = useState<CatalogItem[]>([]);
@@ -199,6 +202,8 @@ export function BusinessFormModal({
     setBancolombiaAccountType(editing?.bancolombiaAccountType ?? undefined);
     setPendingQr(null);
     setQrRemoved(false);
+    setPendingNequiQr(null);
+    setNequiQrRemoved(false);
 
     muni.preload(
       editing?.department ? Number(editing.department.id) : undefined,
@@ -275,6 +280,8 @@ export function BusinessFormModal({
     temporarilyClosed !== (editing?.temporarilyClosed ?? false) ||
     !!pendingQr ||
     qrRemoved ||
+    !!pendingNequiQr ||
+    nequiQrRemoved ||
     paymentHolderName !== (editing?.paymentHolderName ?? '') ||
     nequiNumber !== (editing?.nequiNumber ?? '') ||
     nequiKey !== (editing?.nequiKey ?? '') ||
@@ -317,7 +324,9 @@ export function BusinessFormModal({
           nequiKey.trim() ||
           bancolombiaAccount.trim() ||
           pendingQr ||
-          (!qrRemoved && editing?.bancolombiaQrUrl)) &&
+          (!qrRemoved && editing?.bancolombiaQrUrl) ||
+          pendingNequiQr ||
+          (!nequiQrRemoved && editing?.nequiQrUrl)) &&
         !paymentHolderName.trim()
           ? 'Ingresa el nombre del titular de los pagos.'
           : undefined,
@@ -361,7 +370,13 @@ export function BusinessFormModal({
       ...(muni.departmentId && { departmentId: muni.departmentId }),
       ...(muni.municipalityId && { municipalityId: muni.municipalityId }),
       // Dueño/cuenta/estado son cosas del admin; el NEGO no las envía.
+      // En edición, quitar el representante manda null (desvincula); antes no
+      // se mandaba nada y el backend conservaba el anterior.
       ...(!selfBusiness && owner && { legalPersonId: owner.id }),
+      ...(!selfBusiness &&
+        isEdit &&
+        !owner &&
+        editing?.legalPerson && { legalPersonId: null }),
       ...(!selfBusiness &&
         wantsAccount && {
           accountEmail: accountEmail.trim(),
@@ -417,6 +432,10 @@ export function BusinessFormModal({
         else if (qrRemoved && editing?.bancolombiaQrUrl) {
           await businessService.removeMyPaymentQr();
         }
+        if (pendingNequiQr) await businessService.uploadMyPaymentQr(pendingNequiQr, 'nequi');
+        else if (nequiQrRemoved && editing?.nequiQrUrl) {
+          await businessService.removeMyPaymentQr('nequi');
+        }
         onSaved();
         return;
       }
@@ -438,6 +457,11 @@ export function BusinessFormModal({
         await adminBusinessesService.uploadPaymentQr(businessId, pendingQr);
       } else if (qrRemoved && businessId && editing?.bancolombiaQrUrl) {
         await adminBusinessesService.removePaymentQr(businessId);
+      }
+      if (pendingNequiQr && businessId) {
+        await adminBusinessesService.uploadPaymentQr(businessId, pendingNequiQr, 'nequi');
+      } else if (nequiQrRemoved && businessId && editing?.nequiQrUrl) {
+        await adminBusinessesService.removePaymentQr(businessId, 'nequi');
       }
       onSaved();
     } catch {
@@ -753,6 +777,29 @@ export function BusinessFormModal({
           bien: si tiene un error, los clientes le transferirán a otra persona.
         </Text>
       )}
+      <DocumentPhotoField
+        label={
+          pendingNequiQr
+            ? 'QR Bre-B de Nequi listo (se sube al guardar)'
+            : 'QR Bre-B de Nequi'
+        }
+        uri={pendingNequiQr ?? (nequiQrRemoved ? null : editing?.nequiQrUrl)}
+        onChange={(uri) => {
+          setPendingNequiQr(uri);
+          setNequiQrRemoved(false);
+        }}
+        onRemove={
+          pendingNequiQr || editing?.nequiQrUrl
+            ? () => {
+                if (pendingNequiQr) setPendingNequiQr(null);
+                else setNequiQrRemoved(true);
+              }
+            : undefined
+        }
+        placeholderIcon="qr-code-outline"
+        height={220}
+        contain
+      />
       <TextField
         label="Cuenta Bancolombia"
         icon="business-outline"

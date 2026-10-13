@@ -14,8 +14,13 @@ import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
  * - al volver la app a primer plano, si la pantalla está a la vista;
  * - cuando llega un evento de pedido o el socket se reconecta, si está a la
  *   vista (agrupado: un pedido dispara varios eventos seguidos). Si no está a
- *   la vista no hace nada: el próximo foco recarga igual.
+ *   la vista no hace nada: el próximo foco recarga igual;
+ * - cada minuto mientras está a la vista con la app abierta: respaldo por si
+ *   el socket no entrega eventos (red que corta websockets, token rechazado).
+ *   Son montos de pago: no pueden quedar viejos.
  */
+const POLL_MS = 60_000;
+
 export function useLiveRefresh(refresh: () => void): void {
   const focusedRef = useRef(false);
   const seenFocusRef = useRef(false);
@@ -49,6 +54,13 @@ export function useLiveRefresh(refresh: () => void): void {
       sub.remove();
       if (timerRef.current) clearTimeout(timerRef.current);
     };
+  }, [schedule]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (AppState.currentState === 'active') schedule();
+    }, POLL_MS);
+    return () => clearInterval(id);
   }, [schedule]);
 
   useOrderEvents(schedule);

@@ -5,5 +5,6 @@ export function formatPrice(value: number): string {
 
 /** Precio final con el porcentaje de descuento aplicado. */
 export function finalPrice(priceSale: number, discount: number): number {
-  return discount > 0 ? priceSale * (1 - discount / 100) : priceSale;
+  // Al peso, igual que el backend al crear el pedido.
+  return discount > 0 ? Math.round(priceSale * (1 - discount / 100)) : priceSale;
 }

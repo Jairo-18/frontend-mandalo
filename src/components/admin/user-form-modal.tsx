@@ -94,6 +94,11 @@ export function UserFormModal({
   const { errors, setErrors, clearError, bind, validate } = useFormErrors();
 
   const isEdit = !!editing;
+  // Las cuentas que crea el admin son casi siempre para vincularlas a un
+  // negocio: al crear NO se piden usuario ni dirección. Al editar se muestran
+  // solo si la cuenta ya los tiene (p. ej. un cliente que se registró solo).
+  const showUsername = isEdit && !!editing?.username;
+  const showAddress = selfProfile || (isEdit && !!editing?.address);
 
   // Prellena (edición) o limpia (creación) el formulario cada vez que se abre.
   useEffect(() => {
@@ -257,10 +262,10 @@ export function UserFormModal({
     const payload: AdminUserPayload = {
       fullName: fullName.trim(),
       email: email.trim(),
-      username: username.trim() || null,
+      ...(showUsername && { username: username.trim() || null }),
       // Solo el prefijo (sin número real) cuenta como vacío.
       phone: phoneOrNull(phone),
-      address: address.trim() || null,
+      ...(showAddress && { address: address.trim() || null }),
       // Coordenadas: solo del GPS del propio perfil (para otro usuario el
       // admin no está en la casa de esa persona).
       ...(selfProfile &&
@@ -349,15 +354,17 @@ export function UserFormModal({
         placeholder="Juan Pérez"
       />
 
-      <TextField
-        label="Nombre de usuario"
-        icon="at-outline"
-        format="username"
-        value={username}
-        onChangeText={bind('username', setUsername)}
-        error={errors.username}
-        placeholder="juanp"
-      />
+      {showUsername && (
+        <TextField
+          label="Nombre de usuario"
+          icon="at-outline"
+          format="username"
+          value={username}
+          onChangeText={bind('username', setUsername)}
+          error={errors.username}
+          placeholder="juanp"
+        />
+      )}
 
       <TextField
         label="Correo electrónico"
@@ -433,20 +440,22 @@ export function UserFormModal({
         error={errors.municipalityId}
       />
 
-      <TextField
-        label={
-          selfProfile ? 'Dirección (se llena con tu ubicación)' : 'Dirección'
-        }
-        icon="home-outline"
-        format="text"
-        value={address}
-        onChangeText={bind('address', setAddress)}
-        error={errors.address}
-        placeholder={
-          selfProfile ? 'Toca «Usar mi ubicación actual»' : 'Calle 1 # 2-3'
-        }
-        editable={!selfProfile}
-      />
+      {showAddress && (
+        <TextField
+          label={
+            selfProfile ? 'Dirección (se llena con tu ubicación)' : 'Dirección'
+          }
+          icon="home-outline"
+          format="text"
+          value={address}
+          onChangeText={bind('address', setAddress)}
+          error={errors.address}
+          placeholder={
+            selfProfile ? 'Toca «Usar mi ubicación actual»' : 'Calle 1 # 2-3'
+          }
+          editable={!selfProfile}
+        />
+      )}
       {selfProfile && (
         <Pressable
           onPress={handleUseLocation}

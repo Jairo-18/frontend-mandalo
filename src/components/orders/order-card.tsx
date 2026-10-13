@@ -120,12 +120,17 @@ export function OrderCard({
       )}
 
       <View className="mt-2 flex-row items-center justify-between">
-        <Text className="text-xs text-muted">
+        <Text numberOfLines={1} className="flex-1 pr-2 text-xs text-muted">
           Pedido #{order.id}
           {itemCount > 0 ? ` · ${itemCount} art.` : ''}
           {order.createdAt ? ` · ${shortDate(order.createdAt)}` : ''}
         </Text>
-        <Text className="text-[15px] font-extrabold text-primary">
+        {/* Ancho mínimo: ver AmountRow (montos recortados en Android). */}
+        <Text
+          numberOfLines={1}
+          style={{ minWidth: '35%' }}
+          className="text-right text-[15px] font-extrabold text-primary"
+        >
           {formatPrice(order.total)}
         </Text>
       </View>

@@ -155,6 +155,7 @@ export function AccidentsScreen() {
         transparent
         animationType="slide"
         onRequestClose={() => setSelected(null)}
+        statusBarTranslucent
       >
         <View className="flex-1 justify-end bg-black/40">
           <View

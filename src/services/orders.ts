@@ -36,6 +36,10 @@ export type Order = {
   deliveryFee: number;
   /** Recargos del Anexo I (nocturno/clima/demanda + segundo intento) — 100% repartidor. */
   deliverySurcharge: number;
+  /** Desglose de `deliverySurcharge` (sin el segundo intento, que va en `retryFeeCharged`). */
+  nightSurcharge?: number;
+  weatherSurcharge?: number;
+  demandSurcharge?: number;
   /** Tarifa de servicio: fija por tramos según el subtotal (sin domicilio). */
   serviceFee: number;
   total: number;
@@ -94,6 +98,7 @@ export type Order = {
     bancolombiaAccount?: string | null;
     bancolombiaAccountType?: 'AHORROS' | 'CORRIENTE' | null;
     bancolombiaQrUrl?: string | null;
+    nequiQrUrl?: string | null;
   } | null;
   // El cliente (visible para negocio/repartidor/admin).
   user?: { id: string; fullName: string; phone: string | null; avatarUrl?: string | null } | null;

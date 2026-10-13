@@ -100,6 +100,7 @@ export function Paginator({
         transparent
         animationType="slide"
         onRequestClose={() => setPerPageOpen(false)}
+        statusBarTranslucent
       >
         <Pressable
           className="flex-1 justify-end bg-black/40"

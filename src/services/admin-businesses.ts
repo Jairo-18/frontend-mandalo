@@ -4,6 +4,9 @@ import { CatalogItem } from '@/services/admin-catalogs';
 import { CatalogRef, Paginated } from '@/services/admin-users';
 
 /** Representante legal tal como lo devuelve `/organizational` (datos visibles). */
+/** Banco de un QR de pago del negocio (`?bank=` del backend). */
+export type PaymentQrBank = 'bancolombia' | 'nequi';
+
 export type BusinessOwner = {
   id: string;
   fullName: string;
@@ -40,6 +43,7 @@ export type AdminBusiness = {
   bancolombiaAccount: string | null;
   bancolombiaAccountType: 'AHORROS' | 'CORRIENTE' | null;
   bancolombiaQrUrl: string | null;
+  nequiQrUrl?: string | null;
   identificationType: CatalogRef | null;
   municipality: CatalogRef | null;
   department: CatalogRef | null;
@@ -62,7 +66,7 @@ export type AdminBusinessPayload = {
   departmentId?: number;
   municipalityId?: number;
   /** Usuario dueño/representante legal (rol NEGO). */
-  legalPersonId?: string;
+  legalPersonId?: string | null;
   /**
    * Crear la cuenta de acceso del negocio en el mismo paso (rol NEGO).
    * Van en pareja y son excluyentes con `legalPersonId`. Solo al crear.
@@ -154,12 +158,12 @@ export const adminBusinessesService = {
     });
   },
 
-  /** Sube/reemplaza el QR de Bancolombia del negocio. */
-  uploadPaymentQr: async (id: number, uri: string) => {
+  /** Sube/reemplaza un QR de pago del negocio (Bancolombia o Nequi Bre-B). */
+  uploadPaymentQr: async (id: number, uri: string, bank: PaymentQrBank = 'bancolombia') => {
     const form = new FormData();
     form.append('file', await filePart(uri), 'payment-qr.jpg');
-    return http<{ data: { bancolombiaQrUrl: string } }>(
-      `/organizational/${id}/payment-qr`,
+    return http<{ data: { bancolombiaQrUrl?: string; nequiQrUrl?: string } }>(
+      `/organizational/${id}/payment-qr?bank=${bank}`,
       { method: 'POST', body: form, auth: true },
     );
   },
@@ -171,9 +175,9 @@ export const adminBusinessesService = {
       auth: true,
     }),
 
-  /** Quita el QR de Bancolombia del negocio (sin reemplazo). */
-  removePaymentQr: (id: number) =>
-    http<{ message?: string }>(`/organizational/${id}/payment-qr`, {
+  /** Quita un QR de pago del negocio (sin reemplazo). */
+  removePaymentQr: (id: number, bank: PaymentQrBank = 'bancolombia') =>
+    http<{ message?: string }>(`/organizational/${id}/payment-qr?bank=${bank}`, {
       method: 'DELETE',
       auth: true,
     }),

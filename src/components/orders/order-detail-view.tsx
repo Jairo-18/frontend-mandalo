@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import { AmountRow } from '@/components/ui/amount-row';
 import { ArrivalCountdown } from '@/components/orders/arrival-countdown';
 import { OrderEta } from '@/components/orders/order-eta';
 import { OrderMap } from '@/components/orders/order-map';
@@ -96,9 +97,20 @@ export function OrderDetailView({
       ? !!order.paymentProofUrl
       : !!order.paymentProofUrl || canAttachProof || rejected);
 
+  // Recargos con su motivo (mismos nombres que "Mis cobros" del repartidor).
+  // Lo que no cuadre con el desglose (pedidos viejos) sale como "Recargo".
+  const surcharge = order.deliverySurcharge - (order.retryFeeCharged ?? 0);
+  const surchargeRows = [
+    { label: 'Recargo nocturno', value: order.nightSurcharge ?? 0 },
+    { label: 'Recargo por clima', value: order.weatherSurcharge ?? 0 },
+    { label: 'Recargo por demanda', value: order.demandSurcharge ?? 0 },
+  ].filter((row) => row.value > 0);
+  const unexplained = surcharge - surchargeRows.reduce((sum, row) => sum + row.value, 0);
+  if (unexplained > 0.009) surchargeRows.push({ label: 'Recargo', value: unexplained });
+
   // Datos del negocio para pagar (los ve el cliente al subir el comprobante).
   const org = order.organizational;
-  const hasNequi = !!(org?.nequiNumber || org?.nequiKey);
+  const hasNequi = !!(org?.nequiNumber || org?.nequiKey || org?.nequiQrUrl);
   const hasBancolombia = !!(org?.bancolombiaAccount || org?.bancolombiaQrUrl);
 
   async function uploadProof(uri: string) {
@@ -398,7 +410,12 @@ export function OrderDetailView({
               {detail.productName}
               {detail.discount > 0 ? ` (-${detail.discount}%)` : ''}
             </Text>
-            <Text className="text-[13px] font-semibold text-ink">
+            {/* Ancho mínimo: ver AmountRow (montos recortados en Android). */}
+            <Text
+              numberOfLines={1}
+              style={{ minWidth: 84 }}
+              className="text-right text-[13px] font-semibold text-ink"
+            >
               {formatPrice(detail.lineTotal)}
             </Text>
           </View>
@@ -466,6 +483,12 @@ export function OrderDetailView({
                   {order.paidType?.code === 'NEQUI' && !!org?.nequiKey && (
                     <PayRow label="Llave Nequi" value={org.nequiKey} />
                   )}
+                  {order.paidType?.code === 'NEQUI' && !!org?.nequiQrUrl && (
+                    <PaymentQr
+                      uri={org.nequiQrUrl}
+                      caption="Escanea el QR Bre-B desde tu app Nequi (o la de tu banco)"
+                    />
+                  )}
                   {order.paidType?.code === 'TRAN' &&
                     !!org?.bancolombiaAccount && (
                       <PayRow
@@ -478,16 +501,10 @@ export function OrderDetailView({
                       />
                     )}
                   {order.paidType?.code === 'TRAN' && !!org?.bancolombiaQrUrl && (
-                    <View className="mt-2 items-center rounded-lg bg-card p-2.5">
-                      <Image
-                        source={{ uri: org.bancolombiaQrUrl }}
-                        style={{ width: 220, height: 220 }}
-                        resizeMode="contain"
-                      />
-                      <Text className="mt-1 text-[11px] text-muted">
-                        Escanea el QR desde tu app Bancolombia
-                      </Text>
-                    </View>
+                    <PaymentQr
+                      uri={org.bancolombiaQrUrl}
+                      caption="Escanea el QR desde tu app Bancolombia"
+                    />
                   )}
                 </View>
               )}
@@ -591,24 +608,31 @@ export function OrderDetailView({
 
       {/* Totales */}
       <View className="rounded-2xl bg-card p-4">
-        <TotalRow label="Subtotal" value={formatPrice(order.subtotal)} />
-        <TotalRow label="Domicilio" value={formatPrice(order.deliveryFee)} />
-        {order.deliverySurcharge - (order.retryFeeCharged ?? 0) > 0 && (
-          <TotalRow
-            label="Recargo"
-            value={formatPrice(order.deliverySurcharge - (order.retryFeeCharged ?? 0))}
-          />
-        )}
+        <AmountRow label="Subtotal" value={formatPrice(order.subtotal)} />
+        <AmountRow label="Domicilio" value={formatPrice(order.deliveryFee)} />
+        {surchargeRows.map((row) => (
+          <AmountRow key={row.label} label={row.label} value={formatPrice(row.value)} />
+        ))}
         {(order.retryFeeCharged ?? 0) > 0 && (
-          <TotalRow
+          <AmountRow
             label="Segundo intento (espera adicional)"
             value={formatPrice(order.retryFeeCharged)}
           />
         )}
-        <TotalRow label="Tarifa de servicio" value={formatPrice(order.serviceFee)} />
+        <AmountRow label="Tarifa de servicio" value={formatPrice(order.serviceFee)} />
         <View className="my-2 h-px bg-border" />
-        <TotalRow label="Total" value={formatPrice(order.total)} bold />
+        <AmountRow label="Total" value={formatPrice(order.total)} bold />
       </View>
+    </View>
+  );
+}
+
+/** QR de pago del negocio (Bancolombia o Nequi Bre-B) para escanear. */
+function PaymentQr({ uri, caption }: { uri: string; caption: string }) {
+  return (
+    <View className="mt-2 items-center rounded-lg bg-card p-2.5">
+      <Image source={{ uri }} style={{ width: 220, height: 220 }} resizeMode="contain" />
+      <Text className="mt-1 text-center text-[11px] text-muted">{caption}</Text>
     </View>
   );
 }
@@ -749,37 +773,6 @@ function PhotoCard({
       </Pressable>
       <PhotoPreviewModal uri={preview ? uri : null} onClose={() => setPreview(false)} />
     </>
-  );
-}
-
-function TotalRow({
-  label,
-  value,
-  bold,
-}: {
-  label: string;
-  value: string;
-  bold?: boolean;
-}) {
-  return (
-    <View className="flex-row items-center justify-between">
-      <Text
-        className={
-          bold ? 'text-base font-extrabold text-ink' : 'text-sm text-muted'
-        }
-      >
-        {label}
-      </Text>
-      <Text
-        className={
-          bold
-            ? 'text-base font-extrabold text-primary'
-            : 'text-sm font-semibold text-ink'
-        }
-      >
-        {value}
-      </Text>
-    </View>
   );
 }
 

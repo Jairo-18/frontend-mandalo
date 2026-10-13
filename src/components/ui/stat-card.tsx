@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /**
  * Tarjeta-contador de los dashboards (admin y negocio): icono, número grande
- * y etiqueta; `highlight` la pinta con el degradado de marca (pendientes >
- * 0) — antes era un `bg-primary` sólido. Tocarla navega a la sección
- * correspondiente.
+ * y etiqueta; `highlight` (pendientes > 0) la resalta con borde y tinte de
+ * marca. Tocarla navega a la sección correspondiente.
+ *
+ * Ojo: SIEMPRE es la misma tarjeta (solo cambian clases) y sin degradado.
+ * Antes, al llegar un pedido se montaba otra tarjeta con un `LinearGradient`
+ * de fondo y texto blanco: en algunos teléfonos el degradado no se pintaba y
+ * quedaba toda blanca (texto blanco sobre blanco) o toda roja.
  */
 export function StatCard({
   icon,
@@ -26,57 +29,29 @@ export function StatCard({
 }) {
   const colors = useResolvedAppColors();
 
-  const inner = (
-    <>
-      <View className="h-9 w-9 items-center justify-center">
-        <Ionicons
-          name={icon}
-          size={22}
-          color={highlight ? '#FFFFFF' : colors.primaryColor}
-        />
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`w-[48%] flex-grow rounded-2xl p-4 active:opacity-80 ${
+        highlight ? 'border-2 border-primary bg-primary-tint' : 'border border-border bg-card'
+      }`}
+    >
+      <View className="flex-row items-center justify-between">
+        <View className="h-9 w-9 items-center justify-center">
+          <Ionicons name={icon} size={22} color={colors.primaryColor} />
+        </View>
+        {highlight && <View className="h-2.5 w-2.5 rounded-full bg-primary" />}
       </View>
       <Text
-        className={`mt-2 text-2xl font-extrabold ${highlight ? 'text-white' : 'text-ink'}`}
+        className={`mt-2 text-2xl font-extrabold ${highlight ? 'text-primary' : 'text-ink'}`}
       >
         {value ?? '—'}
       </Text>
       <Text
-        className={`text-xs font-semibold ${highlight ? 'text-white/80' : 'text-muted'}`}
+        className={`text-xs font-semibold ${highlight ? 'text-primary' : 'text-muted'}`}
       >
         {label}
       </Text>
-    </>
-  );
-
-  if (highlight) {
-    // El contenido va DIRECTO en la tarjeta (su alto sale de ahí) y el
-    // degradado es solo una capa de fondo absoluta, con el color de marca
-    // debajo de respaldo. Antes el contenido iba DENTRO del degradado: en el
-    // dashboard del negocio el degradado no se pintaba y quedaba una tarjeta
-    // vacía (texto blanco sobre blanco) justo cuando había pedidos pendientes.
-    return (
-      <Pressable
-        onPress={onPress}
-        className="w-[48%] flex-grow overflow-hidden rounded-2xl p-4 active:opacity-80"
-        style={{ backgroundColor: colors.primaryColor }}
-      >
-        <LinearGradient
-          colors={[colors.primaryColor, colors.darkColor]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        {inner}
-      </Pressable>
-    );
-  }
-
-  return (
-    <Pressable
-      onPress={onPress}
-      className="w-[48%] flex-grow rounded-2xl border border-border bg-card p-4 active:opacity-80"
-    >
-      {inner}
     </Pressable>
   );
 }

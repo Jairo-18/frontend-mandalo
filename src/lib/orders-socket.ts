@@ -3,7 +3,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import { io, Socket } from 'socket.io-client';
 
 import { API_URL } from '@/constants/api';
-import { getSession } from '@/lib/session';
+import { getSession, subscribeSession } from '@/lib/session';
 
 /** Payload común de los eventos de pedido (siempre trae al menos el id). */
 export type OrderEvent = { id: number; [key: string]: unknown };
@@ -27,6 +27,26 @@ let socket: Socket | null = null;
 let hasConnectedOnce = false;
 const reconnectListeners = new Set<() => void>();
 
+// Usuario con el que se abrió el socket: si la sesión pasa a otra cuenta (o se
+// borra sin pasar por signOut, p. ej. refreshToken rechazado), se cierra.
+let socketUserId: string | null = null;
+
+/**
+ * Handlers por evento. Las pantallas se suscriben AQUÍ, no a la instancia del
+ * socket: antes cada hook hacía `socket.on(...)` al montar y, si en ese momento
+ * no había sesión o el socket se recreaba después (cerrar sesión y entrar con
+ * otra cuenta), la pantalla quedaba sorda para siempre (cobros y dashboards sin
+ * actualizar, badge sin sumar). Un único `onAny` del socket reparte a todos.
+ */
+type AnyHandler = (payload: any) => void;
+const eventHandlers = new Map<string, Set<AnyHandler>>();
+
+function hasSubscribers(): boolean {
+  if (reconnectListeners.size > 0) return true;
+  for (const set of eventHandlers.values()) if (set.size > 0) return true;
+  return false;
+}
+
 /**
  * Socket singleton al namespace `/orders` (autenticado con el accessToken de
  * la sesión). Se conecta perezosamente la primera vez que una pantalla se
@@ -46,6 +66,10 @@ function getOrdersSocket(): Socket | null {
       // en vivo (badge de pedidos, cobros, avisos) hasta cerrar sesión.
       auth: (cb) => cb({ token: getSession()?.accessToken }),
       autoConnect: true,
+    });
+    socketUserId = getSession()?.user.id ?? null;
+    socket.onAny((event: string, payload: unknown) => {
+      eventHandlers.get(event)?.forEach((h) => h(payload));
     });
     socket.on('connect', () => {
       reportAppState(AppState.currentState);
@@ -97,7 +121,36 @@ export function disconnectOrdersSocket(): void {
   reconnectTimer = null;
   socket?.disconnect();
   socket = null;
+  socketUserId = null;
   hasConnectedOnce = false;
+}
+
+// Sesión nueva (login, arranque) → abre el socket si alguna pantalla escucha;
+// sesión de OTRA cuenta o sin sesión → cierra el del usuario anterior.
+subscribeSession(() => {
+  const userId = getSession()?.user.id ?? null;
+  if (socket && userId !== socketUserId) disconnectOrdersSocket();
+  if (userId && !socket && hasSubscribers()) getOrdersSocket();
+});
+
+/**
+ * Suscribe `handler` a un evento del gateway. No depende de que el socket
+ * exista al montar: si se crea (o se recrea) después, el handler igual recibe.
+ */
+function useSocketEvent<T>(event: string, handler: (payload: T) => void): void {
+  useEffect(() => {
+    let set = eventHandlers.get(event);
+    if (!set) {
+      set = new Set();
+      eventHandlers.set(event, set);
+    }
+    const h = handler as AnyHandler;
+    set.add(h);
+    getOrdersSocket();
+    return () => {
+      set.delete(h);
+    };
+  }, [event, handler]);
 }
 
 /**
@@ -108,9 +161,8 @@ export function disconnectOrdersSocket(): void {
  */
 export function useSocketReconnected(handler: () => void): void {
   useEffect(() => {
-    const s = getOrdersSocket();
-    if (!s) return;
     reconnectListeners.add(handler);
+    getOrdersSocket();
     return () => {
       reconnectListeners.delete(handler);
     };
@@ -143,15 +195,7 @@ export function emitDeliveryPosition(
 export function useDeliveryPosition(
   handler: (position: DeliveryPosition) => void,
 ): void {
-  useEffect(() => {
-    const s = getOrdersSocket();
-    if (!s) return;
-    const cb = (payload: DeliveryPosition) => handler(payload);
-    s.on('delivery:position', cb);
-    return () => {
-      s.off('delivery:position', cb);
-    };
-  }, [handler]);
+  useSocketEvent<DeliveryPosition>('delivery:position', handler);
 }
 
 /** Mensaje de chat en vivo (relay del gateway a las salas de ambos). */
@@ -173,15 +217,7 @@ export type ChatSocketEvent = {
 export function useChatMessages(
   handler: (event: ChatSocketEvent) => void,
 ): void {
-  useEffect(() => {
-    const s = getOrdersSocket();
-    if (!s) return;
-    const cb = (payload: ChatSocketEvent) => handler(payload);
-    s.on('chat:message', cb);
-    return () => {
-      s.off('chat:message', cb);
-    };
-  }, [handler]);
+  useSocketEvent<ChatSocketEvent>('chat:message', handler);
 }
 
 /** El catálogo del negocio cambió (producto creado, editado, borrado o fotos). */
@@ -198,15 +234,7 @@ export type ProductChangedEvent = {
 export function useProductChanges(
   handler: (event: ProductChangedEvent) => void,
 ): void {
-  useEffect(() => {
-    const s = getOrdersSocket();
-    if (!s) return;
-    const cb = (payload: ProductChangedEvent) => handler(payload);
-    s.on('product:changed', cb);
-    return () => {
-      s.off('product:changed', cb);
-    };
-  }, [handler]);
+  useSocketEvent<ProductChangedEvent>('product:changed', handler);
 }
 
 /** El negocio le pidió al cliente el comprobante del pago (relay del gateway). */
@@ -219,15 +247,7 @@ export type PaymentRequestedEvent = { invoiceId: number; message: string };
 export function usePaymentRequested(
   handler: (event: PaymentRequestedEvent) => void,
 ): void {
-  useEffect(() => {
-    const s = getOrdersSocket();
-    if (!s) return;
-    const cb = (payload: PaymentRequestedEvent) => handler(payload);
-    s.on('invoice:payment-requested', cb);
-    return () => {
-      s.off('invoice:payment-requested', cb);
-    };
-  }, [handler]);
+  useSocketEvent<PaymentRequestedEvent>('invoice:payment-requested', handler);
 }
 
 /** Nombre de evento del gateway (para que el caller decida qué refrescar). */
@@ -244,16 +264,19 @@ export function useOrderEvents(
   handler: (payload: OrderEvent, event: OrderEventName) => void,
 ): void {
   useEffect(() => {
-    const s = getOrdersSocket();
-    if (!s) return;
-
-    const listeners = ORDER_EVENTS.map((event) => {
-      const cb = (payload: OrderEvent) => handler(payload, event);
-      s.on(event, cb);
-      return { event, cb };
+    const subs = ORDER_EVENTS.map((event) => {
+      let set = eventHandlers.get(event);
+      if (!set) {
+        set = new Set();
+        eventHandlers.set(event, set);
+      }
+      const cb: AnyHandler = (payload: OrderEvent) => handler(payload, event);
+      set.add(cb);
+      return { set, cb };
     });
+    getOrdersSocket();
     return () => {
-      listeners.forEach(({ event, cb }) => s.off(event, cb));
+      subs.forEach(({ set, cb }) => set.delete(cb));
     };
   }, [handler]);
 }
