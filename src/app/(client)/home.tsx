@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -18,6 +18,7 @@ import { BusinessGridCard } from '@/components/client/business-grid-card';
 import { CategoryCards } from '@/components/client/category-cards';
 import { FilterSheet } from '@/components/client/filter-sheet';
 import { ErrandBanner } from '@/components/client/errand-banner';
+import { HomeCategoryRows } from '@/components/client/home-category-rows';
 import { HomePromoCarousel } from '@/components/client/home-promo-carousel';
 import { ProductGridCard } from '@/components/client/product-grid-card';
 import { TagCards } from '@/components/client/tag-cards';
@@ -38,6 +39,7 @@ import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
   ExploreBusiness,
   ExploreProduct,
+  HomeRow,
   exploreService,
 } from '@/services/explore';
 
@@ -162,6 +164,27 @@ export default function HomeScreen() {
     productList.search.trim().length > 0 ||
     selectedCategoryId != null ||
     selectedTagIds.length > 0;
+
+  // Filas por categoría (mezclan negocios cercanos, ya rankeadas): solo en
+  // la vista por defecto — con búsqueda, filtros o "Todos los negocios" se
+  // ve la cuadrícula de siempre.
+  const [homeRows, setHomeRows] = useState<HomeRow[]>([]);
+  const showRows = !searching && !businessMode;
+  useEffect(() => {
+    if (!showRows || nearLat == null || nearLng == null) return;
+    let alive = true;
+    exploreService
+      .homeRows({ near: { latitude: nearLat, longitude: nearLng } })
+      .then((res) => {
+        if (alive) setHomeRows(res.data.rows);
+      })
+      .catch(() => {
+        // Silencioso: sin filas queda la cuadrícula.
+      });
+    return () => {
+      alive = false;
+    };
+  }, [showRows, nearLat, nearLng]);
 
   function handleSearchChange(text: string) {
     productList.setSearch(text);
@@ -292,6 +315,16 @@ export default function HomeScreen() {
             onSelect={selectCategory}
           />
         </View>
+      )}
+
+      {showRows && (
+        <HomeCategoryRows
+          rows={homeRows}
+          onOpenProduct={(product) =>
+            product.organizational && openStore(product.organizational.id)
+          }
+          onSeeAll={selectCategory}
+        />
       )}
 
       <View className="mt-1">

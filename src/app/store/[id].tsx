@@ -13,11 +13,12 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProductGridCard } from '@/components/client/product-grid-card';
+import { StoreMenu } from '@/components/client/store-menu';
+import { Paginated } from '@/services/admin-users';
 import { ProductDetailSheet } from '@/components/client/product-detail-sheet';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { StorePromotionCard } from '@/components/client/store-promotion-card';
 import { Avatar } from '@/components/ui/avatar';
-import { FilterChips } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { ReviewsSheet } from '@/components/reviews/reviews-list';
@@ -47,7 +48,7 @@ import {
 import {
   businessDisplayName,
   ExploreBusiness,
-  ExploreFilterItem,
+  MenuSection,
   ExploreProduct,
   exploreService,
 } from '@/services/explore';
@@ -72,9 +73,7 @@ export default function StoreScreen() {
   const windowWidth = useWindowDimensions().width;
   const numColumns = columnsForWidth(windowWidth, 2);
   const [business, setBusiness] = useState<ExploreBusiness | null>(null);
-  const [categories, setCategories] = useState<ExploreFilterItem[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(true);
-  const [categoryValue, setCategoryValue] = useState('all');
   // Producto pendiente de agregar cuando el carrito es de OTRO negocio.
   const [switchTo, setSwitchTo] = useState<ExploreProduct | null>(null);
   // Detalle abierto (tocar la tarjeta): fotos completas + descripción.
@@ -83,16 +82,52 @@ export default function StoreScreen() {
   const [logoPreview, setLogoPreview] = useState(false);
   const [reviewsOpen, setReviewsOpen] = useState(false);
 
-  const categoryTypeId =
-    categoryValue === 'all' ? undefined : Number(categoryValue);
-
+  // Búsqueda: lista plana de resultados. Sin búsqueda no se pide nada acá
+  // (se ve el menú por secciones de abajo).
   const list = usePaginatedList<ExploreProduct>(
     useCallback(
       (params) =>
-        exploreService.products(storeId, { ...params, categoryTypeId }),
-      [storeId, categoryTypeId],
+        params.search.trim()
+          ? exploreService.products(storeId, params)
+          : Promise.resolve(EMPTY_PAGE),
+      [storeId],
     ),
   );
+  const searching = !!list.query.trim();
+
+  // Menú por secciones ("Más pedidos" + categorías A–Z), en una sola petición.
+  const [menu, setMenu] = useState<MenuSection[] | null>(null);
+  const [refreshingMenu, setRefreshingMenu] = useState(false);
+  // Deslizar para recargar el menú (la carga inicial va en el efecto de abajo).
+  const loadMenu = useCallback(
+    async (refresh = false) => {
+      if (refresh) setRefreshingMenu(true);
+      try {
+        const res = await exploreService.storeMenu(storeId);
+        setMenu(res.data.sections);
+      } catch {
+        // El interceptor ya avisó; queda el menú anterior (o vacío).
+        setMenu((prev) => prev ?? []);
+      } finally {
+        setRefreshingMenu(false);
+      }
+    },
+    [storeId],
+  );
+  useEffect(() => {
+    let alive = true;
+    exploreService
+      .storeMenu(storeId)
+      .then((res) => {
+        if (alive) setMenu(res.data.sections);
+      })
+      .catch(() => {
+        if (alive) setMenu((prev) => prev ?? []);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [storeId]);
 
   // Distancia/ETA/tarifa a ESTE negocio (estilo Rappi): un solo valor para
   // toda la pantalla, se muestra una vez en la cabecera (todos los productos
@@ -109,7 +144,6 @@ export default function StoreScreen() {
       .then((res) => {
         if (!alive) return;
         setBusiness(res.data.organizational);
-        setCategories(res.data.categories);
       })
       .catch(() => {
         // El interceptor HTTP ya mostró el error (p. ej. negocio inactivo).
@@ -204,6 +238,21 @@ export default function StoreScreen() {
 
   // La barra flotante solo aplica al carrito de ESTE negocio.
   const showCartBar = cart.count > 0 && cart.businessId === storeId;
+
+  // Misma tarjeta en el menú por secciones y en los resultados de búsqueda.
+  function renderProduct(item: ExploreProduct) {
+    return (
+      <ProductGridCard
+        compact
+        product={item}
+        onPress={() => setDetail(item)}
+        quantity={cart.quantityOf(item.id)}
+        onAdd={() => handleAdd(item)}
+        onDecrement={() => cart.decrement(item.id)}
+        estimate={estimate}
+      />
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-card">
@@ -330,7 +379,7 @@ export default function StoreScreen() {
         </View>
       )}
 
-      {/* Búsqueda + categorías del negocio */}
+      {/* Búsqueda (los chips del menú van debajo, en `StoreMenu`) */}
       <View className="px-5 pb-2">
         <View className="rounded-xl border border-border">
           <SearchBar
@@ -340,113 +389,107 @@ export default function StoreScreen() {
           />
         </View>
       </View>
-      {categories.length > 0 && (
-        <View className="px-5 pb-2">
-          <FilterChips
-            options={[
-              { value: 'all', label: 'Todas' },
-              ...categories.map((category) => ({
-                value: String(category.id),
-                label: category.name,
-              })),
-            ]}
-            value={categoryValue}
-            onChange={setCategoryValue}
+
+      {searching ? (
+        // Resultados de la búsqueda (scroll infinito, lista plana).
+        <View className="flex-1 bg-surface">
+          {list.loading ? (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator size="large" color={colors.primaryColor} />
+            </View>
+          ) : (
+            <FlatList
+              key={numColumns}
+              data={list.items}
+              keyExtractor={(item) => String(item.id)}
+              numColumns={numColumns}
+              {...gridPerfProps}
+              columnWrapperStyle={{ gap: 12 }}
+              renderItem={({ item, index }) => (
+                <View style={gridItemStyle(index, list.items.length, numColumns)}>
+                  {renderProduct(item)}
+                </View>
+              )}
+              contentContainerStyle={{
+                paddingHorizontal: 16,
+                paddingTop: 14,
+                paddingBottom: showCartBar ? 96 : 24,
+              }}
+              refreshing={list.refreshing}
+              onRefresh={() => list.fetchPage(1, 'refresh')}
+              onEndReached={list.loadMore}
+              onEndReachedThreshold={0.4}
+              ListFooterComponent={
+                list.loadingMore ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.primaryColor}
+                    style={{ paddingVertical: 12 }}
+                  />
+                ) : null
+              }
+              ListEmptyComponent={
+                <ListEmpty
+                  icon="search-outline"
+                  message="No hay productos que coincidan con la búsqueda."
+                />
+              }
+            />
+          )}
+        </View>
+      ) : menu == null ? (
+        <View className="flex-1 items-center justify-center bg-surface">
+          <ActivityIndicator size="large" color={colors.primaryColor} />
+        </View>
+      ) : menu.length === 0 && promos.length === 0 ? (
+        <View className="flex-1 bg-surface">
+          <ListEmpty
+            icon="cube-outline"
+            message="Este negocio aún no tiene productos disponibles."
           />
         </View>
-      )}
-
-      {/* Productos (scroll infinito) */}
-      <View className="flex-1 bg-surface">
-        {list.loading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={colors.primaryColor} />
-          </View>
-        ) : (
-          <FlatList
-            key={numColumns}
-            data={list.items}
-            keyExtractor={(item) => String(item.id)}
-            numColumns={numColumns}
-            {...gridPerfProps}
-            columnWrapperStyle={{ gap: 12 }}
-            renderItem={({ item, index }) => (
-              <View style={gridItemStyle(index, list.items.length, numColumns)}>
-                <ProductGridCard
-                  compact
-                  product={item}
-                  onPress={() => setDetail(item)}
-                  quantity={cart.quantityOf(item.id)}
-                  onAdd={() => handleAdd(item)}
-                  onDecrement={() => cart.decrement(item.id)}
-                  estimate={estimate}
-                />
+      ) : (
+        <StoreMenu
+          // Remonta si cambia el negocio (offsets y chip activo desde cero).
+          key={storeId}
+          sections={menu}
+          numColumns={numColumns}
+          renderProduct={renderProduct}
+          refreshing={refreshingMenu}
+          onRefresh={() => void loadMenu(true)}
+          bottomPadding={showCartBar ? 96 : 24}
+          header={
+            promos.length > 0 ? (
+              <View className="mb-4 gap-3">
+                <Text className="text-[15px] font-extrabold text-ink">Promociones</Text>
+                {/* Celular: una por fila. Tablet: 2. Web: 4 por fila (una sola
+                    a todo el ancho salía enorme). */}
+                {chunk(promos, promosPerRow(windowWidth, 4)).map((row) => (
+                  <View key={row[0].id} className="flex-row gap-3">
+                    {row.map((promo) => (
+                      <View key={promo.id} className="flex-1">
+                        <StorePromotionCard
+                          promo={promo}
+                          quantity={cart.quantityOf(-promo.id)}
+                          onAdd={() => handleAdd(promotionAsCartProduct(promo))}
+                          onDecrement={() => cart.decrement(-promo.id)}
+                          onPress={() => setDetail(promotionAsCartProduct(promo))}
+                        />
+                      </View>
+                    ))}
+                    {/* Relleno: la última fila incompleta no se estira. */}
+                    {Array.from({ length: promosPerRow(windowWidth, 4) - row.length }).map(
+                      (_, i) => (
+                        <View key={`pad-${i}`} className="flex-1" />
+                      ),
+                    )}
+                  </View>
+                ))}
               </View>
-            )}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingTop: 14,
-              paddingBottom: showCartBar ? 96 : 24,
-            }}
-            refreshing={list.refreshing}
-            onRefresh={() => list.fetchPage(1, 'refresh')}
-            onEndReached={list.loadMore}
-            onEndReachedThreshold={0.4}
-            // Promociones arriba de los productos (no mientras busca o filtra
-            // por categoría: ahí se ven solo los resultados).
-            ListHeaderComponent={
-              promos.length > 0 && !list.query && !categoryTypeId ? (
-                <View className="mb-4 gap-3">
-                  <Text className="text-[15px] font-extrabold text-ink">Promociones</Text>
-                  {/* Celular: una por fila. Tablet: 2. Web: 4 por fila (una sola
-                      a todo el ancho salía enorme). */}
-                  {chunk(promos, promosPerRow(windowWidth, 4)).map((row) => (
-                    <View key={row[0].id} className="flex-row gap-3">
-                      {row.map((promo) => (
-                        <View key={promo.id} className="flex-1">
-                          <StorePromotionCard
-                            promo={promo}
-                            quantity={cart.quantityOf(-promo.id)}
-                            onAdd={() => handleAdd(promotionAsCartProduct(promo))}
-                            onDecrement={() => cart.decrement(-promo.id)}
-                            onPress={() => setDetail(promotionAsCartProduct(promo))}
-                          />
-                        </View>
-                      ))}
-                      {/* Relleno: la última fila incompleta no se estira. */}
-                      {Array.from({ length: promosPerRow(windowWidth, 4) - row.length }).map(
-                        (_, i) => (
-                          <View key={`pad-${i}`} className="flex-1" />
-                        ),
-                      )}
-                    </View>
-                  ))}
-                  <Text className="mt-1 text-[15px] font-extrabold text-ink">Productos</Text>
-                </View>
-              ) : null
-            }
-            ListFooterComponent={
-              list.loadingMore ? (
-                <ActivityIndicator
-                  size="small"
-                  color={colors.primaryColor}
-                  style={{ paddingVertical: 12 }}
-                />
-              ) : null
-            }
-            ListEmptyComponent={
-              <ListEmpty
-                icon="cube-outline"
-                message={
-                  list.query || categoryTypeId
-                    ? 'No hay productos que coincidan con la búsqueda.'
-                    : 'Este negocio aún no tiene productos disponibles.'
-                }
-              />
-            }
-          />
-        )}
-      </View>
+            ) : null
+          }
+        />
+      )}
 
       {/* Barra flotante del carrito → checkout. Es absolute (escapa del
           padding del SafeAreaView), así que el inset inferior va a mano para
@@ -518,6 +561,18 @@ function BackButton({ onPress }: { onPress: () => void }) {
     </Pressable>
   );
 }
+
+const EMPTY_PAGE: Paginated<ExploreProduct> = {
+  data: [],
+  pagination: {
+    page: 1,
+    perPage: 20,
+    total: 0,
+    pageCount: 0,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  },
+};
 
 /** Parte una lista en filas de `size` (grid simple sin FlatList). */
 function chunk<T>(items: T[], size: number): T[][] {

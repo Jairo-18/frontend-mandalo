@@ -49,6 +49,17 @@ export type ExploreBusiness = {
   nequiQrUrl?: string | null;
 };
 
+/** Fila del home: una categoría con sus productos mejor rankeados. */
+export type HomeRow = { categoryType: ExploreFilterItem; products: ExploreProduct[] };
+
+/** Sección del menú de una tienda ("Más pedidos", una categoría u "Otros"). */
+export type MenuSection = {
+  key: string;
+  title: string;
+  categoryTypeId: number | null;
+  products: ExploreProduct[];
+};
+
 /** Producto activo de un negocio (vista del cliente). */
 export type ExploreProduct = {
   id: number;
@@ -184,6 +195,27 @@ export const exploreService = {
       { authOptional: true },
     );
   },
+
+  /**
+   * Filas del home por categoría: cada una mezcla productos de todos los
+   * negocios cercanos, ya rankeados (abiertos, más pedidos, calificación…).
+   */
+  homeRows: (params: { tagIds?: number[]; near?: NearCoords | null }) => {
+    const query = new URLSearchParams();
+    if (params.tagIds?.length) query.set('tagIds', params.tagIds.join(','));
+    appendNear(query, params.near);
+    return http<{ data: { rows: HomeRow[] } }>(
+      `/explore/home-rows?${query.toString()}`,
+      { authOptional: true, toastError: false },
+    );
+  },
+
+  /** Menú de un negocio por secciones: "Más pedidos" + categorías A–Z. */
+  storeMenu: (organizationalId: number) =>
+    http<{ data: { sections: MenuSection[] } }>(
+      `/explore/organizationals/${organizationalId}/menu`,
+      { authOptional: true },
+    ),
 
   /** Detalle del negocio + las categorías que usan sus productos activos. */
   business: (id: number) =>
