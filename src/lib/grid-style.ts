@@ -19,11 +19,12 @@ export function columnsForWidth(width: number, mobileColumns: 2 | 3 = 2): number
 
 /**
  * Cuántos banners de publicidad (16:9) caben lado a lado: uno en celular,
- * 2 en tablet y 3 en web/pantallas anchas — a todo el ancho de un monitor
- * un banner 16:9 salía de ~700 px de alto.
+ * 2 en tablet y `wide` en web/pantallas anchas (3 en el carrusel del home, 4
+ * en las tarjetas de la tienda) — a todo el ancho de un monitor un banner
+ * 16:9 salía de ~700 px de alto.
  */
-export function promosPerRow(width: number): number {
-  if (width >= 1100) return 3;
+export function promosPerRow(width: number, wide: 3 | 4 = 3): number {
+  if (width >= 1100) return wide;
   if (width >= 700) return 2;
   return 1;
 }

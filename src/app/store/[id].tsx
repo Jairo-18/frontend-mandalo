@@ -398,9 +398,9 @@ export default function StoreScreen() {
               promos.length > 0 && !list.query && !categoryTypeId ? (
                 <View className="mb-4 gap-3">
                   <Text className="text-[15px] font-extrabold text-ink">Promociones</Text>
-                  {/* Celular: una por fila. Tablet/web: 2–3 por fila (una sola
+                  {/* Celular: una por fila. Tablet: 2. Web: 4 por fila (una sola
                       a todo el ancho salía enorme). */}
-                  {chunk(promos, promosPerRow(windowWidth)).map((row) => (
+                  {chunk(promos, promosPerRow(windowWidth, 4)).map((row) => (
                     <View key={row[0].id} className="flex-row gap-3">
                       {row.map((promo) => (
                         <View key={promo.id} className="flex-1">
@@ -414,7 +414,7 @@ export default function StoreScreen() {
                         </View>
                       ))}
                       {/* Relleno: la última fila incompleta no se estira. */}
-                      {Array.from({ length: promosPerRow(windowWidth) - row.length }).map(
+                      {Array.from({ length: promosPerRow(windowWidth, 4) - row.length }).map(
                         (_, i) => (
                           <View key={`pad-${i}`} className="flex-1" />
                         ),
