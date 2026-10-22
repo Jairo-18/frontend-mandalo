@@ -10,13 +10,22 @@ type Props = {
   /** null = ninguna elegida (tocar la elegida la deselecciona). */
   selectedId: number | null;
   onSelect: (id: number | null) => void;
+  /** Card "Todas" activa = todos los productos (sin filas), con el ranking. */
+  allSelected?: boolean;
+  onToggleAll?: () => void;
 };
 
 /**
  * Slider de categorías del home (cards cuadradas con icono): elegir una
  * muestra los productos de esa categoría en todos los negocios.
  */
-export function CategoryCards({ categories, selectedId, onSelect }: Props) {
+export function CategoryCards({
+  categories,
+  selectedId,
+  onSelect,
+  allSelected = false,
+  onToggleAll,
+}: Props) {
   const webScrollRef = useWebHorizontalScroll();
 
   return (
@@ -27,6 +36,15 @@ export function CategoryCards({ categories, selectedId, onSelect }: Props) {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }}
     >
+      {!!onToggleAll && (
+        <SquareCard
+          label="Todas"
+          icon={{ family: 'ionicons', name: 'grid-outline' }}
+          selected={allSelected}
+          onPress={onToggleAll}
+        />
+      )}
+
       {categories.map((category) => {
         const selected = category.id === selectedId;
         return (

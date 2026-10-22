@@ -76,6 +76,9 @@ export default function HomeScreen() {
 
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [allBusinesses, setAllBusinesses] = useState(false);
+  // Card "Todas" de Categorías: la cuadrícula completa de productos (con el
+  // ranking: abiertos, más pedidos, calificación…) sin las filas.
+  const [allProducts, setAllProducts] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   );
@@ -171,7 +174,7 @@ export default function HomeScreen() {
   // Filas por categoría (mezclan negocios cercanos, ya rankeadas): solo en
   // la vista por defecto — con búsqueda, filtros o "Todos los negocios" se
   // ve la cuadrícula de siempre.
-  const showRows = !searching && !businessMode;
+  const showRows = !searching && !businessMode && !allProducts;
   useEffect(() => {
     if (!showRows || nearLat == null || nearLng == null) return;
     let alive = true;
@@ -194,12 +197,14 @@ export default function HomeScreen() {
       setSelectedTagIds([]);
       setSelectedCategoryId(null);
       setAllBusinesses(false);
+      setAllProducts(false);
     }
   }
 
   /** Etiqueta puntual: filtra productos, se combina con la categoría elegida. */
   function toggleTag(id: number) {
     setAllBusinesses(false);
+    setAllProducts(false);
     productList.setSearch('');
     setSelectedTagIds((prev) =>
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
@@ -208,6 +213,7 @@ export default function HomeScreen() {
 
   function toggleAllBusinesses() {
     setAllBusinesses((prev) => !prev);
+    setAllProducts(false);
     setSelectedTagIds([]);
     setSelectedCategoryId(null);
     productList.setSearch('');
@@ -217,14 +223,24 @@ export default function HomeScreen() {
   function selectCategory(id: number | null) {
     setSelectedCategoryId(id);
     setAllBusinesses(false);
+    setAllProducts(false);
     if (id != null) {
       productList.setSearch('');
     }
   }
 
+  function toggleAllProducts() {
+    setAllProducts((prev) => !prev);
+    setAllBusinesses(false);
+    setSelectedTagIds([]);
+    setSelectedCategoryId(null);
+    productList.setSearch('');
+  }
+
   function clearFilters() {
     setSelectedTagIds([]);
     setAllBusinesses(false);
+    setAllProducts(false);
     setSelectedCategoryId(null);
   }
 
@@ -243,7 +259,10 @@ export default function HomeScreen() {
 
   const hasFilters = tags.length > 0 || categories.length > 0;
   const hasActiveFilters =
-    allBusinesses || selectedTagIds.length > 0 || selectedCategoryId != null;
+    allBusinesses ||
+    allProducts ||
+    selectedTagIds.length > 0 ||
+    selectedCategoryId != null;
 
   /**
    * Buscador + filtros FIJOS bajo la navbar: antes iban en la cabecera del
@@ -315,6 +334,8 @@ export default function HomeScreen() {
             categories={categories}
             selectedId={selectedCategoryId}
             onSelect={selectCategory}
+            allSelected={allProducts}
+            onToggleAll={toggleAllProducts}
           />
         </View>
       )}
