@@ -147,16 +147,19 @@ export default function HomeScreen() {
   // Distancia/ETA al negocio de cada producto visible (estilo Rappi): un
   // solo fix de GPS (ver el hook) + se piden solo los ids nuevos que van
   // apareciendo al scrollear, cacheados por negocio.
+  // Filas por categoría del home (ver más abajo): sus negocios también
+  // necesitan distancia/tiempo en la tarjeta.
+  const [homeRows, setHomeRows] = useState<HomeRow[]>([]);
   const visibleOrgIds = useMemo(
     () =>
       Array.from(
         new Set(
-          productList.items
+          [...productList.items, ...homeRows.flatMap((row) => row.products)]
             .map((p) => p.organizational?.id)
             .filter((id): id is number => id != null),
         ),
       ),
-    [productList.items],
+    [productList.items, homeRows],
   );
   const deliveryEstimates = useDeliveryEstimates(visibleOrgIds);
 
@@ -168,7 +171,6 @@ export default function HomeScreen() {
   // Filas por categoría (mezclan negocios cercanos, ya rankeadas): solo en
   // la vista por defecto — con búsqueda, filtros o "Todos los negocios" se
   // ve la cuadrícula de siempre.
-  const [homeRows, setHomeRows] = useState<HomeRow[]>([]);
   const showRows = !searching && !businessMode;
   useEffect(() => {
     if (!showRows || nearLat == null || nearLng == null) return;
@@ -324,6 +326,7 @@ export default function HomeScreen() {
             product.organizational && openStore(product.organizational.id)
           }
           onSeeAll={selectCategory}
+          estimates={deliveryEstimates}
         />
       )}
 

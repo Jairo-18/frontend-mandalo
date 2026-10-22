@@ -4,13 +4,15 @@ import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-na
 import { ProductGridCard } from '@/components/client/product-grid-card';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { useWebHorizontalScroll } from '@/hooks/use-web-horizontal-scroll';
-import { ExploreProduct, HomeRow } from '@/services/explore';
+import { DeliveryEstimate, ExploreProduct, HomeRow } from '@/services/explore';
 
 type Props = {
   rows: HomeRow[];
   onOpenProduct: (product: ExploreProduct) => void;
   /** "Ver todo": abre la cuadrícula filtrada por esa categoría. */
   onSeeAll: (categoryTypeId: number) => void;
+  /** Distancia/tiempo por negocio (la tarjeta reserva ese renglón). */
+  estimates?: Record<number, DeliveryEstimate>;
 };
 
 /** Ancho de cada tarjeta en la fila: ~2.3 visibles en celular (se intuye el scroll). */
@@ -26,7 +28,7 @@ function cardWidth(screenWidth: number): number {
  * backend (abiertos, más pedidos, calificación…), con "Ver todo" para la
  * cuadrícula completa de esa categoría (ahí siguen los filtros).
  */
-export function HomeCategoryRows({ rows, onOpenProduct, onSeeAll }: Props) {
+export function HomeCategoryRows({ rows, onOpenProduct, onSeeAll, estimates }: Props) {
   const width = cardWidth(useWindowDimensions().width);
   if (!rows.length) return null;
   return (
@@ -38,6 +40,7 @@ export function HomeCategoryRows({ rows, onOpenProduct, onSeeAll }: Props) {
           cardWidth={width}
           onOpenProduct={onOpenProduct}
           onSeeAll={onSeeAll}
+          estimates={estimates}
         />
       ))}
     </View>
@@ -49,8 +52,10 @@ function CategoryRow({
   cardWidth: width,
   onOpenProduct,
   onSeeAll,
+  estimates,
 }: {
   row: HomeRow;
+  estimates?: Record<number, DeliveryEstimate>;
   cardWidth: number;
   onOpenProduct: (product: ExploreProduct) => void;
   onSeeAll: (categoryTypeId: number) => void;
@@ -79,7 +84,13 @@ function CategoryRow({
       >
         {row.products.map((product) => (
           <View key={product.id} style={{ width }}>
-            <ProductGridCard product={product} onPress={() => onOpenProduct(product)} />
+            <ProductGridCard
+              product={product}
+              onPress={() => onOpenProduct(product)}
+              estimate={
+                product.organizational ? estimates?.[product.organizational.id] : undefined
+              }
+            />
           </View>
         ))}
       </ScrollView>
