@@ -1,4 +1,4 @@
-import { Dimensions, type ViewStyle } from 'react-native';
+import { Dimensions, Platform, type ViewStyle } from 'react-native';
 
 /** Separación entre tarjetas (`columnWrapperStyle={{ gap: 12 }}`). */
 const GRID_GAP = 12;
@@ -80,6 +80,14 @@ export function gridItemStyle(
   // Ancho EXACTO de una celda llena: (fila − espacios) / columnas. Antes era
   // un porcentaje aproximado (100/n − 2 %) que no descontaba bien los
   // espacios: con 8 columnas en escritorio la última fila salía más angosta.
+  if (Platform.OS === 'web') {
+    // En web, relativo al ancho REAL de la fila: el de la ventana incluye la
+    // barra de scroll del navegador y las celdas salían un poco más anchas.
+    return {
+      flex: 1,
+      maxWidth: `calc((100% - ${GRID_GAP * (numColumns - 1)}px) / ${numColumns})` as ViewStyle['maxWidth'],
+    };
+  }
   const rowWidth = Dimensions.get('window').width - GRID_SIDE * 2;
   const cell = (rowWidth - GRID_GAP * (numColumns - 1)) / numColumns;
   return { flex: 1, maxWidth: cell };
