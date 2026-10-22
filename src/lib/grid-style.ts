@@ -1,4 +1,9 @@
-import type { ViewStyle } from 'react-native';
+import { Dimensions, type ViewStyle } from 'react-native';
+
+/** Separación entre tarjetas (`columnWrapperStyle={{ gap: 12 }}`). */
+const GRID_GAP = 12;
+/** Margen lateral de los grids (`paddingHorizontal: 16` a cada lado). */
+const GRID_SIDE = 16;
 
 /**
  * Columnas del grid según el ancho disponible: 2 en celular (o `mobileColumns`
@@ -72,5 +77,20 @@ export function gridItemStyle(
   const remainder = count % numColumns;
   const inLastIncompleteRow = remainder !== 0 && index >= count - remainder;
   if (!inLastIncompleteRow) return { flex: 1 };
-  return { flex: 1, maxWidth: `${100 / numColumns - 2}%` };
+  // Ancho EXACTO de una celda llena: (fila − espacios) / columnas. Antes era
+  // un porcentaje aproximado (100/n − 2 %) que no descontaba bien los
+  // espacios: con 8 columnas en escritorio la última fila salía más angosta.
+  const rowWidth = Dimensions.get('window').width - GRID_SIDE * 2;
+  const cell = (rowWidth - GRID_GAP * (numColumns - 1)) / numColumns;
+  return { flex: 1, maxWidth: cell };
+}
+
+/**
+ * Tamaño de página de los feeds con scroll infinito: al menos 4 filas
+ * completas (con 8 columnas en escritorio, 20 productos eran 2,5 filas y el
+ * cargador salía a cada rato). Múltiplo de las columnas para no dejar filas
+ * a medias entre páginas.
+ */
+export function feedPageSize(numColumns: number): number {
+  return Math.max(20, numColumns * 4);
 }

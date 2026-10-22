@@ -33,7 +33,7 @@ import { useDeliveryEstimates, useNearGpsFallback } from '@/hooks/use-delivery-e
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useExploreFilters, useUserAddresses } from '@/hooks/use-user-data';
 import { useSession } from '@/hooks/use-session';
-import { columnsForWidth, gridItemStyle, gridPerfProps } from '@/lib/grid-style';
+import { columnsForWidth, feedPageSize, gridItemStyle, gridPerfProps } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
@@ -111,14 +111,14 @@ export default function HomeScreen() {
       (params) =>
         exploreService.businesses({
           page: params.page,
-          perPage: params.perPage,
+          perPage: feedPageSize(numColumns),
           tagIds: [],
           near:
             nearLat != null && nearLng != null
               ? { latitude: nearLat, longitude: nearLng }
               : null,
         }),
-      [nearLat, nearLng],
+      [nearLat, nearLng, numColumns],
     ),
     // Perezoso: solo se fetchea al abrir "Todos los negocios" — por defecto
     // el home muestra productos. Además espera tener con qué filtrar por
@@ -132,6 +132,7 @@ export default function HomeScreen() {
       (params) =>
         exploreService.allProducts({
           ...params,
+          perPage: feedPageSize(numColumns),
           categoryTypeId: selectedCategoryId ?? undefined,
           tagIds: selectedTagIds.length ? selectedTagIds : undefined,
           near:
@@ -139,7 +140,7 @@ export default function HomeScreen() {
               ? { latitude: nearLat, longitude: nearLng }
               : null,
         }),
-      [selectedCategoryId, selectedTagIds, nearLat, nearLng],
+      [selectedCategoryId, selectedTagIds, nearLat, nearLng, numColumns],
     ),
     // Espera tener con qué filtrar por cercanía (dirección o GPS): antes
     // solo esperaba `!loadingAddress` y fetcheaba sin coords mientras el GPS
@@ -359,7 +360,8 @@ export default function HomeScreen() {
 
   // Una fila de tarjetas fantasma al traer la página siguiente, en vez de un
   // spinner suelto: el hueco ya mide lo que va a llegar y nada salta después.
-  const productFooter = <GridSkeleton numColumns={numColumns} count={numColumns} />;
+  // Dos filas fantasma (no una): se ve que viene más contenido.
+  const productFooter = <GridSkeleton numColumns={numColumns} count={numColumns * 2} />;
   const businessFooter = (
     <GridSkeleton numColumns={numColumns} count={numColumns} infoHeight={80} />
   );
@@ -472,7 +474,7 @@ export default function HomeScreen() {
           refreshing={businessList.refreshing}
           onRefresh={() => businessList.fetchPage(1, 'refresh')}
           onEndReached={businessList.loadMore}
-          onEndReachedThreshold={0.4}
+          onEndReachedThreshold={1.5}
           ListFooterComponent={businessList.loadingMore ? businessFooter : null}
           ListEmptyComponent={
             businessList.loading ? (
@@ -518,7 +520,7 @@ export default function HomeScreen() {
           refreshing={productList.refreshing}
           onRefresh={() => productList.fetchPage(1, 'refresh')}
           onEndReached={productList.loadMore}
-          onEndReachedThreshold={0.4}
+          onEndReachedThreshold={1.5}
           ListFooterComponent={productList.loadingMore ? productFooter : null}
           ListEmptyComponent={
             productList.loading ? (
