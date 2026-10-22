@@ -93,7 +93,10 @@ export const promotionsService = {
   feed: (coords?: { latitude: number; longitude: number } | null) =>
     http<{ data: Promotion[] }>(
       coords
-        ? `/promotion/feed?lat=${coords.latitude}&lng=${coords.longitude}`
+        ? // 2 decimales (~1 km), igual que /explore: el backend cachea por
+          // URL y con la coordenada completa cada usuario tendría su propia
+          // entrada (el caché casi nunca acertaría).
+          `/promotion/feed?lat=${coords.latitude.toFixed(2)}&lng=${coords.longitude.toFixed(2)}`
         : '/promotion/feed',
       { authOptional: true, toastError: false },
     ),
