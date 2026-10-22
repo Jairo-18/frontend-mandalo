@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BusinessFormModal } from '@/components/admin/business-form-modal';
+import { BusinessProductsModal } from '@/components/admin/business-products-modal';
+import { BusinessPromotionsModal } from '@/components/admin/business-promotions-modal';
+import { ReviewsSheet } from '@/components/reviews/reviews-list';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Fab } from '@/components/ui/fab';
@@ -21,6 +24,7 @@ import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { getAppColors } from '@/lib/app-colors';
 import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
+import { reviewsService } from '@/services/reviews';
 
 import {
   AdminBusiness,
@@ -31,9 +35,20 @@ import {
 /** Campos por los que puede buscar el admin. */
 const SEARCH_FIELDS: FilterChipOption<BusinessSearchField>[] = [
   { value: 'search', label: 'Todos' },
-  { value: 'legalName', label: 'Razón social' },
+  { value: 'businessName', label: 'Nombre del negocio' },
+  { value: 'legalPersonName', label: 'Representante legal' },
   { value: 'identificationNumber', label: 'NIT / identificación' },
+  { value: 'legalName', label: 'Razón social' },
 ];
+
+/** Texto del buscador según el campo elegido. */
+const SEARCH_PLACEHOLDER: Record<BusinessSearchField, string> = {
+  search: 'Buscar por negocio, representante o NIT…',
+  businessName: 'Nombre comercial o razón social…',
+  legalPersonName: 'Nombre del representante legal…',
+  identificationNumber: 'NIT del negocio o cédula del representante…',
+  legalName: 'Razón social…',
+};
 
 /** Valor del select de tipo que significa "sin filtro". */
 const ALL_TYPES = 0;
@@ -51,6 +66,9 @@ export function BusinessCrudScreen() {
   const { identificationTypes } = useAppData();
 
   const [searchField, setSearchField] = useState<BusinessSearchField>('search');
+  // El campo se lee por ref: cambiar de chip con el buscador VACÍO no debe
+  // volver a pedir la lista (el resultado es el mismo); con texto sí recarga.
+  const searchFieldRef = useRef<BusinessSearchField>('search');
   const [identificationTypeId, setIdentificationTypeId] = useState(ALL_TYPES);
 
   const list = usePaginatedList<AdminBusiness>(
@@ -58,12 +76,18 @@ export function BusinessCrudScreen() {
       (params) =>
         adminBusinessesService.paginated({
           ...params,
-          searchField,
+          searchField: searchFieldRef.current,
           ...(identificationTypeId !== ALL_TYPES && { identificationTypeId }),
         }),
-      [searchField, identificationTypeId],
+      [identificationTypeId],
     ),
   );
+
+  function changeSearchField(field: BusinessSearchField) {
+    setSearchField(field);
+    searchFieldRef.current = field;
+    if (list.query.trim()) list.fetchPage(1, 'initial');
+  }
 
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<AdminBusiness | null>(null);
@@ -76,6 +100,14 @@ export function BusinessCrudScreen() {
     ],
     [identificationTypes],
   );
+
+  // Productos / reseñas de un negocio (revisar, editar, moderar).
+  const [productsOf, setProductsOf] = useState<{ id: number; name: string } | null>(null);
+  const [reviewsOf, setReviewsOf] = useState<{ id: number; name: string } | null>(null);
+  const [promotionsOf, setPromotionsOf] = useState<{ id: number; name: string } | null>(null);
+  // Solo si se borró alguna reseña hay que refrescar el conteo de la tarjeta:
+  // cerrar la hoja sin cambios no debe volver a pedir la lista.
+  const [reviewsChanged, setReviewsChanged] = useState(false);
 
   function openCreate() {
     setEditing(null);
@@ -185,6 +217,33 @@ export function BusinessCrudScreen() {
             <Badge key={tag.id} label={tag.name} tone="primary" />
           ))}
         </View>
+
+        {/* Revisar el catálogo y moderar las reseñas del negocio. */}
+        <View className="mt-3 flex-row gap-2">
+          <Pressable
+            onPress={() => setProductsOf({ id: item.id, name: displayName })}
+            className="h-9 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-surface active:opacity-70"
+          >
+            <Ionicons name="cube-outline" size={15} color={colors.inkColor} />
+            <Text className="text-[13px] font-bold text-ink">Productos</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setReviewsOf({ id: item.id, name: displayName })}
+            className="h-9 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-surface active:opacity-70"
+          >
+            <Ionicons name="star-outline" size={15} color={colors.inkColor} />
+            <Text className="text-[13px] font-bold text-ink">
+              Reseñas{item.ratingCount ? ` (${item.ratingCount})` : ''}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setPromotionsOf({ id: item.id, name: displayName })}
+            className="h-9 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl bg-surface active:opacity-70"
+          >
+            <Ionicons name="megaphone-outline" size={15} color={colors.inkColor} />
+            <Text className="text-[13px] font-bold text-ink">Publicidad</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -198,7 +257,7 @@ export function BusinessCrudScreen() {
             <SearchBar
               value={list.search}
               onChangeText={list.setSearch}
-              placeholder="Buscar negocios…"
+              placeholder={SEARCH_PLACEHOLDER[searchField]}
             />
           </View>
           <ThemeToggle />
@@ -208,7 +267,7 @@ export function BusinessCrudScreen() {
           <FilterChips
             options={SEARCH_FIELDS}
             value={searchField}
-            onChange={setSearchField}
+            onChange={changeSearchField}
           />
         </View>
 
@@ -269,6 +328,33 @@ export function BusinessCrudScreen() {
       </View>
 
       <Fab onPress={openCreate} />
+
+      <BusinessProductsModal business={productsOf} onClose={() => setProductsOf(null)} />
+
+      <BusinessPromotionsModal
+        key={promotionsOf?.id ?? 'none'}
+        business={promotionsOf}
+        onClose={() => setPromotionsOf(null)}
+      />
+
+      <ReviewsSheet
+        visible={!!reviewsOf}
+        title={`Reseñas de ${reviewsOf?.name ?? ''}`}
+        fetchPage={(page) =>
+          reviewsOf ? reviewsService.forBusiness(reviewsOf.id, page) : Promise.reject(new Error('sin negocio'))
+        }
+        onDelete={async (review) => {
+          await reviewsService.remove(review.id);
+          setReviewsChanged(true);
+        }}
+        onClose={() => {
+          setReviewsOf(null);
+          if (reviewsChanged) {
+            setReviewsChanged(false);
+            list.fetchPage(list.meta?.page ?? 1, 'refresh');
+          }
+        }}
+      />
 
       <BusinessFormModal
         visible={formVisible}

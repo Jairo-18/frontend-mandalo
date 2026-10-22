@@ -18,6 +18,17 @@ export function columnsForWidth(width: number, mobileColumns: 2 | 3 = 2): number
 }
 
 /**
+ * Cuántos banners de publicidad (16:9) caben lado a lado: uno en celular,
+ * 2 en tablet y 3 en web/pantallas anchas — a todo el ancho de un monitor
+ * un banner 16:9 salía de ~700 px de alto.
+ */
+export function promosPerRow(width: number): number {
+  if (width >= 1100) return 3;
+  if (width >= 700) return 2;
+  return 1;
+}
+
+/**
  * Estilo de cada celda de un grid de N columnas (FlatList `numColumns={n}` +
  * `columnWrapperStyle` con gap): fracción de fila (flex-1); los items sueltos
  * de la última fila incompleta se limitan a ~el ancho de una celda para que

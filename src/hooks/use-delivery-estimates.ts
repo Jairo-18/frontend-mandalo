@@ -6,6 +6,7 @@ import {
   sharedCoords,
 } from '@/lib/delivery-estimates-store';
 import { DeviceCoords } from '@/lib/location';
+import { useUserAddresses } from '@/hooks/use-user-data';
 import { DeliveryEstimate } from '@/services/explore';
 
 /**
@@ -13,26 +14,39 @@ import { DeliveryEstimate } from '@/services/explore';
  * van mostrando en el explorar — estilo Rappi. El GPS y el caché por negocio
  * viven en `lib/delivery-estimates-store.ts`, COMPARTIDOS entre todas las
  * pantallas (home, tienda...): este hook es solo el puente a React.
+ *
+ * Se cotiza hacia la dirección "enviar a" (la principal), la misma que usa
+ * el checkout para cobrar — antes era siempre el GPS y, si el cliente estaba
+ * lejos de su casa, la tienda mostraba un domicilio distinto al del pedido.
+ * Sin dirección guardada (invitado) cae al GPS.
  */
 export function useDeliveryEstimates(
   organizationalIds: number[],
 ): Record<number, DeliveryEstimate> {
   const [estimates, setEstimates] = useState<Record<number, DeliveryEstimate>>({});
+  const { defaultAddress, loading: loadingAddress } = useUserAddresses();
+  // Primitivos en las deps (un objeto nuevo por render relanzaría el efecto).
+  const lat = defaultAddress?.latitude ?? null;
+  const lng = defaultAddress?.longitude ?? null;
 
   // Clave estable por contenido (no por identidad del array) para no
   // relanzar el efecto en cada render si el caller no memoiza la lista.
   const idsKey = organizationalIds.join(',');
 
   useEffect(() => {
-    if (!idsKey) return;
+    // Espera a saber si hay dirección (si no, cotizaría con el GPS y luego
+    // cambiaría el valor en pantalla).
+    if (!idsKey || loadingAddress) return;
     let alive = true;
-    fetchDeliveryEstimates(idsKey.split(',').map(Number)).then((data) => {
-      if (alive) setEstimates((prev) => ({ ...prev, ...data }));
+    const near = lat != null && lng != null ? { latitude: lat, longitude: lng } : null;
+    fetchDeliveryEstimates(idsKey.split(',').map(Number), near).then((data) => {
+      // Reemplaza (no mezcla): al cambiar de dirección no quedan valores viejos.
+      if (alive) setEstimates(data);
     });
     return () => {
       alive = false;
     };
-  }, [idsKey]);
+  }, [idsKey, loadingAddress, lat, lng]);
 
   return estimates;
 }

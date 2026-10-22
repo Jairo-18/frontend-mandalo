@@ -18,7 +18,7 @@ type Props = {
   numColumns: number;
   /** Tarjetas a pintar; se redondea hacia arriba para llenar filas completas. */
   count?: number;
-  /** Alto del bloque de texto: 116 en productos, 80 en negocios. */
+  /** Alto del bloque de texto: 130 en productos, 80 en negocios. */
   infoHeight?: number;
   /** Debe coincidir con el `columnWrapperStyle` del grid real. */
   paddingHorizontal?: number;
@@ -69,7 +69,7 @@ function SkeletonCard({ infoHeight }: { infoHeight: number }) {
 export function GridSkeleton({
   numColumns,
   count,
-  infoHeight = 116,
+  infoHeight = 130,
   paddingHorizontal = 16,
 }: Props) {
   const opacity = usePulse();

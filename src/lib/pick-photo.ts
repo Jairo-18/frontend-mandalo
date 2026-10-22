@@ -11,7 +11,8 @@ import { toast } from '@/lib/toast';
  */
 export async function pickPhoto(
   source: 'library' | 'camera',
-  onPicked: (uri: string) => void,
+  /** `asset` trae ancho/alto (para pasarla luego por el `PhotoEditor`). */
+  onPicked: (uri: string, asset: { width: number; height: number }) => void,
 ) {
   try {
     let result: ImagePicker.ImagePickerResult;
@@ -32,7 +33,8 @@ export async function pickPhoto(
       });
     }
     if (result.canceled || !result.assets?.[0]) return;
-    onPicked(result.assets[0].uri);
+    const asset = result.assets[0];
+    onPicked(asset.uri, { width: asset.width, height: asset.height });
   } catch {
     toast.error(
       source === 'camera'

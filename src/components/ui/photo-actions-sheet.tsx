@@ -22,6 +22,8 @@ type Props = {
   viewLabel?: string;
   onPickLibrary: () => void;
   onPickCamera: () => void;
+  /** Texto del botón de cámara ("Tomar foto" por defecto; "Grabar video" para videos). */
+  cameraLabel?: string;
   /** Documentos de vehículo: además de foto, aceptan un PDF. */
   onPickPdf?: () => void;
   /** Quitar sin reemplazo (solo campos opcionales: avatar, logo, QR). */
@@ -41,6 +43,7 @@ export function PhotoActionsSheet({
   viewLabel = 'Ver foto',
   onPickLibrary,
   onPickCamera,
+  cameraLabel = 'Tomar foto',
   onPickPdf,
   onRemove,
   onClose,
@@ -75,7 +78,7 @@ export function PhotoActionsSheet({
       icon: 'image-outline',
       onPress: onPickLibrary,
     },
-    { key: 'camera', label: 'Tomar foto', icon: 'camera-outline', onPress: onPickCamera },
+    { key: 'camera', label: cameraLabel, icon: 'camera-outline', onPress: onPickCamera },
     ...(onPickPdf
       ? [
           {

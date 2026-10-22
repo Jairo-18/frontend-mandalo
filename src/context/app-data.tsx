@@ -159,26 +159,16 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const load = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
       if (!silent) setState((s) => ({ ...s, loading: true, error: null }));
+      // Los colores se piden aparte: si /app-settings responde pero falla un
+      // catálogo, la pantalla de error igual sale con la paleta del backend.
+      const settingsPromise = appSettingsService.get();
       try {
         const [departments, identificationTypes, appColorsRes] = await Promise.all([
           catalogService.getDepartments(),
           catalogService.getIdentificationTypes(),
-          appSettingsService.get(),
+          settingsPromise,
         ]);
-        const appColors: AppColors = {
-          primaryColor: appColorsRes.data.primaryColor,
-          darkColor: appColorsRes.data.darkColor,
-          surfaceLightColor: appColorsRes.data.surfaceLightColor,
-          surfaceDarkColor: appColorsRes.data.surfaceDarkColor,
-          cardLightColor: appColorsRes.data.cardLightColor,
-          cardDarkColor: appColorsRes.data.cardDarkColor,
-          textPrimaryLightColor: appColorsRes.data.textPrimaryLightColor,
-          textPrimaryDarkColor: appColorsRes.data.textPrimaryDarkColor,
-          textSecondaryLightColor: appColorsRes.data.textSecondaryLightColor,
-          textSecondaryDarkColor: appColorsRes.data.textSecondaryDarkColor,
-          borderLightColor: appColorsRes.data.borderLightColor,
-          borderDarkColor: appColorsRes.data.borderDarkColor,
-        };
+        const appColors = pickAppColors(appColorsRes.data);
         const platformSocial: PlatformSocial = {
           youtubeUrl: appColorsRes.data.youtubeUrl,
           facebookUrl: appColorsRes.data.facebookUrl,
@@ -204,8 +194,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         // Refresco en segundo plano fallido → se sigue con la caché, sin molestar.
         if (silent) return;
+        const fallbackColors = await settingsPromise
+          .then((res) => pickAppColors(res.data))
+          .catch(() => null);
         setState((s) => ({
           ...s,
+          ...(fallbackColors ? { appColors: fallbackColors } : {}),
           loading: false,
           error: e instanceof Error ? e.message : 'Error cargando la aplicación',
           errorDetail: extractErrorDetail(e),
@@ -297,20 +291,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   }, [cssVars]);
 
+  // Cargando / error: se pintan FUERA del `<View style={cssVars}>` de abajo,
+  // así que las clases `bg-card`/`text-ink` caerían en los valores fijos de
+  // global.css (por eso esta pantalla salía naranja y siempre clara). Se usan
+  // los colores ya resueltos (backend o caché, según el tema activo).
+  const boot = getAppColors();
+
   if (state.loading) {
-    // Colores explícitos (no `bg-card`/`text-muted`): esta pantalla sale
-    // ANTES de que se resuelva la preferencia de tema real (guardada en
-    // disco, async) y antes de que lleguen los appSettings del backend —
-    // usar clases dependientes del tema acá corría el riesgo de mezclar un
-    // `isDark` viejo con colores nuevos y verse gris/deslavado. Con hex fijo
-    // (los defaults de marca) se ve igual siempre, sin parpadeo.
     return (
       <View
         className="flex-1 items-center justify-center"
-        style={{ backgroundColor: '#FFFFFF' }}
+        style={{ backgroundColor: boot.cardColor }}
       >
-        <ActivityIndicator size="large" color={getAppColors().primaryColor} />
-        <Text className="mt-4 text-sm" style={{ color: '#7A7A8A' }}>
+        <ActivityIndicator size="large" color={boot.primaryColor} />
+        <Text className="mt-4 text-sm" style={{ color: boot.mutedColor }}>
           Cargando Mandalo…
         </Text>
       </View>
@@ -319,23 +313,28 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   if (state.error) {
     return (
-      <View className="flex-1 items-center justify-center bg-card px-8">
-        <Text className="mb-2 text-center text-lg font-bold text-ink">
+      <View
+        className="flex-1 items-center justify-center px-8"
+        style={{ backgroundColor: boot.cardColor }}
+      >
+        <Text
+          className="mb-2 text-center text-lg font-bold"
+          style={{ color: boot.inkColor }}
+        >
           No se pudo cargar la app
         </Text>
-        <Text className="mb-6 text-center text-sm text-muted">
+        <Text className="mb-6 text-center text-sm" style={{ color: boot.mutedColor }}>
           {state.error}
         </Text>
         {/* Botón inline (no el `Button` compartido): ese depende de
             `useResolvedAppColors`, que a su vez depende de este contexto —
-            importarlo aquí cerraba un require cycle. Mismos colores fijos
-            que la pantalla de "Cargando…" arriba, por la misma razón. */}
+            importarlo aquí cerraba un require cycle. */}
         <Pressable
           onPress={() => load()}
           className="w-full overflow-hidden rounded-[30px] shadow-md active:opacity-80"
         >
           <LinearGradient
-            colors={[getAppColors().primaryColor, getAppColors().darkColor]}
+            colors={[boot.primaryColor, boot.darkColor]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={{ height: 54, alignItems: 'center', justifyContent: 'center' }}
@@ -344,7 +343,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           </LinearGradient>
         </Pressable>
         {/* Detalle técnico para soporte: con un pantallazo se diagnostica remoto. */}
-        <Text className="mt-6 text-center text-[10px] text-muted/70">
+        <Text
+          className="mt-6 text-center text-[10px]"
+          style={{ color: boot.mutedColor, opacity: 0.7 }}
+        >
           {API_URL.replace(/^https?:\/\//, '')}
           {state.errorDetail ? `\n${state.errorDetail}` : ''}
         </Text>
@@ -367,4 +369,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       </View>
     </AppDataContext.Provider>
   );
+}
+
+/** Los 12 colores de la paleta, tal como los devuelve `GET /app-settings`. */
+function pickAppColors(data: AppColors): AppColors {
+  return {
+    primaryColor: data.primaryColor,
+    darkColor: data.darkColor,
+    surfaceLightColor: data.surfaceLightColor,
+    surfaceDarkColor: data.surfaceDarkColor,
+    cardLightColor: data.cardLightColor,
+    cardDarkColor: data.cardDarkColor,
+    textPrimaryLightColor: data.textPrimaryLightColor,
+    textPrimaryDarkColor: data.textPrimaryDarkColor,
+    textSecondaryLightColor: data.textSecondaryLightColor,
+    textSecondaryDarkColor: data.textSecondaryDarkColor,
+    borderLightColor: data.borderLightColor,
+    borderDarkColor: data.borderDarkColor,
+  };
 }

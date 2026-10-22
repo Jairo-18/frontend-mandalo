@@ -13,7 +13,9 @@ import { formatPrice } from '@/lib/price';
 import { getAppColors } from '@/lib/app-colors';
 import {
   DeliverySettlementPeriod,
+  collectedRow,
   myDeliverySettlementsService,
+  riderNet,
 } from '@/services/admin-delivery-settlements';
 
 const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
@@ -86,8 +88,14 @@ export default function DeliveryEarningsScreen() {
                 periodStart={item.periodStart}
                 periodEnd={item.periodEnd}
                 ordersCount={item.ordersCount}
-                primaryLabel="Ganaste"
-                primaryValue={formatPrice(item.riderCut)}
+                primaryLabel={
+                  riderNet(item) < 0
+                    ? 'Debes a Mándalo'
+                    : (item.collectedTotal ?? 0) > 0
+                      ? 'Neto a cobrar'
+                      : 'Ganaste'
+                }
+                primaryValue={formatPrice(Math.abs(riderNet(item)))}
                 secondaryLabel="Domicilios"
                 secondaryValue={formatPrice(item.deliveryTotal)}
                 breakdown={[
@@ -104,6 +112,7 @@ export default function DeliveryEarningsScreen() {
                   ...(item.retryTotal > 0
                     ? [{ label: 'Segundo intento', value: formatPrice(item.retryTotal) }]
                     : []),
+                  ...collectedRow(item),
                 ]}
                 isPaid={item.settlement?.isPaid}
                 paidLabel="Cobrado"

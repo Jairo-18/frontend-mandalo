@@ -31,8 +31,12 @@ export function resetSharedCoords(): void {
 }
 
 type Entry = { data: DeliveryEstimate; expiresAt: number };
-const cache = new Map<number, Entry>();
-const pending = new Map<number, Promise<void>>();
+/** Clave `lat,lng:organizationalId` (2 decimales, igual que la query al
+ * backend): cambiar la dirección "enviar a" no reutiliza cotizaciones de otra. */
+const cache = new Map<string, Entry>();
+const pending = new Map<string, Promise<void>>();
+
+const coordsKey = (c: DeviceCoords) => `${c.latitude.toFixed(2)},${c.longitude.toFixed(2)}`;
 
 /**
  * Cotizaciones de domicilio cacheadas por negocio y COMPARTIDAS entre todas
@@ -42,14 +46,18 @@ const pending = new Map<number, Promise<void>>();
  */
 export async function fetchDeliveryEstimates(
   organizationalIds: number[],
+  /** Dirección "enviar a" del cliente; sin ella, el GPS del teléfono. */
+  near?: DeviceCoords | null,
 ): Promise<Record<number, DeliveryEstimate>> {
-  const coords = await sharedCoords();
+  const coords = near ?? (await sharedCoords());
   if (!coords) return {};
+  const prefix = coordsKey(coords);
+  const key = (id: number) => `${prefix}:${id}`;
 
   const now = Date.now();
   const toFetch = organizationalIds.filter((id) => {
-    const entry = cache.get(id);
-    return (!entry || entry.expiresAt <= now) && !pending.has(id);
+    const entry = cache.get(key(id));
+    return (!entry || entry.expiresAt <= now) && !pending.has(key(id));
   });
 
   if (toFetch.length > 0) {
@@ -58,27 +66,27 @@ export async function fetchDeliveryEstimates(
       .then(({ data }) => {
         const expiresAt = Date.now() + TTL_MS;
         for (const item of data) {
-          cache.set(item.organizationalId, { data: item, expiresAt });
+          cache.set(key(item.organizationalId), { data: item, expiresAt });
         }
       })
       .catch(() => {
         // Sin cotización no pasa nada: el caller oculta el dato si no llega.
       })
       .finally(() => {
-        toFetch.forEach((id) => pending.delete(id));
+        toFetch.forEach((id) => pending.delete(key(id)));
       });
-    toFetch.forEach((id) => pending.set(id, fetchPromise));
+    toFetch.forEach((id) => pending.set(key(id), fetchPromise));
   }
 
   // Espera cualquier fetch en curso para los ids pedidos (propio o disparado
   // por otro caller que llegó primero al mismo negocio).
   await Promise.all(
-    organizationalIds.map((id) => pending.get(id)).filter((p) => p != null),
+    organizationalIds.map((id) => pending.get(key(id))).filter((p) => p != null),
   );
 
   const result: Record<number, DeliveryEstimate> = {};
   for (const id of organizationalIds) {
-    const entry = cache.get(id);
+    const entry = cache.get(key(id));
     if (entry) result[id] = entry.data;
   }
   return result;

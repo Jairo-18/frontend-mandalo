@@ -30,6 +30,7 @@ import { ExploreBusiness, exploreService } from '@/services/explore';
 import { ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
+import { markClientOrdersStale } from '@/lib/orders-stale';
 
 /**
  * Checkout del cliente: revisa el carrito, elige a dónde enviar (dirección
@@ -232,15 +233,19 @@ export default function CheckoutScreen() {
         organizationalId: cart.businessId!,
         addressId: defaultAddress.id,
         paidTypeCode: payment,
-        items: cart.items.map((i) => ({
-          productId: i.product.id,
-          quantity: i.quantity,
-        })),
+        // Promociones van como `promotionId` (el backend cobra su precio y
+        // congela su contenido); el resto, como producto.
+        items: cart.items.map((i) =>
+          i.product.promotionId != null
+            ? { promotionId: i.product.promotionId, quantity: i.quantity }
+            : { productId: i.product.id, quantity: i.quantity },
+        ),
         notes: notes.trim() || undefined,
         idempotencyKey,
       });
       const orderId = res.data.rowId;
       cart.clear();
+      markClientOrdersStale();
       // Con ancla: debajo del detalle queda la lista de "Mis pedidos".
       router.replace(
         { pathname: '/orders/[id]', params: { id: orderId } },
@@ -347,6 +352,12 @@ export default function CheckoutScreen() {
                   <Text numberOfLines={1} className="text-[13px] text-ink">
                     {item.product.name}
                   </Text>
+                  {/* Promo: qué incluye ("2× Hamburguesa, 1× Gaseosa"). */}
+                  {item.product.promotionId != null && !!item.product.description && (
+                    <Text numberOfLines={2} className="text-[11px] text-muted">
+                      {item.product.description}
+                    </Text>
+                  )}
                   <Text className="text-[12px] font-semibold text-ink">
                     {formatPrice(price * item.quantity)}
                   </Text>
@@ -419,7 +430,8 @@ export default function CheckoutScreen() {
         </Text>
         <View className="mb-5 rounded-xl border border-border px-3.5 py-2.5">
           <TextInput
-            className="min-h-[44px] text-[15px] text-ink"
+            className="min-h-[96px] text-[15px] text-ink"
+            textAlignVertical="top"
             placeholder="Ej: sin cebolla, timbre dañado — llamar."
             placeholderTextColor={colors.mutedColor}
             value={notes}

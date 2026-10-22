@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { ProductPhotosField } from '@/components/business/product-photos-field';
+import { ProductVideoField } from '@/components/business/product-video-field';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormModal } from '@/components/ui/form-modal';
 import { Select, SelectOption } from '@/components/ui/select';
 import { TextField } from '@/components/ui/text-field';
 import { UploadProgressBar } from '@/components/ui/upload-progress-bar';
 import { useFormErrors } from '@/hooks/use-form-errors';
+import { PickedVideo } from '@/lib/pick-video';
 import { copToNumber, formatText } from '@/lib/text-format';
 import {
   BusinessProduct,
@@ -17,6 +19,9 @@ import {
 
 /** Valor del Select para "sin categoría" (el payload manda null). */
 const NO_CATEGORY = 0;
+
+/** Igual que `MIN_PRODUCT_PRICE` del backend (product.dto.ts). */
+const MIN_PRODUCT_PRICE = 1000;
 
 type Props = {
   visible: boolean;
@@ -62,6 +67,11 @@ export function ProductFormModal({
   const [removedUrls, setRemovedUrls] = useState<string[]>([]);
   const [pendingUris, setPendingUris] = useState<string[]>([]);
 
+  // Video: el guardado (si no se quitó) y/o uno nuevo pendiente de subir.
+  const [savedVideo, setSavedVideo] = useState<{ url: string; thumbnailUrl: string | null } | null>(null);
+  const [pendingVideo, setPendingVideo] = useState<PickedVideo | null>(null);
+  const [videoRemoved, setVideoRemoved] = useState(false);
+
   const [saving, setSaving] = useState(false);
   // Progreso agregado de las fotos pendientes (varias van una tras otra, no
   // en un solo request como el registro de repartidor): "foto X de N" + %
@@ -70,8 +80,10 @@ export function ProductFormModal({
     index: number;
     total: number;
     fraction: number;
+    /** El video va después de las fotos, con su propia etiqueta. */
+    video?: boolean;
   } | null>(null);
-  const { errors, setErrors, clearError, validate } = useFormErrors();
+  const { errors, setErrors, clearError, validate, applyServerErrors } = useFormErrors();
 
   const isEdit = !!editing;
 
@@ -89,7 +101,9 @@ export function ProductFormModal({
     description !== (editing?.description ?? '') ||
     isActive !== (editing?.isActive ?? true) ||
     removedUrls.length > 0 ||
-    pendingUris.length > 0;
+    pendingUris.length > 0 ||
+    !!pendingVideo ||
+    videoRemoved;
 
   // Prellena (edición) o limpia (creación) el formulario cada vez que se abre.
   useEffect(() => {
@@ -107,6 +121,13 @@ export function ProductFormModal({
     setDescription(editing?.description ?? '');
     setIsActive(editing?.isActive ?? true);
     setSavedImages(editing?.images ?? []);
+    setSavedVideo(
+      editing?.videoUrl
+        ? { url: editing.videoUrl, thumbnailUrl: editing.videoThumbnailUrl ?? null }
+        : null,
+    );
+    setPendingVideo(null);
+    setVideoRemoved(false);
     setRemovedUrls([]);
     setPendingUris([]);
   }, [visible, editing, setErrors]);
@@ -119,7 +140,9 @@ export function ProductFormModal({
       price:
         !price.trim() || Number.isNaN(priceValue) || priceValue <= 0
           ? 'Ingresa un precio válido.'
-          : undefined,
+          : priceValue < MIN_PRODUCT_PRICE
+            ? 'El precio debe ser de mínimo $1.000.'
+            : undefined,
       discount:
         discount.trim() &&
         (Number.isNaN(discountValue) || discountValue < 0 || discountValue > 100)
@@ -167,8 +190,20 @@ export function ProductFormModal({
         );
       }
 
+      // Video: el nuevo reemplaza al anterior en el servidor; si solo se
+      // quitó, se borra.
+      if (pendingVideo) {
+        setUploadProgress({ index: 0, total: 1, fraction: 0, video: true });
+        await businessService.products.uploadVideo(productId, pendingVideo, (fraction) =>
+          setUploadProgress({ index: 0, total: 1, fraction, video: true }),
+        );
+      } else if (videoRemoved && isEdit) {
+        await businessService.products.removeVideo(productId);
+      }
+
       onSaved();
-    } catch {
+    } catch (e) {
+      applyServerErrors(e, { priceSale: 'price' });
       // El interceptor HTTP ya mostró el mensaje del backend.
     } finally {
       setSaving(false);
@@ -202,6 +237,16 @@ export function ProductFormModal({
           setPendingUris((p) => p.filter((u) => u !== uri))
         }
         onAdded={(uri) => setPendingUris((p) => [...p, uri])}
+      />
+
+      <ProductVideoField
+        saved={videoRemoved ? null : savedVideo}
+        pending={pendingVideo}
+        onPicked={(video) => setPendingVideo(video)}
+        onRemove={() => {
+          if (pendingVideo) setPendingVideo(null);
+          else setVideoRemoved(true);
+        }}
       />
 
       <TextField
@@ -280,7 +325,11 @@ export function ProductFormModal({
             uploadProgress.total
           }
           label={
-            uploadProgress.total > 1
+            uploadProgress.video
+              ? uploadProgress.fraction >= 1
+                ? 'Procesando video…'
+                : 'Subiendo video…'
+              : uploadProgress.total > 1
               ? `Subiendo foto ${uploadProgress.index + 1} de ${uploadProgress.total}…`
               : 'Subiendo foto…'
           }

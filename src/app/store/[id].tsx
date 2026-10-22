@@ -14,10 +14,14 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ProductGridCard } from '@/components/client/product-grid-card';
 import { ProductDetailSheet } from '@/components/client/product-detail-sheet';
+import { FavoriteButton } from '@/components/ui/favorite-button';
+import { StorePromotionCard } from '@/components/client/store-promotion-card';
 import { Avatar } from '@/components/ui/avatar';
 import { FilterChips } from '@/components/ui/filter-chips';
 import { ListEmpty } from '@/components/ui/list-empty';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
+import { ReviewsSheet } from '@/components/reviews/reviews-list';
+import { RatingBadge } from '@/components/reviews/star-rating';
 import { SearchBar } from '@/components/ui/search-bar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
@@ -26,7 +30,7 @@ import { useCart } from '@/context/cart';
 import { getAppColors } from '@/lib/app-colors';
 import { lightenHex } from '@/lib/color';
 import { formatDistance } from '@/lib/distance';
-import { columnsForWidth, gridItemStyle, gridPerfProps } from '@/lib/grid-style';
+import { columnsForWidth, gridItemStyle, gridPerfProps, promosPerRow } from '@/lib/grid-style';
 import { formatPrice } from '@/lib/price';
 import { formatHour12 } from '@/lib/text-format';
 import { toast } from '@/lib/toast';
@@ -34,6 +38,12 @@ import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 import { useDeliveryEstimates } from '@/hooks/use-delivery-estimates';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
+import { reviewsService } from '@/services/reviews';
+import {
+  Promotion,
+  promotionAsCartProduct,
+  promotionsService,
+} from '@/services/promotions';
 import {
   businessDisplayName,
   ExploreBusiness,
@@ -59,7 +69,8 @@ export default function StoreScreen() {
   // Grid responsivo: 2 columnas en celular (pedido del usuario — las cards
   // de producto con foto+nombre+precio+distancia se ven muy chicas en 3),
   // hasta 6 en web ancho/tablet.
-  const numColumns = columnsForWidth(useWindowDimensions().width, 2);
+  const windowWidth = useWindowDimensions().width;
+  const numColumns = columnsForWidth(windowWidth, 2);
   const [business, setBusiness] = useState<ExploreBusiness | null>(null);
   const [categories, setCategories] = useState<ExploreFilterItem[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(true);
@@ -70,6 +81,7 @@ export default function StoreScreen() {
   const [detail, setDetail] = useState<ExploreProduct | null>(null);
   // Logo del negocio a pantalla completa (tocar el avatar de la cabecera).
   const [logoPreview, setLogoPreview] = useState(false);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
 
   const categoryTypeId =
     categoryValue === 'all' ? undefined : Number(categoryValue);
@@ -104,6 +116,23 @@ export default function StoreScreen() {
       })
       .finally(() => {
         if (alive) setLoadingDetail(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [storeId]);
+
+  // Publicidades vigentes del negocio: van PRIMERO, antes de los productos.
+  const [promos, setPromos] = useState<Promotion[]>([]);
+  useEffect(() => {
+    let alive = true;
+    promotionsService
+      .forBusiness(storeId)
+      .then((res) => {
+        if (alive) setPromos(res.data);
+      })
+      .catch(() => {
+        // Silencioso: sin promos la tienda queda igual.
       });
     return () => {
       alive = false;
@@ -180,6 +209,13 @@ export default function StoreScreen() {
     <SafeAreaView className="flex-1 bg-card">
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
+      <ReviewsSheet
+        visible={reviewsOpen}
+        title={`Reseñas de ${businessDisplayName(business)}`}
+        fetchPage={(page) => reviewsService.forBusiness(business.id, page)}
+        onClose={() => setReviewsOpen(false)}
+      />
+
       {/* Cabecera: volver + negocio */}
       <View className="flex-row items-center gap-3 px-5 pb-3 pt-2">
         <BackButton onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
@@ -204,8 +240,27 @@ export default function StoreScreen() {
               {business.tags.map((tag) => tag.name).join(' · ')}
             </Text>
           )}
+          {/* Calificación: toca para ver las reseñas del negocio. */}
+          <View className="mt-1">
+            <RatingBadge
+              average={business.ratingAverage}
+              count={business.ratingCount}
+              onPress={business.ratingCount ? () => setReviewsOpen(true) : undefined}
+            />
+          </View>
         </View>
-        <ThemeToggle />
+        <View className="items-center gap-2">
+          <ThemeToggle />
+          <View className="rounded-full bg-surface">
+            <FavoriteButton
+              kind="business"
+              id={business.id}
+              size={40}
+              variant="plain"
+              color={colors.inkColor}
+            />
+          </View>
+        </View>
       </View>
 
       {/* Negocio cerrado: aviso arriba de todo (y el carrito queda bloqueado) */}
@@ -318,6 +373,7 @@ export default function StoreScreen() {
             renderItem={({ item, index }) => (
               <View style={gridItemStyle(index, list.items.length, numColumns)}>
                 <ProductGridCard
+                  compact
                   product={item}
                   onPress={() => setDetail(item)}
                   quantity={cart.quantityOf(item.id)}
@@ -336,6 +392,39 @@ export default function StoreScreen() {
             onRefresh={() => list.fetchPage(1, 'refresh')}
             onEndReached={list.loadMore}
             onEndReachedThreshold={0.4}
+            // Promociones arriba de los productos (no mientras busca o filtra
+            // por categoría: ahí se ven solo los resultados).
+            ListHeaderComponent={
+              promos.length > 0 && !list.query && !categoryTypeId ? (
+                <View className="mb-4 gap-3">
+                  <Text className="text-[15px] font-extrabold text-ink">Promociones</Text>
+                  {/* Celular: una por fila. Tablet/web: 2–3 por fila (una sola
+                      a todo el ancho salía enorme). */}
+                  {chunk(promos, promosPerRow(windowWidth)).map((row) => (
+                    <View key={row[0].id} className="flex-row gap-3">
+                      {row.map((promo) => (
+                        <View key={promo.id} className="flex-1">
+                          <StorePromotionCard
+                            promo={promo}
+                            quantity={cart.quantityOf(-promo.id)}
+                            onAdd={() => handleAdd(promotionAsCartProduct(promo))}
+                            onDecrement={() => cart.decrement(-promo.id)}
+                            onPress={() => setDetail(promotionAsCartProduct(promo))}
+                          />
+                        </View>
+                      ))}
+                      {/* Relleno: la última fila incompleta no se estira. */}
+                      {Array.from({ length: promosPerRow(windowWidth) - row.length }).map(
+                        (_, i) => (
+                          <View key={`pad-${i}`} className="flex-1" />
+                        ),
+                      )}
+                    </View>
+                  ))}
+                  <Text className="mt-1 text-[15px] font-extrabold text-ink">Productos</Text>
+                </View>
+              ) : null
+            }
             ListFooterComponent={
               list.loadingMore ? (
                 <ActivityIndicator
@@ -393,6 +482,9 @@ export default function StoreScreen() {
         onDecrement={() => detail && cart.decrement(detail.id)}
         onClose={() => setDetail(null)}
         estimate={estimate}
+        promotion={
+          detail?.promotionId ? promos.find((p) => p.id === detail.promotionId) : null
+        }
       />
 
       <YesNoDialog
@@ -425,4 +517,11 @@ function BackButton({ onPress }: { onPress: () => void }) {
       <Ionicons name="arrow-back" size={20} color={colors.inkColor} />
     </Pressable>
   );
+}
+
+/** Parte una lista en filas de `size` (grid simple sin FlatList). */
+function chunk<T>(items: T[], size: number): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += size) rows.push(items.slice(i, i + size));
+  return rows;
 }

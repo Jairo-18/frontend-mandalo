@@ -3,9 +3,12 @@ import { useCallback, useEffect } from 'react';
 import {
   ChatSocketEvent,
   OrderEventName,
+  ReviewReceivedEvent,
   useChatMessages,
   useOrderEvents,
+  useReviewReceived,
 } from '@/lib/orders-socket';
+import { toast } from '@/lib/toast';
 
 /**
  * Avisos del sistema en la versión web. `expo-notifications` no soporta el
@@ -116,4 +119,15 @@ export function useLiveNotifications(): void {
     show('Nuevo mensaje', event.message.body, `chat-${event.invoiceId}`);
   }, []);
   useChatMessages(onChat);
+
+  // Me calificaron: pestaña oculta → aviso del navegador; visible → toast.
+  const onReview = useCallback((event: ReviewReceivedEvent) => {
+    if (isHidden()) {
+      bumpTitle();
+      show(event.title, event.body, `review-${event.invoiceId}-${event.targetType}`);
+    } else {
+      toast.info(event.title);
+    }
+  }, []);
+  useReviewReceived(onReview);
 }

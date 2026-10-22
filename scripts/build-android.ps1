@@ -7,6 +7,9 @@
 #   npm run build:android
 #   npm run build:android -- --no-apk
 #   npm run build:android -- --deps
+#   npm run build:android -- --keep-wsl   (no apagar WSL al terminar)
+#
+# Al terminar (bien o mal) hace `wsl --shutdown` para liberar la RAM.
 
 $ErrorActionPreference = 'Stop'
 
@@ -21,8 +24,23 @@ if ($distros -notcontains $distro) {
   exit 1
 }
 
-$extra = if ($args.Count) { ' ' + ($args -join ' ') } else { '' }
+# `--keep-wsl` es solo de este wrapper (no llega al .sh): deja WSL encendido.
+$keepWsl = $args -contains '--keep-wsl'
+$passArgs = @($args | Where-Object { $_ -ne '--keep-wsl' })
+$extra = if ($passArgs.Count) { ' ' + ($passArgs -join ' ') } else { '' }
 
 Write-Host "Entrando a WSL ($distro)…" -ForegroundColor Cyan
 wsl -d $distro -- bash -lc "bash '$script'$extra"
-exit $LASTEXITCODE
+$code = $LASTEXITCODE
+
+# El daemon de Gradle y la VM de WSL se quedan con varios GB de RAM después
+# del build. Se apaga WSL entero, salga bien o mal (el .aab ya quedó copiado
+# en C:\Trabajo\mandalo\builds). `npm run build:android -- --keep-wsl` lo evita.
+if ($keepWsl) {
+  Write-Host 'WSL sigue encendido (--keep-wsl).' -ForegroundColor Yellow
+} else {
+  Write-Host 'Apagando WSL para liberar la RAM…' -ForegroundColor Cyan
+  wsl --shutdown
+  Write-Host 'WSL apagado.' -ForegroundColor Green
+}
+exit $code

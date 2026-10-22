@@ -21,11 +21,13 @@ import { refreshMyBusiness } from '@/lib/my-business';
 import { signOutEverywhere } from '@/lib/sign-out';
 import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 
-type BusinessRoute =
+export type BusinessRoute =
   | '/business/dashboard'
   | '/business/products'
   | '/business/orders'
   | '/business/earnings'
+  | '/business/reviews'
+  | '/business/promotions'
   | '/business/profile';
 
 type Item = {
@@ -34,12 +36,17 @@ type Item = {
   href: BusinessRoute;
 };
 
-/** Secciones del panel del negocio. */
-const ITEMS: Item[] = [
+/**
+ * Secciones del panel del negocio. Los accesos rápidos del Inicio salen de
+ * esta misma lista.
+ */
+export const BUSINESS_NAV_ITEMS: Item[] = [
   { label: 'Inicio', icon: 'grid-outline', href: '/business/dashboard' },
   { label: 'Productos', icon: 'cube-outline', href: '/business/products' },
   { label: 'Pedidos', icon: 'receipt-outline', href: '/business/orders' },
   { label: 'Mis pagos', icon: 'cash-outline', href: '/business/earnings' },
+  { label: 'Mis reseñas', icon: 'star-outline', href: '/business/reviews' },
+  { label: 'Mis publicidades', icon: 'megaphone-outline', href: '/business/promotions' },
   { label: 'Mi negocio', icon: 'storefront-outline', href: '/business/profile' },
 ];
 
@@ -136,7 +143,7 @@ export function BusinessDrawerContent({ navigation }: Props) {
       {/* Navegación: ScrollView (no View), ver mismo comentario en
           admin/drawer-content.tsx — evita el solape en web con muchos ítems. */}
       <ScrollView className="flex-1 px-3 pt-4" showsVerticalScrollIndicator={false}>
-        {ITEMS.map((item) => {
+        {BUSINESS_NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
           const badge = item.href === '/business/orders' ? pendingCount : 0;
           return (

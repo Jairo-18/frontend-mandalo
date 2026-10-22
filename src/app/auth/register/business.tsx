@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { useFormErrors } from '@/hooks/use-form-errors';
 import { EMAIL_RE, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
+import { identificationError } from '@/lib/identification';
 import { authService } from '@/services/auth';
 
 /**
@@ -20,7 +21,7 @@ import { authService } from '@/services/auth';
  */
 export default function BusinessLeadScreen() {
   const router = useRouter();
-  const { errors, clearError, bind, validate } = useFormErrors();
+  const { errors, clearError, bind, validate, applyServerErrors } = useFormErrors();
 
   const [businessName, setBusinessName] = useState('');
   const [ownerName, setOwnerName] = useState('');
@@ -38,9 +39,13 @@ export default function BusinessLeadScreen() {
       businessName: businessName.trim()
         ? undefined
         : 'Ingresa el nombre del negocio.',
+      // Cédula o NIT del negocio (opcional): solo números o NIT-DV.
+      identificationNumber: identificationNumber.trim()
+        ? (identificationError('NIT', identificationNumber) ?? undefined)
+        : undefined,
       ownerName: ownerName.trim()
         ? undefined
-        : 'Ingresa tu nombre completo.',
+        : 'Ingresa tus nombres y apellidos completos.',
       phone:
         normalizePhone(phone).replace('+', '').length >= 10
           ? undefined
@@ -72,7 +77,8 @@ export default function BusinessLeadScreen() {
         municipalityAddress: municipalityAddress.trim(),
       });
       setSent(true);
-    } catch {
+    } catch (e) {
+      applyServerErrors(e);
       // El interceptor HTTP ya mostró el toast con el mensaje del backend.
     } finally {
       setLoading(false);
@@ -148,7 +154,7 @@ export default function BusinessLeadScreen() {
 
           <FormSection label="Datos de contacto" />
           <TextField
-            label="Tu nombre completo"
+            label="Tus nombres y apellidos completos"
             icon="person-outline"
             format="name"
             value={ownerName}

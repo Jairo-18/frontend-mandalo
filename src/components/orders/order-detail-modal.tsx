@@ -137,6 +137,10 @@ export function OrderDetailModal({
       animationType="slide"
       onRequestClose={onClose}
       statusBarTranslucent
+      // Dibuja también DEBAJO de la barra de navegación de Android: sin esto
+      // esa franja quedaba blanca encima de los botones y el fondo oscuro de
+      // los diálogos (que viven dentro de este Modal) no la cubría.
+      navigationBarTranslucent
     >
       <View className="flex-1 bg-surface" style={{ paddingTop: insets.top }}>
         <View className="flex-row items-center gap-3 border-b border-border bg-card px-5 py-4">

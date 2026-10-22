@@ -5,6 +5,7 @@ export default function DeliveryProfileRoute() {
   return (
     <ProfileScreen
       changePasswordHref="/delivery/change-password"
+      editProfileHref="/delivery/edit-profile"
       resendDocumentsHref="/delivery/resend-documents"
     />
   );

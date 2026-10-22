@@ -10,15 +10,21 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
+import { FavoriteButton } from '@/components/ui/favorite-button';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
 import { formatDistance } from '@/lib/distance';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { DeliveryEstimate, ExploreProduct } from '@/services/explore';
 import { getAppColors } from '@/lib/app-colors';
+import { ProductVideo } from '@/components/ui/product-video';
+import { useSwipeDownToClose } from '@/components/ui/swipe-down-to-close';
 import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
+import { Promotion } from '@/services/promotions';
 
 const CAROUSEL_HEIGHT = 280;
 
@@ -32,6 +38,11 @@ type Props = {
   onClose: () => void;
   /** Distancia/ETA/tarifa al negocio que lo vende (estilo Rappi). */
   estimate?: DeliveryEstimate | null;
+  /**
+   * Si `product` es una promo (`promotionAsCartProduct`): muestra su mensaje,
+   * el precio normal tachado con el ahorro y los productos que incluye.
+   */
+  promotion?: Promotion | null;
 };
 
 /**
@@ -47,6 +58,7 @@ export function ProductDetailSheet({
   onDecrement,
   onClose,
   estimate,
+  promotion,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -62,8 +74,23 @@ export function ProductDetailSheet({
   }, [productId]);
 
   const images = product?.images ?? [];
+  // El video (si hay) es la primera diapositiva; después las fotos.
+  const slides: { key: string; kind: 'video' | 'image'; uri: string }[] = [
+    ...(product?.videoUrl
+      ? [{ key: `v-${product.videoUrl}`, kind: 'video' as const, uri: product.videoUrl }]
+      : []),
+    ...images.map((uri) => ({ key: uri, kind: 'image' as const, uri })),
+  ];
   const hasDiscount = (product?.discount ?? 0) > 0;
   const price = product ? finalPrice(product.priceSale, product.discount) : 0;
+  const promoSavings =
+    promotion && promotion.regularPrice > promotion.price
+      ? Math.round((1 - promotion.price / promotion.regularPrice) * 100)
+      : 0;
+
+  // Arrastrar la foto/video de arriba hacia abajo cierra la hoja (además de
+  // la X y tocar afuera). Solo esa zona: abajo hay un scroll de texto.
+  const swipe = useSwipeDownToClose({ visible: product != null, onClose });
 
   return (
     <Modal
@@ -72,30 +99,52 @@ export function ProductDetailSheet({
       animationType="slide"
       onRequestClose={onClose}
       statusBarTranslucent
+      navigationBarTranslucent
     >
-      {/* Backdrop: tocar afuera cierra */}
-      <Pressable className="flex-1 bg-black/40" onPress={onClose} />
+      {/* GestureHandlerRootView: dentro de un Modal (Android) los gestos no
+          llegan sin su propia raíz. */}
+      <GestureHandlerRootView style={{ flex: 1, justifyContent: 'flex-end' }}>
+      {/* Backdrop a pantalla COMPLETA (detrás de la hoja), no solo el espacio
+          de arriba: si no, al arrastrar la hoja hacia abajo quedaba una
+          franja sin oscurecer entre el fondo y la hoja. Tocar afuera cierra. */}
+      <Pressable className="absolute inset-0 bg-black/40" onPress={onClose} />
 
-      <View
-        className="max-h-[85%] overflow-hidden rounded-t-[24px] bg-card"
-        style={{ paddingBottom: insets.bottom + 16 }}
+      {/* Sin esquinas redondeadas: la foto/video de arriba va a ras, sin
+          recortes (pedido del cliente 2026-10-21). */}
+      <Animated.View
+        className="max-h-[85%] overflow-hidden bg-card"
+        style={[{ paddingBottom: insets.bottom + 16 }, swipe.animatedStyle]}
       >
-        {/* Carrusel de fotos (remonta por producto para arrancar en la 1ª) */}
+        {/* Carrusel de fotos (remonta por producto para arrancar en la 1ª).
+            Es la zona que se agarra para cerrar arrastrando hacia abajo. */}
+        <GestureDetector gesture={swipe.gesture}>
         <View>
-          {images.length > 0 ? (
+          {slides.length > 0 ? (
             <FlatList
               key={product?.id ?? 'closed'}
-              data={images}
+              data={slides}
               horizontal
               pagingEnabled
               showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => item}
+              keyExtractor={(item) => item.key}
               onMomentumScrollEnd={(e) =>
                 setIndex(Math.round(e.nativeEvent.contentOffset.x / width))
               }
-              renderItem={({ item }) => (
+              renderItem={({ item, index: slideIndex }) =>
+                item.kind === 'video' ? (
+                  // Video completo (contain) en toda el área: el 4:3 horizontal
+                  // casi la llena. Suena solo si el cliente lo activa; se
+                  // pausa al pasar a una foto.
+                  <ProductVideo
+                    url={item.uri}
+                    thumbnailUrl={product?.videoThumbnailUrl}
+                    width={width}
+                    height={CAROUSEL_HEIGHT}
+                    active={product != null && index === slideIndex}
+                  />
+                ) : (
                 <Pressable
-                  onPress={() => setPreview(item)}
+                  onPress={() => setPreview(item.uri)}
                   className="bg-surface"
                   style={{ width, height: CAROUSEL_HEIGHT }}
                 >
@@ -103,12 +152,13 @@ export function ProductDetailSheet({
                       no siempre tienen esta proporción — con `cover` algunas
                       quedaban con zoom y recortadas sin verse completas. */}
                   <Image
-                    source={{ uri: item }}
+                    source={{ uri: item.uri }}
                     style={{ width, height: CAROUSEL_HEIGHT }}
                     resizeMode="contain"
                   />
                 </Pressable>
-              )}
+                )
+              }
             />
           ) : (
             <Image
@@ -119,10 +169,10 @@ export function ProductDetailSheet({
             />
           )}
 
-          {images.length > 1 && (
+          {slides.length > 1 && (
             <View className="absolute bottom-3 self-center rounded-full bg-black/50 px-3 py-1">
               <Text className="text-xs font-bold text-white">
-                {Math.min(index + 1, images.length)} / {images.length}
+                {Math.min(index + 1, slides.length)} / {slides.length}
               </Text>
             </View>
           )}
@@ -134,7 +184,14 @@ export function ProductDetailSheet({
           >
             <Ionicons name="close" size={20} color="#FFFFFF" />
           </Pressable>
+
+          {/* Agarradera: avisa que se puede arrastrar hacia abajo. */}
+          <View
+            pointerEvents="none"
+            className="absolute top-2 h-1.5 w-10 self-center rounded-full bg-white/80"
+          />
         </View>
+        </GestureDetector>
 
         {/* Datos del producto: mide lo que mide su contenido y, si no cabe en
             la hoja (alto MÁXIMO 85%, no fijo), se encoge y hace scroll.
@@ -142,9 +199,23 @@ export function ProductDetailSheet({
             alto fijo, el bloque quedaba en 0 de alto — la descripción (y el
             nombre/precio) no se veían. */}
         <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} className="px-5 pt-4">
-          <Text className="text-xl font-extrabold text-ink">
-            {product?.name}
-          </Text>
+          <View className="flex-row items-start gap-3">
+            <Text className="flex-1 text-xl font-extrabold text-ink">
+              {product?.name}
+            </Text>
+            {/* Promos (id negativo) no son favoritos. */}
+            {!!product && product.id > 0 && (
+              <View className="rounded-full bg-surface">
+                <FavoriteButton
+                  kind="product"
+                  id={product.id}
+                  size={38}
+                  variant="plain"
+                  color={getAppColors().inkColor}
+                />
+              </View>
+            )}
+          </View>
 
           {!!product?.categoryType?.name && (
             <Text className="mt-0.5 text-xs font-semibold text-muted">
@@ -152,7 +223,23 @@ export function ProductDetailSheet({
             </Text>
           )}
 
+          {!!promotion?.message && (
+            <Text className="mt-1 text-sm text-muted">{promotion.message}</Text>
+          )}
+
           <View className="mt-2">
+            {promoSavings > 0 && promotion && (
+              <View className="flex-row items-center gap-2">
+                <Text className="text-sm text-muted line-through">
+                  {formatPrice(promotion.regularPrice)}
+                </Text>
+                <View className="rounded-full bg-primary-tint px-2 py-0.5">
+                  <Text className="text-[11px] font-bold text-primary">
+                    Ahorra {promoSavings}%
+                  </Text>
+                </View>
+              </View>
+            )}
             {hasDiscount && product && (
               <View className="flex-row items-center gap-2">
                 <Text className="text-sm text-muted line-through">
@@ -191,7 +278,23 @@ export function ProductDetailSheet({
             </View>
           )}
 
-          {!!product?.description && (
+          {promotion ? (
+            <View className="mb-2 mt-3">
+              <Text className="mb-1.5 text-sm font-bold text-ink">Incluye</Text>
+              {promotion.items.map((item) => (
+                <View key={item.productId} className="flex-row items-center gap-2.5 py-1.5">
+                  <Image
+                    source={item.imageUrl ? { uri: item.imageUrl } : DEFAULT_PRODUCT_IMAGE}
+                    style={{ width: 44, height: 44, borderRadius: 10 }}
+                    resizeMode="cover"
+                  />
+                  <Text className="flex-1 text-sm text-ink" numberOfLines={2}>
+                    <Text className="font-extrabold">{item.quantity}×</Text> {item.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : !!product?.description && (
             <Text className="mb-2 mt-3 text-sm leading-5 text-ink">
               {product.description}
             </Text>
@@ -227,7 +330,8 @@ export function ProductDetailSheet({
             />
           )}
         </View>
-      </View>
+      </Animated.View>
+      </GestureHandlerRootView>
 
       {/* Zoom a pantalla completa de la foto tocada */}
       <PhotoPreviewModal

@@ -28,7 +28,7 @@ export function ChangePasswordScreen() {
   const router = useRouter();
   const { isDark } = useAppTheme();
   const session = useSession();
-  const { errors, bind, validate } = useFormErrors();
+  const { errors, bind, validate, applyServerErrors } = useFormErrors();
   // "Cambiar contraseña" es un Tabs.Screen oculto (hermano de "profile"), no
   // una pantalla apilada — cambiar de tab no arma historial real, así que
   // `router.canGoBack()` no es confiable acá; se vuelve SIEMPRE a Mi cuenta.
@@ -62,7 +62,8 @@ export function ChangePasswordScreen() {
       await profileService.changePassword(currentPassword, newPassword);
       // El interceptor ya mostró el toast de éxito del backend.
       router.replace(profileHref);
-    } catch {
+    } catch (e) {
+      applyServerErrors(e, { confirmNewPassword: 'confirmPassword' });
       // El interceptor HTTP ya mostró el toast ("La contraseña actual no es correcta").
     } finally {
       setSaving(false);

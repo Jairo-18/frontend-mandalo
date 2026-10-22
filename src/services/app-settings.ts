@@ -21,20 +21,25 @@ export type AppColors = {
   borderDarkColor: string;
 };
 
-/** Mismos valores que el default de la migración (fallback si falla la carga). */
+/**
+ * Fallback si falla la carga (primer arranque sin caché: splash y pantalla de
+ * error "No se pudo cargar la app"). Copia de la paleta vigente en prod
+ * (`appSettings`, 2026-10-21) — antes era la naranja de la migración y esa
+ * pantalla salía con colores que ya no son de la marca.
+ */
 export const DEFAULT_APP_COLORS: AppColors = {
-  primaryColor: '#FF5A3C',
-  darkColor: '#1E1E2D',
-  surfaceLightColor: '#F2F2F2',
-  surfaceDarkColor: '#12121B',
+  primaryColor: '#C62828',
+  darkColor: '#8E1B1B',
+  surfaceLightColor: '#FFFFFF',
+  surfaceDarkColor: '#1E1E24',
   cardLightColor: '#FFFFFF',
-  cardDarkColor: '#262636',
-  textPrimaryLightColor: '#1E1E2D',
+  cardDarkColor: '#1E1E24',
+  textPrimaryLightColor: '#222222',
   textPrimaryDarkColor: '#EDEDF2',
   textSecondaryLightColor: '#7A7A8A',
   textSecondaryDarkColor: '#A0A0B2',
-  borderLightColor: '#E5E7EB',
-  borderDarkColor: '#33334A',
+  borderLightColor: '#C62828',
+  borderDarkColor: '#C62828',
 };
 
 /**

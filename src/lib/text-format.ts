@@ -113,11 +113,11 @@ const FORMATTERS: Record<TextFormat, (value: string) => string> = {
   /** Celular legible: "+57 - 310 210 366 0" (enviar con normalizePhone). */
   phone: formatPhone,
   /**
-   * Identificación: MAYÚSCULAS, letras/números/símbolos (cédulas, pasaportes
-   * y extranjería traen formatos mixtos — solo se bloquean espacios). El
-   * tope de 15 caracteres lo pone el `maxLength` de cada campo.
+   * Identificación: solo dígitos y el guion del dígito de verificación del
+   * NIT (`lib/identification.ts` valida por tipo: CC/TI no aceptan guion).
+   * El tope de caracteres lo pone el `maxLength` de cada campo.
    */
-  identification: (v) => v.toUpperCase().replace(/\s+/g, ''),
+  identification: (v) => v.replace(/[^0-9-]/g, ''),
   /** MAYÚSCULAS sostenidas (razón social). */
   upper: (v) => collapseSpaces(v).toUpperCase(),
   /** NIT: dígitos y guion de verificación ("901234567-8"). */

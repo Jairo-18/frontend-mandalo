@@ -33,6 +33,7 @@ import {
 } from '@/services/admin-users';
 import { authService } from '@/services/auth';
 import { getAppColors } from '@/lib/app-colors';
+import { identificationErrorFor } from '@/lib/identification';
 
 type Props = {
   visible: boolean;
@@ -91,7 +92,7 @@ export function UserFormModal({
 
   const [saving, setSaving] = useState(false);
   const [sendingRecovery, setSendingRecovery] = useState(false);
-  const { errors, setErrors, clearError, bind, validate } = useFormErrors();
+  const { errors, setErrors, clearError, bind, validate, applyServerErrors } = useFormErrors();
 
   const isEdit = !!editing;
   // Las cuentas que crea el admin son casi siempre para vincularlas a un
@@ -209,7 +210,9 @@ export function UserFormModal({
 
   function validateForm() {
     return validate({
-      fullName: fullName.trim() ? undefined : 'Ingresa el nombre completo.',
+      fullName: fullName.trim()
+        ? undefined
+        : 'Ingresa los nombres y apellidos completos.',
       email: !email.trim()
         ? 'Ingresa el correo.'
         : !EMAIL_RE.test(email.trim())
@@ -233,6 +236,11 @@ export function UserFormModal({
         identificationNumber.trim() && !identificationTypeId
           ? 'Selecciona el tipo.'
           : undefined,
+      identificationNumber: identificationErrorFor(
+        identificationTypes,
+        identificationTypeId,
+        identificationNumber,
+      ),
       // Una cuenta ADMIN siempre necesita municipio (el backend lo exige
       // igual) — ya no existe "ADMIN sin municipio" como superadmin implícito.
       municipalityId:
@@ -304,7 +312,8 @@ export function UserFormModal({
         await adminUsersService.removeAvatar(userId);
       }
       onSaved();
-    } catch {
+    } catch (e) {
+      applyServerErrors(e, { latitude: 'address', longitude: 'address' });
       // El interceptor HTTP ya mostró el mensaje del backend.
     } finally {
       setSaving(false);
@@ -345,7 +354,7 @@ export function UserFormModal({
       />
 
       <TextField
-        label="Nombre completo"
+        label="Nombres y apellidos completos"
         icon="person-outline"
         format="name"
         value={fullName}

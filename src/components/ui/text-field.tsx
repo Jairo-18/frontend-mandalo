@@ -76,6 +76,9 @@ export function TextField({
 }: Props) {
   const colors = useResolvedAppColors();
   const [hidden, setHidden] = useState(true);
+  // Enfocado: el borde pasa al color de marca (en web reemplaza el contorno
+  // negro del navegador, que se quita en `+html.tsx`).
+  const [focused, setFocused] = useState(false);
   const placeholderColor = colors.mutedColor;
 
   const handleChangeText = (value: string) => {
@@ -88,6 +91,7 @@ export function TextField({
       const finished = finishText(inputProps.value);
       if (finished !== inputProps.value) onChangeText?.(finished);
     }
+    setFocused(false);
     onBlur?.(e);
   };
 
@@ -97,7 +101,7 @@ export function TextField({
       <View
         className={`flex-row gap-2.5 rounded-xl border px-3.5 ${
           multiline ? 'items-start py-3' : 'h-[52px] items-center'
-        } ${error ? 'border-red-500' : 'border-border'} ${
+        } ${error ? 'border-red-500' : focused ? 'border-primary' : 'border-border'} ${
           readOnly ? 'bg-surface' : ''
         }`}
       >
@@ -112,7 +116,9 @@ export function TextField({
           className={`flex-1 text-[15px] ${readOnly ? 'text-muted' : 'text-ink'} ${multiline ? '' : 'h-full'}`}
           style={
             multiline
-              ? { minHeight: (numberOfLines ?? 3) * 22, textAlignVertical: 'top' }
+              ? // Observaciones/descripciones: alto mínimo cómodo (~4 líneas)
+                // aunque pidan menos; con `numberOfLines` mayor, crece.
+                { minHeight: Math.max(96, (numberOfLines ?? 4) * 22), textAlignVertical: 'top' }
               : undefined
           }
           placeholderTextColor={placeholderColor}
@@ -135,6 +141,10 @@ export function TextField({
             : undefined)}
           {...inputProps}
           onChangeText={handleChangeText}
+          onFocus={(e) => {
+            setFocused(true);
+            inputProps.onFocus?.(e);
+          }}
           onBlur={handleBlur}
         />
         {secure && (

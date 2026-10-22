@@ -1,6 +1,8 @@
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
+import { RatingBadge } from '@/components/reviews/star-rating';
+import { FavoriteButton } from '@/components/ui/favorite-button';
 import { businessDisplayName, ExploreBusiness } from '@/services/explore';
 import { DEFAULT_BUSINESS_LOGO } from '@/lib/default-images';
 
@@ -38,6 +40,18 @@ export function BusinessGridCard({ business, onPress }: Props) {
             <Text className="text-[10px] font-bold text-white">Cerrado</Text>
           </View>
         )}
+        {/* Calificación (reseñas) sobre la foto: no cambia el alto fijo de la card. */}
+        <View className="absolute right-2 top-2">
+          <RatingBadge
+            average={business.ratingAverage}
+            count={business.ratingCount}
+            variant="overlay"
+            hideWhenEmpty
+          />
+        </View>
+        <View className="absolute bottom-2 right-2">
+          <FavoriteButton kind="business" id={business.id} size={30} />
+        </View>
       </View>
 
       {/* Alto FIJO (no mínimo), igual que en `ProductGridCard`: la fila de

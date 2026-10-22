@@ -220,7 +220,8 @@ export function ReportAccidentDialog({ visible, invoiceId, onClose }: Props) {
 
               <View className="mt-3 rounded-xl border border-border px-3.5 py-2.5">
                 <TextInput
-                  className="min-h-[70px] text-[15px] text-ink"
+                  className="min-h-[96px] text-[15px] text-ink"
+                  textAlignVertical="top"
                   placeholder="Describe qué pasó (opcional)"
                   placeholderTextColor={colors.mutedColor}
                   value={notes}

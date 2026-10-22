@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { PaginationMeta } from '@/components/ui/paginator';
 import { Paginated } from '@/services/admin-users';
 
-export type FetchMode = 'initial' | 'refresh' | 'page' | 'more';
+/** `silent`: recarga en segundo plano, sin spinner (la lista vieja se ve hasta que llega la nueva). */
+export type FetchMode = 'initial' | 'refresh' | 'page' | 'more' | 'silent';
 
 type Fetcher<T> = (params: {
   page: number;

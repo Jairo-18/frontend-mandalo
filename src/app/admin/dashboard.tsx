@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { adminNavItemsFor } from '@/components/admin/drawer-content';
 import { QuickAction } from '@/components/ui/quick-action';
 import { SectionTitle } from '@/components/ui/section-title';
 import { StatCard } from '@/components/ui/stat-card';
@@ -52,7 +53,9 @@ export default function AdminDashboardScreen() {
   const busyRef = useRef(false);
 
   // Saludo del héroe (useSession: regla React Compiler, no getSession suelto).
-  const firstName = useSession()?.user.fullName?.split(' ')[0];
+  const sessionUser = useSession()?.user;
+  const firstName = sessionUser?.fullName?.split(' ')[0];
+  const isSuperAdmin = sessionUser?.role?.code === 'SUPERADMIN';
 
   const load = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     if (busyRef.current) return;
@@ -179,41 +182,18 @@ export default function AdminDashboardScreen() {
         <SectionTitle label="Accesos rápidos" />
       </View>
       <View className="flex-row flex-wrap gap-3 px-4">
-        <QuickAction
-          icon="receipt-outline"
-          label="Pedidos"
-          onPress={() => router.navigate('/admin/orders')}
-        />
-        <QuickAction
-          icon="storefront-outline"
-          label="Negocios"
-          onPress={() => router.navigate('/admin/businesses')}
-        />
-        <QuickAction
-          icon="people-outline"
-          label="Usuarios"
-          onPress={() => router.navigate('/admin/users')}
-        />
-        <QuickAction
-          icon="bicycle-outline"
-          label="Domiciliarios"
-          onPress={() => router.navigate('/admin/deliveries')}
-        />
-        <QuickAction
-          icon="pricetags-outline"
-          label="Etiquetas"
-          onPress={() => router.navigate('/admin/tags')}
-        />
-        <QuickAction
-          icon="grid-outline"
-          label="Categorías"
-          onPress={() => router.navigate('/admin/categories')}
-        />
-        <QuickAction
-          icon="color-palette-outline"
-          label="Aplicación"
-          onPress={() => router.navigate('/admin/app-settings')}
-        />
+        {/* Mismas secciones que el menú lateral de ESTE rol (el admin regional
+            no ve etiquetas/categorías/alta masiva/aplicación). */}
+        {adminNavItemsFor(isSuperAdmin)
+          .filter((item) => item.href !== '/admin/dashboard')
+          .map((item) => (
+            <QuickAction
+              key={item.href}
+              icon={item.icon}
+              label={item.label}
+              onPress={() => router.navigate(item.href)}
+            />
+          ))}
       </View>
       </>
       )}

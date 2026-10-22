@@ -18,6 +18,11 @@ type Props = {
   height: number;
   onCancel: () => void;
   onDone: (uri: string) => void;
+  /** Ignorados en web (usa sus defaults); se aceptan por compatibilidad. */
+  maxOutput?: number;
+  quality?: number;
+  /** Proporción ancho/alto del recorte (default 1 = cuadrado). */
+  aspect?: number;
 };
 
 /**
@@ -34,10 +39,19 @@ type Props = {
  * centrado de la imagen (igual "cover" que ve el usuario en el preview) —
  * mantiene rotar 90° y el mismo tamaño de salida que el nativo.
  */
-export function PhotoEditor({ visible, uri, width, height, onCancel, onDone }: Props) {
+export function PhotoEditor({
+  visible,
+  uri,
+  width,
+  height,
+  onCancel,
+  onDone,
+  aspect = 1,
+}: Props) {
   const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
-  const frame = useMemo(() => Math.min(Dimensions.get('window').width - 48, 420), []);
+  const frameW = useMemo(() => Math.min(Dimensions.get('window').width - 48, 420), []);
+  const frameH = frameW / aspect;
 
   const [current, setCurrent] = useState<{ uri: string; w: number; h: number } | null>(null);
   const [rotating, setRotating] = useState(false);
@@ -66,18 +80,24 @@ export function PhotoEditor({ visible, uri, width, height, onCancel, onDone }: P
     if (!current || rotating || saving) return;
     setSaving(true);
     try {
-      const cropSize = Math.min(current.w, current.h);
-      const originX = Math.round((current.w - cropSize) / 2);
-      const originY = Math.round((current.h - cropSize) / 2);
+      // Mayor rectángulo centrado con la proporción `aspect`.
+      const cropW = Math.min(current.w, current.h * aspect);
+      const cropH = cropW / aspect;
+      const originX = Math.round((current.w - cropW) / 2);
+      const originY = Math.round((current.h - cropH) / 2);
 
       const context = ImageManipulator.manipulate(current.uri).crop({
         originX,
         originY,
-        width: Math.floor(cropSize),
-        height: Math.floor(cropSize),
+        width: Math.floor(cropW),
+        height: Math.floor(cropH),
       });
-      if (cropSize > MAX_OUTPUT) {
-        context.resize({ width: MAX_OUTPUT, height: MAX_OUTPUT });
+      if (Math.max(cropW, cropH) > MAX_OUTPUT) {
+        context.resize(
+          cropW >= cropH
+            ? { width: MAX_OUTPUT, height: Math.round(MAX_OUTPUT / aspect) }
+            : { width: Math.round(MAX_OUTPUT * aspect), height: MAX_OUTPUT },
+        );
       }
       const rendered = await context.renderAsync();
       // Casi sin pérdida: el backend igual re-optimiza a WebP, ver mismo
@@ -91,11 +111,11 @@ export function PhotoEditor({ visible, uri, width, height, onCancel, onDone }: P
     }
   }
 
+  // "Cover" del marco: lo visible es justo lo que se recorta.
+  const coverScale = current ? Math.max(frameW / current.w, frameH / current.h) : 1;
   const displaySide = current
-    ? current.w >= current.h
-      ? { width: frame * (current.w / current.h), height: frame }
-      : { width: frame, height: frame * (current.h / current.w) }
-    : { width: frame, height: frame };
+    ? { width: current.w * coverScale, height: current.h * coverScale }
+    : { width: frameW, height: frameH };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
@@ -113,7 +133,7 @@ export function PhotoEditor({ visible, uri, width, height, onCancel, onDone }: P
 
           <View
             className="items-center justify-center self-center overflow-hidden rounded-2xl bg-black"
-            style={{ width: frame, height: frame }}
+            style={{ width: frameW, height: frameH }}
           >
             {current && (
               <Image
@@ -129,7 +149,7 @@ export function PhotoEditor({ visible, uri, width, height, onCancel, onDone }: P
             )}
           </View>
           <Text className="mt-3 text-center text-xs text-muted">
-            Se usa el recorte cuadrado centrado — si necesitas encuadrar distinto, usa la app móvil.
+            Se usa el recorte centrado — si necesitas encuadrar distinto, usa la app móvil.
           </Text>
 
           <View className="mt-5 flex-row items-center gap-3">

@@ -5,10 +5,11 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { OrderEta } from '@/components/orders/order-eta';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { RatingBadge } from '@/components/reviews/star-rating';
 import { DEFAULT_BUSINESS_LOGO, DEFAULT_USER_AVATAR } from '@/lib/default-images';
 import { formatPrice } from '@/lib/price';
-import { stateMeta } from '@/lib/order-status';
-import { Order } from '@/services/orders';
+import { orderStateMeta } from '@/lib/order-status';
+import { isErrand, Order } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
@@ -66,7 +67,8 @@ export function OrderCard({
   action,
 }: Props) {
   const colors = useResolvedAppColors();
-  const meta = stateMeta(order.stateType?.code ?? '');
+  const meta = orderStateMeta(order);
+  const errand = isErrand(order);
   const itemCount = order.details?.reduce((sum, d) => sum + d.quantity, 0) ?? 0;
   const [working, setWorking] = useState(false);
 
@@ -110,6 +112,24 @@ export function OrderCard({
         <Badge label={meta.label} tone={meta.tone} />
       </View>
 
+      {/* Mandado: qué hay que hacer (es lo que decide si tomarlo). */}
+      {errand && !!order.errandDescription && (
+        <View className="mt-2 flex-row items-start gap-1.5">
+          <Ionicons name="clipboard-outline" size={13} color={colors.mutedColor} style={{ marginTop: 1 }} />
+          <Text numberOfLines={2} className="flex-1 text-xs text-ink">
+            {order.errandDescription}
+          </Text>
+        </View>
+      )}
+      {errand && !!order.pickupAddress && showAddress && (
+        <View className="mt-1.5 flex-row items-center gap-1.5">
+          <Ionicons name="flag-outline" size={13} color={colors.mutedColor} />
+          <Text numberOfLines={1} className="flex-1 text-xs text-muted">
+            Recoger: {order.pickupAddress}
+          </Text>
+        </View>
+      )}
+
       {showAddress && (
         <View className="mt-2 flex-row items-center gap-1.5">
           <Ionicons name="location-outline" size={13} color={colors.mutedColor} />
@@ -121,8 +141,11 @@ export function OrderCard({
 
       <View className="mt-2 flex-row items-center justify-between">
         <Text numberOfLines={1} className="flex-1 pr-2 text-xs text-muted">
-          Pedido #{order.id}
+          {errand ? 'Mandado' : 'Pedido'} #{order.id}
           {itemCount > 0 ? ` · ${itemCount} art.` : ''}
+          {errand && (order.errandPurchaseAmount ?? 0) > 0
+            ? ` · compra ${formatPrice(order.errandPurchaseAmount ?? 0)}`
+            : ''}
           {order.createdAt ? ` · ${shortDate(order.createdAt)}` : ''}
         </Text>
         {/* Ancho mínimo: ver AmountRow (montos recortados en Android). */}
@@ -134,6 +157,10 @@ export function OrderCard({
           {formatPrice(order.total)}
         </Text>
       </View>
+
+      {/* Calificación de las otras partes (el repartidor la ve antes de tomar
+          el pedido; el negocio, la del cliente y del repartidor). */}
+      {perspective && <PartyRatings order={order} perspective={perspective} />}
 
       {/* Tiempo estimado vigente (listo aprox. / llega aprox.). */}
       {perspective && <OrderEta order={order} perspective={perspective} compact />}
@@ -166,5 +193,38 @@ export function OrderCard({
         </Pressable>
       )}
     </Pressable>
+  );
+}
+
+/** "Negocio ★ 4,5 (12) · Cliente ★ Nuevo" — las partes que no son yo. */
+function PartyRatings({
+  order,
+  perspective,
+}: {
+  order: Order;
+  perspective: 'client' | 'business' | 'delivery';
+}) {
+  const parties = [
+    perspective !== 'business' && order.organizational
+      ? { label: 'Negocio', rating: order.organizational }
+      : null,
+    perspective !== 'client' && order.user
+      ? { label: 'Cliente', rating: order.user }
+      : null,
+    perspective !== 'delivery' && order.deliveryUser
+      ? { label: 'Domiciliario', rating: order.deliveryUser }
+      : null,
+  ].filter((p): p is NonNullable<typeof p> => !!p);
+  if (!parties.length) return null;
+
+  return (
+    <View className="mt-2 flex-row flex-wrap items-center gap-x-3 gap-y-1">
+      {parties.map((p) => (
+        <View key={p.label} className="flex-row items-center gap-1">
+          <Text className="text-[11px] text-muted">{p.label}</Text>
+          <RatingBadge average={p.rating.ratingAverage} count={p.rating.ratingCount} />
+        </View>
+      ))}
+    </View>
   );
 }

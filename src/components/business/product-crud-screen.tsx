@@ -36,14 +36,26 @@ import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
  * negocio del JWT): listado con búsqueda por nombre/código, crear/editar en
  * modal con fotos y eliminar con confirmación.
  */
-export function ProductCrudScreen() {
+export function ProductCrudScreen({
+  organizationalId,
+}: {
+  /**
+   * Modo ADMIN: productos de ESE negocio (revisar/editar/borrar). Sin crear:
+   * el catálogo lo arma el negocio. Sin esto, los del negocio propio (NEGO).
+   */
+  organizationalId?: number;
+} = {}) {
+  const adminMode = organizationalId != null;
   const colors = useResolvedAppColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useAppTheme();
   const numColumns = columnsForWidth(useWindowDimensions().width);
 
   const list = usePaginatedList<BusinessProduct>(
-    useCallback((params) => businessService.products.paginated(params), []),
+    useCallback(
+      (params) => businessService.products.paginated({ ...params, organizationalId }),
+      [organizationalId],
+    ),
   );
 
   // En vivo: la misma cuenta del negocio abierta en otro teléfono creó,
@@ -153,6 +165,13 @@ export function ProductCrudScreen() {
               </View>
             )}
 
+            {/* Tiene video (se ve en el detalle). */}
+            {!!item.videoUrl && (
+              <View className="absolute bottom-2 left-2 h-7 w-7 items-center justify-center rounded-full bg-black/55">
+                <Ionicons name="videocam" size={14} color="#FFFFFF" />
+              </View>
+            )}
+
             {/* Acciones (editar / eliminar) sobre la foto. */}
             <View className="absolute bottom-2 right-2 flex-row gap-1.5">
               <Pressable
@@ -246,7 +265,9 @@ export function ProductCrudScreen() {
               message={
                 list.query
                   ? 'No hay productos que coincidan con la búsqueda.'
-                  : 'Aún no tienes productos. Crea el primero con el botón +.'
+                  : adminMode
+                    ? 'Este negocio aún no tiene productos.'
+                    : 'Aún no tienes productos. Crea el primero con el botón +.'
               }
             />
           }
@@ -263,7 +284,7 @@ export function ProductCrudScreen() {
         />
       </View>
 
-      <Fab onPress={openCreate} />
+      {!adminMode && <Fab onPress={openCreate} />}
 
       <ProductFormModal
         visible={formVisible}

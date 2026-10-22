@@ -33,6 +33,7 @@ import { EMAIL_RE, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
 import { DocumentValue } from '@/lib/upload';
 import { authService, RegisterPayload } from '@/services/auth';
 import { getAppColors } from '@/lib/app-colors';
+import { identificationErrorFor } from '@/lib/identification';
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function RegisterForm() {
 
   const { departments, identificationTypes } = useAppData();
   const muni = useMunicipalities();
-  const { errors, clearError, bind, validate } = useFormErrors();
+  const { errors, clearError, bind, validate, applyServerErrors } = useFormErrors();
 
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -150,7 +151,9 @@ export default function RegisterForm() {
 
   function validateForm() {
     return validate({
-      fullName: fullName.trim() ? undefined : 'Ingresa tu nombre completo.',
+      fullName: fullName.trim()
+        ? undefined
+        : 'Ingresa tus nombres y apellidos completos.',
       username: username.trim() ? undefined : 'Ingresa un nombre de usuario.',
       // El prellenado "+57 - " sin número no cuenta como teléfono.
       phone:
@@ -195,7 +198,11 @@ export default function RegisterForm() {
           ? undefined
           : 'Selecciona el tipo.',
         identificationNumber: identificationNumber.trim()
-          ? undefined
+          ? identificationErrorFor(
+              identificationTypes,
+              identificationTypeId,
+              identificationNumber,
+            )
           : 'Ingresa tu número de identificación.',
         avatar: avatarUri ? undefined : 'Sube una foto de tu rostro.',
         idFront: idFrontUri
@@ -266,7 +273,8 @@ export default function RegisterForm() {
       }
       // El interceptor muestra el toast de éxito del backend.
       router.replace('/auth/login');
-    } catch {
+    } catch (e) {
+      applyServerErrors(e, { latitude: 'location', longitude: 'location' });
       // El interceptor HTTP ya mostró el toast con el mensaje del backend.
     } finally {
       setLoading(false);
@@ -332,7 +340,7 @@ export default function RegisterForm() {
 
       <FormSection label="Tus datos" />
       <TextField
-        label="Nombre completo"
+        label="Nombres y apellidos completos"
         icon="person-outline"
         format="name"
         value={fullName}

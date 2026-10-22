@@ -27,6 +27,9 @@ export type ExploreBusiness = {
   closeTime?: string | null;
   openDays?: string | null;
   temporarilyClosed?: boolean;
+  /** Calificación (reseñas): promedio 0.5–5 y cantidad. */
+  ratingAverage?: number | null;
+  ratingCount?: number;
   /**
    * Calculada por el backend con el horario. Opcional por compatibilidad:
    * si el backend viejo no la manda, se asume abierto (`!== false`).
@@ -58,6 +61,14 @@ export type ExploreProduct = {
   discount: number;
   /** URLs de las fotos; la primera es la principal. */
   images: string[];
+  /** Video corto del producto (4:3 horizontal, <= 10 s) y su miniatura. */
+  videoUrl?: string | null;
+  videoThumbnailUrl?: string | null;
+  /**
+   * Solo en el CARRITO: este "producto" es una promoción (ver
+   * `promotionAsCartProduct`); el checkout la manda como `promotionId`.
+   */
+  promotionId?: number;
   /** El negocio que lo vende (solo en la búsqueda global del home). */
   organizational?: {
     id: number;
@@ -68,6 +79,9 @@ export type ExploreProduct = {
     isOpen?: boolean;
     latitude?: number | null;
     longitude?: number | null;
+    /** Calificación del negocio (reseñas): promedio 0.5–5 y cantidad. */
+    ratingAverage?: number | null;
+    ratingCount?: number;
   } | null;
 };
 

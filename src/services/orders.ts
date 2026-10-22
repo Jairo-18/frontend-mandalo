@@ -16,13 +16,47 @@ export type OrderDetail = {
   quantity: number;
   lineTotal: number;
   product?: { id: number; images: string[] } | null;
+  /** Línea de PROMOCIÓN: su id, banner y contenido congelado ("2× …, 1× …"). */
+  promotionId?: number | null;
+  promotion?: { id: number; imageUrl: string | null } | null;
+  itemsDescription?: string | null;
 };
 
 /** Pedido tal como lo devuelve `/invoice` (scoped por rol en el backend). */
+/** Cliente o repartidor de un pedido, con su calificación (reseñas). */
+export type OrderParty = {
+  id: string;
+  fullName: string;
+  phone: string | null;
+  avatarUrl?: string | null;
+  ratingAverage?: number | null;
+  ratingCount?: number;
+  /** Nequi del REPARTIDOR (mandados pagados por Nequi: el cliente le transfiere). */
+  paymentHolderName?: string | null;
+  nequiNumber?: string | null;
+  nequiKey?: string | null;
+  nequiQrUrl?: string | null;
+};
+
+/** Pedido a un negocio (lo de siempre) o mandado (sin negocio). */
+export type OrderType = 'ORDER' | 'ERRAND';
+
 export type Order = {
   id: number;
+  /** Opcional por compatibilidad con un backend viejo (= 'ORDER'). */
+  type?: OrderType;
   userId: string;
-  organizationalId: number;
+  /** null en los mandados. */
+  organizationalId: number | null;
+  // ---- Mandados ----
+  /** Dónde recoger (opcional). */
+  pickupAddress?: string | null;
+  pickupLatitude?: number | null;
+  pickupLongitude?: number | null;
+  /** Qué debe hacer el repartidor. */
+  errandDescription?: string | null;
+  /** Compra que adelanta el repartidor (0 = sin compra); el cliente se la devuelve. */
+  errandPurchaseAmount?: number;
   deliveryUserId: string | null;
   stateType: Ref | null;
   paidType: Ref | null;
@@ -99,23 +133,49 @@ export type Order = {
     bancolombiaAccountType?: 'AHORROS' | 'CORRIENTE' | null;
     bancolombiaQrUrl?: string | null;
     nequiQrUrl?: string | null;
+    /** Calificación (reseñas): promedio 0.5–5 y cantidad. */
+    ratingAverage?: number | null;
+    ratingCount?: number;
   } | null;
   // El cliente (visible para negocio/repartidor/admin).
-  user?: { id: string; fullName: string; phone: string | null; avatarUrl?: string | null } | null;
+  user?: OrderParty | null;
   // El repartidor asignado (visible para cliente/negocio).
-  deliveryUser?: { id: string; fullName: string; phone: string | null; avatarUrl?: string | null } | null;
+  deliveryUser?: OrderParty | null;
 };
 
 export type CreateOrderPayload = {
   organizationalId: number;
   addressId: number;
   paidTypeCode: string;
-  items: { productId: number; quantity: number }[];
+  /** Un producto o una promoción (exactamente uno de los dos) por ítem. */
+  items: ({ productId: number; quantity: number } | { promotionId: number; quantity: number })[];
   notes?: string;
   /** Uno por intento de checkout — evita duplicar el pedido si se reintenta
    * tras un fallo ambiguo de red (ver `invoice.service.ts` en el backend). */
   idempotencyKey?: string;
 };
+
+/** "Pedir un mandado" (ver `app/errand.tsx`). */
+export type CreateErrandPayload = {
+  addressId: number;
+  pickupAddress?: string;
+  pickupLatitude?: number;
+  pickupLongitude?: number;
+  description: string;
+  notes?: string;
+  purchaseAmount?: number;
+  offeredFee: number;
+  paidTypeCode: 'EFEC' | 'NEQUI';
+  idempotencyKey?: string;
+};
+
+/** Tope de la compra que adelanta el repartidor (igual al backend). */
+export const ERRAND_MAX_PURCHASE = 150000;
+
+/** ¿Es un mandado (sin negocio)? */
+export function isErrand(order: Pick<Order, 'type'> | null | undefined): boolean {
+  return order?.type === 'ERRAND';
+}
 
 type ListParams = {
   page: number;
@@ -134,6 +194,8 @@ type ListParams = {
   /** Solo ADMIN: entregados desde/hasta (YYYY-MM-DD, fecha local, inclusive). */
   deliveredFrom?: string;
   deliveredTo?: string;
+  /** Solo pedidos a negocios o solo mandados. */
+  type?: OrderType;
 };
 
 function listQuery(params: ListParams): string {
@@ -155,6 +217,7 @@ function listQuery(params: ListParams): string {
   }
   if (params.deliveredFrom) query.set('deliveredFrom', params.deliveredFrom);
   if (params.deliveredTo) query.set('deliveredTo', params.deliveredTo);
+  if (params.type) query.set('type', params.type);
   return query.toString();
 }
 
@@ -197,6 +260,47 @@ export const ordersService = {
       };
     }>(`/invoice/delivery-fee?${query.toString()}`, { auth: true });
   },
+
+  /**
+   * Mínimo que puede ofrecer el cliente por un mandado: la tarifa por
+   * distancia de la app (recogida → entrega) + recargos vigentes.
+   */
+  errandFee: (params: {
+    addressId: number;
+    pickupLatitude?: number | null;
+    pickupLongitude?: number | null;
+  }) => {
+    const query = new URLSearchParams({ addressId: String(params.addressId) });
+    if (params.pickupLatitude != null && params.pickupLongitude != null) {
+      query.set('pickupLatitude', String(params.pickupLatitude));
+      query.set('pickupLongitude', String(params.pickupLongitude));
+    }
+    return http<{
+      data: {
+        minimumFee: number;
+        deliveryFee: number;
+        deliverySurcharge: number;
+        surchargeReasons: string[];
+        distanceKm: number | null;
+      };
+    }>(`/invoice/errand-fee?${query.toString()}`, { auth: true });
+  },
+
+  createErrand: (payload: CreateErrandPayload) =>
+    http<{ data: { rowId: string } }>('/invoice/errand', {
+      method: 'POST',
+      body: payload,
+      auth: true,
+      toastSuccess: true,
+    }),
+
+  /** El repartidor no puede hacer el mandado: vuelve a "Disponibles". */
+  releaseErrand: (id: number) =>
+    http<{ message?: string; data: Order }>(`/invoice/${id}/release`, {
+      method: 'POST',
+      auth: true,
+      toastSuccess: true,
+    }),
 
   /** Total histórico de tarifa de servicio (ingreso de Mándalo). Solo ADMIN. */
   serviceFeeSummary: () =>

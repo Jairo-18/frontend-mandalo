@@ -8,8 +8,10 @@ import {
   ChatSocketEvent,
   OrderEvent,
   OrderEventName,
+  ReviewReceivedEvent,
   useChatMessages,
   useOrderEvents,
+  useReviewReceived,
 } from '@/lib/orders-socket';
 import { stateMeta } from '@/lib/order-status';
 import { CHANNEL_ID, setActiveChatThread, usePushUnavailable } from '@/lib/push';
@@ -90,6 +92,20 @@ export function useInAppAlerts(): void {
     [myId, pathname, pushUnavailable],
   );
   useChatMessages(onChat);
+
+  // Reseña recibida: con push ya avisó el backend; sin push (Huawei sin
+  // GMS) el socket es lo único que llega.
+  const onReview = useCallback(
+    (event: ReviewReceivedEvent) => {
+      if (!pushUnavailable) return;
+      void notifyLocal(`review-${event.invoiceId}-${event.targetType}`, event.title, event.body, {
+        type: 'review',
+        invoiceId: event.invoiceId,
+      });
+    },
+    [pushUnavailable],
+  );
+  useReviewReceived(onReview);
 
   // Último estado visto por pedido: 'invoice:updated' llega por TODO cambio
   // (incluidos los que provocó el propio usuario), así que solo se avisa

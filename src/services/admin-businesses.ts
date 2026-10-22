@@ -20,6 +20,9 @@ export type AdminBusiness = {
   id: number;
   legalName: string;
   tradeName: string | null;
+  /** Calificación (reseñas): promedio 0.5–5 y cantidad. */
+  ratingAverage?: number | null;
+  ratingCount?: number;
   identificationNumber: string | null;
   description: string | null;
   logoUrl: string | null;
@@ -93,7 +96,12 @@ export type AdminBusinessPayload = {
 };
 
 /** Campo por el que busca el admin ('search' = nombre comercial/razón/NIT). */
-export type BusinessSearchField = 'search' | 'legalName' | 'identificationNumber';
+export type BusinessSearchField =
+  | 'search'
+  | 'businessName'
+  | 'legalPersonName'
+  | 'identificationNumber'
+  | 'legalName';
 
 /** CRUD de negocios del panel de administración (endpoints con JWT). */
 export const adminBusinessesService = {
@@ -109,7 +117,8 @@ export const adminBusinessesService = {
     const query = new URLSearchParams({
       page: String(params.page),
       perPage: String(params.perPage ?? 20),
-      order: 'ASC',
+      // Más recientes primero (igual que usuarios y domiciliarios).
+      order: 'DESC',
     });
     if (params.search?.trim()) {
       query.set(params.searchField ?? 'search', params.search.trim());

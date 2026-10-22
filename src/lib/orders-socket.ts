@@ -237,6 +237,25 @@ export function useProductChanges(
   useSocketEvent<ProductChangedEvent>('product:changed', handler);
 }
 
+/** Me calificaron (o a mi negocio): `review:received` del backend. */
+export type ReviewReceivedEvent = {
+  invoiceId: number;
+  rating: number;
+  targetType: 'BUSINESS' | 'DELIVERY' | 'CLIENT';
+  title: string;
+  body: string;
+};
+
+/**
+ * Reseña recibida en vivo (refresca "Mis reseñas" y avisa en los teléfonos
+ * sin push). El handler debe venir memoizado.
+ */
+export function useReviewReceived(
+  handler: (event: ReviewReceivedEvent) => void,
+): void {
+  useSocketEvent<ReviewReceivedEvent>('review:received', handler);
+}
+
 /** El negocio le pidió al cliente el comprobante del pago (relay del gateway). */
 export type PaymentRequestedEvent = { invoiceId: number; message: string };
 

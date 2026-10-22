@@ -37,7 +37,7 @@ export function CatalogFormModal({
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('');
   const [saving, setSaving] = useState(false);
-  const { errors, setErrors, clearError, validate } = useFormErrors();
+  const { errors, setErrors, clearError, validate, applyServerErrors } = useFormErrors();
 
   const isEdit = !!editing;
 
@@ -92,7 +92,8 @@ export function CatalogFormModal({
         await service.create(payload);
       }
       onSaved();
-    } catch {
+    } catch (e) {
+      applyServerErrors(e);
       // El interceptor HTTP ya mostró el mensaje del backend.
     } finally {
       setSaving(false);

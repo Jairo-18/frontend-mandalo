@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 import { getAppColors } from '@/lib/app-colors';
 import { formatTime } from '@/lib/order-eta';
 import { ORDER_FLOW, ORDER_STATE, OrderStateCode, stateMeta } from '@/lib/order-status';
-import { Order } from '@/services/orders';
+import { isErrand, Order } from '@/services/orders';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Props = { order: Order };
@@ -32,6 +32,8 @@ export function OrderTimeline({ order }: Props) {
   const colors = useResolvedAppColors();
   const stateCode = order.stateType?.code ?? '';
 
+  if (stateCode !== 'CANC' && isErrand(order)) return <ErrandTimeline order={order} />;
+
   if (stateCode === 'CANC') {
     const meta = stateMeta('CANC');
     const time = stepTime(order, 'CANC');
@@ -39,7 +41,7 @@ export function OrderTimeline({ order }: Props) {
       <View className="flex-row items-center gap-2 rounded-2xl bg-red-50 p-3.5">
         <Ionicons name={meta.icon} size={20} color="#DC2626" />
         <Text className="flex-1 text-sm font-bold text-red-600">
-          Pedido cancelado
+          {isErrand(order) ? 'Mandado cancelado' : 'Pedido cancelado'}
         </Text>
         {!!time && <Text className="text-xs text-red-400">{time}</Text>}
       </View>
@@ -101,6 +103,63 @@ export function OrderTimeline({ order }: Props) {
             {!!time && (
               <Text numberOfLines={1} className="text-[9px] text-muted">
                 {time}
+              </Text>
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/**
+ * Progreso de un MANDADO (sin negocio): Publicado → Tomado → En camino →
+ * Entregado, con la hora real de cada paso.
+ */
+function ErrandTimeline({ order }: Props) {
+  const colors = useResolvedAppColors();
+  const code = order.stateType?.code ?? '';
+  const steps: { label: string; icon: keyof typeof Ionicons.glyphMap; at: string | null }[] = [
+    { label: 'Publicado', icon: 'megaphone-outline', at: order.createdAt },
+    { label: 'Tomado', icon: 'walk-outline', at: order.deliveryUserId ? order.takenAt : null },
+    { label: 'En camino', icon: 'bicycle-outline', at: order.onRouteAt },
+    { label: 'Entregado', icon: 'checkmark-done-outline', at: order.deliveredAt },
+  ];
+  const current =
+    code === 'ENTR' ? 3 : code === 'RUTA' || code === 'FALL' ? 2 : order.deliveryUserId ? 1 : 0;
+
+  return (
+    <View className="flex-row items-start justify-between">
+      {steps.map((step, idx) => {
+        const done = idx <= current;
+        return (
+          <View key={step.label} className="flex-1 items-center">
+            <View className="w-full flex-row items-center">
+              <View
+                className={`h-0.5 flex-1 ${idx === 0 ? 'opacity-0' : done ? 'bg-primary' : 'bg-border'}`}
+              />
+              <View
+                className={`h-8 w-8 items-center justify-center rounded-full border ${
+                  done ? 'border-primary bg-primary' : 'border-border bg-white'
+                }`}
+              >
+                <Ionicons name={step.icon} size={16} color={done ? '#FFFFFF' : colors.mutedColor} />
+              </View>
+              <View
+                className={`h-0.5 flex-1 ${
+                  idx === steps.length - 1 ? 'opacity-0' : idx < current ? 'bg-primary' : 'bg-border'
+                }`}
+              />
+            </View>
+            <Text
+              numberOfLines={1}
+              className={`mt-1 text-[10px] font-semibold ${done ? 'text-primary' : 'text-muted'}`}
+            >
+              {step.label}
+            </Text>
+            {done && !!step.at && (
+              <Text numberOfLines={1} className="text-[9px] text-muted">
+                {formatTime(new Date(step.at))}
               </Text>
             )}
           </View>

@@ -31,6 +31,7 @@ type Props = {
  */
 export function OrderMapFallback({ order, reason }: Props) {
   const colors = useResolvedAppColors();
+  // Punto de recogida: el negocio o, en un mandado, su recogida (opcional).
   const business: LatLng | null =
     order.organizational?.latitude != null &&
     order.organizational?.longitude != null
@@ -38,7 +39,9 @@ export function OrderMapFallback({ order, reason }: Props) {
           latitude: order.organizational.latitude,
           longitude: order.organizational.longitude,
         }
-      : null;
+      : order.pickupLatitude != null && order.pickupLongitude != null
+        ? { latitude: order.pickupLatitude, longitude: order.pickupLongitude }
+        : null;
   const destination: LatLng | null =
     order.deliveryLatitude != null && order.deliveryLongitude != null
       ? {

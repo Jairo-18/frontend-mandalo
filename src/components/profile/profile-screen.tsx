@@ -1,54 +1,33 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   View,
 } from 'react-native';
 import { GoogleButton } from '@/components/auth/google-button';
-import { Button } from '@/components/ui/button';
-import { KeyboardAwareScroll } from '@/components/ui/keyboard-aware-scroll';
+import { Avatar } from '@/components/ui/avatar';
 import { PanelHeader, PanelSafeArea } from '@/components/ui/panel-header';
-import { PhotoField } from '@/components/ui/photo-field';
-import { Select } from '@/components/ui/select';
-import { TextField } from '@/components/ui/text-field';
 import { YesNoDialog } from '@/components/ui/yes-no-dialog';
 import { useAppData } from '@/context/app-data';
-import { useFormErrors } from '@/hooks/use-form-errors';
 import { useGoogleServices } from '@/hooks/use-google-services';
-import { useMunicipalities } from '@/hooks/use-municipalities';
 import { getGoogleIdToken } from '@/lib/google-auth';
 import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
-import {
-  DeviceCoords,
-  getDeviceLocation,
-  samePlaceName,
-} from '@/lib/location';
 import { WebNotifyRow } from '@/components/ui/web-notify-row';
 import { getSession, setSession } from '@/lib/session';
 import { signOutEverywhere } from '@/lib/sign-out';
-import { formatText, normalizePhone, PHONE_PREFIX } from '@/lib/text-format';
+import { formatText } from '@/lib/text-format';
 import { MyProfile, profileService } from '@/services/profile';
 import { buildSocialLinkItems } from '@/lib/social-links';
-import { getAppColors } from '@/lib/app-colors';
+import { openStoreReview, STORE_LABEL, storeFor } from '@/lib/rate-app';
+import { AnimatedSocialIcon } from '@/components/ui/animated-social-icon';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
-
-/** Campos editables cuyo valor inicial se recuerda para detectar cambios. */
-type FormSnapshot = {
-  fullName: string;
-  username: string;
-  phone: string;
-  address: string;
-  identificationNumber: string;
-  identificationTypeId?: number;
-  departmentId?: number;
-  municipalityId?: number;
-};
 
 type Props = {
   menu?: ReactNode;
@@ -60,19 +39,22 @@ type Props = {
    * no se muestra la fila (el cliente no tiene documentos que subir).
    */
   resendDocumentsHref?: '/delivery/resend-documents';
+  /** Ruta de "Editar información" (el formulario vive en su propia pantalla). */
+  editProfileHref: '/edit-profile' | '/delivery/edit-profile';
 };
 
 /**
- * Pantalla "Mi perfil" COMPARTIDA entre los paneles del cliente y el
- * repartidor: editar datos personales (nombre, teléfono, foto), completar
- * la identificación, vincular la cuenta con Google y entrar a cambiar la
- * contraseña. Los datos de sesión (nombre/foto) se refrescan al guardar.
- * Cada rol la monta desde su propia ruta.
+ * Pantalla "Mi cuenta" COMPARTIDA entre los paneles del cliente y el
+ * repartidor: MUESTRA los datos personales (solo lectura: se editan en
+ * "Editar información", con el lápiz de la foto o el botón), vincula la
+ * cuenta con Google, entra a cambiar la contraseña, reseñas, eliminar la
+ * cuenta y ayuda/legal. Cada rol la monta desde su propia ruta.
  */
 export function ProfileScreen({
   menu,
   changePasswordHref,
   resendDocumentsHref,
+  editProfileHref,
 }: Props) {
   const colors = useResolvedAppColors();
   const router = useRouter();
@@ -80,225 +62,76 @@ export function ProfileScreen({
   // pedidos); el repartidor no lo tiene, así que la nota de más abajo no
   // aplica para él.
   const isClient = changePasswordHref === '/change-password';
-  const { departments, identificationTypes, platformSocial } = useAppData();
+  const { departments, platformSocial, getMunicipalities } = useAppData();
   const socialItems = buildSocialLinkItems(platformSocial);
-  const muni = useMunicipalities();
-  const { errors, clearError, bind, validate } = useFormErrors();
 
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Datos personales
-  const [fullName, setFullName] = useState('');
-  const [username, setUsername] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [identificationNumber, setIdentificationNumber] = useState('');
-  const [identificationTypeId, setIdentificationTypeId] = useState<number>();
-  const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
-  const [avatarRemoved, setAvatarRemoved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  // Ubicación re-marcada con el GPS en ESTA visita (null = quedó la guardada).
-  const [coords, setCoords] = useState<DeviceCoords | null>(null);
-  const [locating, setLocating] = useState(false);
-  // Valores con los que se prellenó el form: guardar se habilita solo si algo cambió.
-  const [initial, setInitial] = useState<FormSnapshot | null>(null);
+  const [municipalityName, setMunicipalityName] = useState<string | null>(null);
 
   // Cuenta: vínculo con Google (el botón de VINCULAR necesita el sign-in
   // nativo, así que no aparece en un Android sin GMS — desvincular sí sigue,
   // es una llamada normal al API. Ver `lib/google-services.ts`).
   const googleServices = useGoogleServices();
+  // Tienda donde se califica la app (App Store / Google Play / AppGallery).
+  const store = storeFor(googleServices);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [confirmUnlink, setConfirmUnlink] = useState(false);
 
-  // Cuenta: eliminar cuenta (self-service, exigido por Google Play)
+  // Cuenta: eliminar cuenta (self-service, exigido por las tiendas). Pide
+  // confirmación y manda un correo con el enlace que la elimina de verdad.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletionEmailSent, setDeletionEmailSent] = useState(false);
 
   // Cuenta: cerrar sesión (antes vivía en el pie del drawer, ver NOTAS).
   const [signingOut, setSigningOut] = useState(false);
 
-  const departmentOptions = useMemo(
-    () => departments.map((d) => ({ label: d.name, value: d.id })),
-    [departments],
-  );
-  const municipalityOptions = useMemo(
-    () => muni.municipalities.map((m) => ({ label: m.name, value: m.id })),
-    [muni.municipalities],
-  );
-  const identificationTypeOptions = useMemo(
-    () => identificationTypes.map((t) => ({ label: t.name, value: t.id })),
-    [identificationTypes],
-  );
-
-  useEffect(() => {
-    profileService
-      .getMe()
-      .then((res) => {
-        const p = res.data;
-        setProfile(p);
-        setFullName(p.fullName ?? '');
-        setUsername(p.username ?? '');
-        // El backend guarda "+573102103660"; acá se muestra legible.
-        setPhone(p.phone ? formatText('phone', p.phone) : PHONE_PREFIX);
-        setAddress(p.address ?? '');
-        setIdentificationNumber(p.identificationNumber ?? '');
-        setIdentificationTypeId(p.identificationTypeId ?? undefined);
-        muni.preload(
-          p.departmentId ?? undefined,
-          p.municipalityId ?? undefined,
-        );
-        setInitial({
-          fullName: p.fullName ?? '',
-          username: p.username ?? '',
-          phone: p.phone ? formatText('phone', p.phone) : PHONE_PREFIX,
-          address: p.address ?? '',
-          identificationNumber: p.identificationNumber ?? '',
-          identificationTypeId: p.identificationTypeId ?? undefined,
-          departmentId: p.departmentId ?? undefined,
-          municipalityId: p.municipalityId ?? undefined,
-        });
-      })
-      .catch(() => {
-        // El interceptor HTTP ya mostró el toast.
-      })
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Se recarga cada vez que se vuelve a esta pantalla (p. ej. después de
+  // "Editar información"), no solo al montarla.
+  const loadProfile = useCallback(async () => {
+    try {
+      const res = await profileService.getMe();
+      setProfile(res.data);
+    } catch {
+      // El interceptor HTTP ya mostró el toast.
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  /** Refresca nombre/foto en la sesión persistida (cabecera del drawer). */
-  async function refreshSessionUser(changes: {
-    fullName?: string;
-    avatarUrl?: string | null;
-  }) {
+  useFocusEffect(
+    useCallback(() => {
+      void loadProfile();
+    }, [loadProfile]),
+  );
+
+  // Nombre del municipio (el perfil trae solo el id; se resuelve del catálogo).
+  useEffect(() => {
+    const deptId = profile?.departmentId;
+    const munId = profile?.municipalityId;
+    if (!deptId || !munId) {
+      setMunicipalityName(null);
+      return;
+    }
+    let alive = true;
+    getMunicipalities(deptId)
+      .then((muns) => {
+        if (alive) setMunicipalityName(muns.find((m) => m.id === munId)?.name ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [profile?.departmentId, profile?.municipalityId, getMunicipalities]);
+
+  /** Refresca la foto en la sesión persistida (cabecera del drawer). */
+  async function refreshSessionUser(changes: { avatarUrl?: string | null }) {
     const session = getSession();
     if (!session) return;
     await setSession({
       ...session,
       user: { ...session.user, ...changes },
     });
-  }
-
-  // Sin cambios no hay nada que guardar (evita PATCH inútiles al backend).
-  const dirty =
-    !!pendingAvatar ||
-    avatarRemoved ||
-    !!coords ||
-    (!!initial &&
-      (fullName !== initial.fullName ||
-        username !== initial.username ||
-        phone !== initial.phone ||
-        address !== initial.address ||
-        identificationNumber !== initial.identificationNumber ||
-        identificationTypeId !== initial.identificationTypeId ||
-        muni.departmentId !== initial.departmentId ||
-        muni.municipalityId !== initial.municipalityId));
-
-  /**
-   * Re-marca la ubicación con el GPS (espejo del registro): actualiza las
-   * coordenadas, la dirección legible y preselecciona depto/municipio según
-   * el geocoder. La dirección es de solo lectura para que el texto siempre
-   * corresponda a las coordenadas guardadas.
-   */
-  async function handleUseLocation() {
-    setLocating(true);
-    try {
-      const result = await getDeviceLocation();
-      if (result) {
-        setCoords(result.coords);
-        setAddress(
-          result.address ??
-            `Ubicación GPS (${result.coords.latitude.toFixed(5)}, ${result.coords.longitude.toFixed(5)})`,
-        );
-        clearError('address');
-        // Preselección de departamento/municipio según el geocoder (los
-        // selects siguen editables por si el nombre no matchea con el DANE).
-        if (result.region) {
-          const dept = departments.find((d) =>
-            samePlaceName(d.name, result.region),
-          );
-          if (dept && result.city) {
-            const muns = await muni.preload(dept.id);
-            const mun = muns.find((m) => samePlaceName(m.name, result.city));
-            if (mun) muni.setMunicipalityId(mun.id);
-          }
-        }
-      }
-    } finally {
-      setLocating(false);
-    }
-  }
-
-  async function handleSave() {
-    const ok = validate({
-      fullName: fullName.trim() ? undefined : 'Ingresa tu nombre completo.',
-      // La identificación es opcional (registro rápido), pero si se llena un
-      // campo del par tipo+número, se exige el otro.
-      identificationTypeId:
-        identificationNumber.trim() && !identificationTypeId
-          ? 'Selecciona el tipo.'
-          : undefined,
-      identificationNumber:
-        identificationTypeId && !identificationNumber.trim()
-          ? 'Ingresa tu número de identificación.'
-          : undefined,
-    });
-    if (!ok) return;
-
-    try {
-      setSaving(true);
-      await profileService.updateMe({
-        fullName: fullName.trim(),
-        username: username.trim() || undefined,
-        phone: normalizePhone(phone) || undefined,
-        address: address.trim() || undefined,
-        departmentId: muni.departmentId,
-        municipalityId: muni.municipalityId,
-        identificationNumber: identificationNumber.trim() || undefined,
-        identificationTypeId,
-        // Solo si se re-marcó con el GPS (si no, quedan las guardadas).
-        ...(coords && {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        }),
-      });
-
-      let avatarUrl = profile?.avatarUrl ?? null;
-      if (pendingAvatar) {
-        const res = await profileService.uploadAvatar(pendingAvatar);
-        avatarUrl = res.data.avatarUrl;
-        setPendingAvatar(null);
-        setProfile((p) => (p ? { ...p, avatarUrl } : p));
-      } else if (avatarRemoved && profile?.avatarUrl) {
-        await profileService.removeAvatar();
-        avatarUrl = null;
-        setProfile((p) => (p ? { ...p, avatarUrl: null } : p));
-      }
-      setAvatarRemoved(false);
-      await refreshSessionUser({ fullName: fullName.trim(), avatarUrl });
-
-      // Lo recién guardado pasa a ser el punto de partida: el botón vuelve
-      // a deshabilitarse hasta que algo cambie de nuevo.
-      if (coords) {
-        setProfile((p) =>
-          p ? { ...p, latitude: coords.latitude, longitude: coords.longitude } : p,
-        );
-        setCoords(null);
-      }
-      setInitial({
-        fullName,
-        username,
-        phone,
-        address,
-        identificationNumber,
-        identificationTypeId,
-        departmentId: muni.departmentId,
-        municipalityId: muni.municipalityId,
-      });
-    } catch {
-      // El interceptor HTTP ya mostró el toast (409 de duplicados, etc.).
-    } finally {
-      setSaving(false);
-    }
   }
 
   async function handleLinkGoogle() {
@@ -331,15 +164,16 @@ export function ProfileScreen({
   }
 
   /**
-   * El backend ya deja la cuenta inutilizable (borrada o baneada) — acá solo
-   * queda limpiar todo del lado del dispositivo y volver al login, igual que
-   * un cierre de sesión normal. (`YesNoDialog` ya maneja su propio spinner
-   * mientras esta promesa está pendiente.)
+   * Paso 1 de "Eliminar mi cuenta": el backend manda al correo de la cuenta
+   * un enlace (30 min, un solo uso) que es el que la elimina de verdad. La
+   * sesión sigue abierta hasta entonces; al confirmarse, el siguiente
+   * request da 401 y la app cierra sesión sola.
    */
   async function handleDeleteAccount() {
     try {
-      await profileService.deleteAccount();
-      await signOutEverywhere();
+      await profileService.requestAccountDeletion();
+      setConfirmDelete(false);
+      setDeletionEmailSent(true);
     } catch {
       // El interceptor HTTP ya mostró el toast.
       setConfirmDelete(false);
@@ -376,178 +210,95 @@ export function ProfileScreen({
       <View className="flex-1 bg-surface">
       <PanelHeader title="Mi cuenta" menu={menu} />
 
-      {/* safeBottom=false: esta pantalla vive dentro del menú inferior de
-          Tabs (cliente/repartidor), que ya reserva el inset real por su
-          cuenta — sumarlo acá también dejaba un espacio vacío de más. */}
-      <KeyboardAwareScroll safeBottom={false}>
+      {/* Sin sumar insets.bottom: esta pantalla vive dentro del menú inferior
+          de Tabs (cliente/repartidor), que ya reserva el inset real. */}
+      <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
         <View className="px-5 pb-4">
-          {/* ---- Datos personales ---- */}
+          {/* ---- Datos personales (solo lectura) ---- */}
           <View className="mt-5 rounded-2xl border border-border bg-card p-4">
             <View className="items-center">
-              <PhotoField
-                label="Foto de perfil"
-                imageUrl={avatarRemoved ? null : profile?.avatarUrl}
-                pendingUri={pendingAvatar}
-                onChange={(uri) => {
-                  setPendingAvatar(uri);
-                  setAvatarRemoved(false);
-                }}
-                onRemove={
-                  pendingAvatar || profile?.avatarUrl
-                    ? () => {
-                        if (pendingAvatar) setPendingAvatar(null);
-                        else setAvatarRemoved(true);
-                      }
-                    : undefined
+              <View>
+                <Avatar
+                  uri={profile?.avatarUrl}
+                  fallbackSource={DEFAULT_USER_AVATAR}
+                  size={88}
+                  shape="circle"
+                />
+                {/* Lápiz junto a la foto: entra a "Editar información". */}
+                <Pressable
+                  onPress={() => router.push(editProfileHref)}
+                  hitSlop={8}
+                  accessibilityLabel="Editar información"
+                  className="absolute -bottom-1 -right-1 h-9 w-9 items-center justify-center rounded-full border-2 border-card bg-primary active:opacity-80"
+                >
+                  <Ionicons name="pencil" size={16} color="#FFFFFF" />
+                </Pressable>
+              </View>
+              <Text className="mt-3 text-center text-lg font-extrabold text-ink">
+                {profile?.fullName}
+              </Text>
+              {!!profile?.username && (
+                <Text className="text-[13px] text-muted">@{profile.username}</Text>
+              )}
+              {/* Rol visible para el repartidor (la pantalla es compartida). */}
+              {!isClient && (
+                <View className="mt-2 flex-row items-center gap-1.5 rounded-full bg-primary-tint px-3 py-1">
+                  <Ionicons name="bicycle" size={14} color={colors.primaryColor} />
+                  <Text className="text-[12px] font-bold text-primary">Repartidor</Text>
+                </View>
+              )}
+            </View>
+
+            <View className="mt-4">
+              <InfoRow
+                icon="call-outline"
+                label="Celular"
+                value={profile?.phone ? formatText('phone', profile.phone) : null}
+              />
+              <InfoRow
+                icon="card-outline"
+                label="Identificación"
+                value={
+                  profile?.identificationNumber
+                    ? `${profile.identificationType?.name ?? ''} ${profile.identificationNumber}`.trim()
+                    : null
                 }
-                fallbackSource={DEFAULT_USER_AVATAR}
+              />
+              <InfoRow
+                icon="map-outline"
+                label="Municipio"
+                value={
+                  [
+                    municipalityName,
+                    departments.find((d) => d.id === profile?.departmentId)?.name,
+                  ]
+                    .filter(Boolean)
+                    .join(', ') || null
+                }
+              />
+              <InfoRow
+                icon="home-outline"
+                label={isClient ? 'Dirección de mi perfil' : 'Dirección'}
+                value={profile?.address ?? null}
               />
             </View>
 
-            <TextField
-              label="Nombre completo"
-              icon="person-outline"
-              format="name"
-              value={fullName}
-              onChangeText={bind('fullName', setFullName)}
-              error={errors.fullName}
-              placeholder="Juan Pérez"
-            />
-            <TextField
-              label="Nombre de usuario"
-              icon="at-outline"
-              format="username"
-              value={username}
-              onChangeText={bind('username', setUsername)}
-              error={errors.username}
-              placeholder="juanp"
-            />
-            <TextField
-              label="Celular"
-              icon="call-outline"
-              format="phone"
-              value={phone}
-              onChangeText={bind('phone', setPhone)}
-              error={errors.phone}
-              placeholder="+57 - 310 210 366 0"
-            />
-
-            <Select
-              label="Tipo de identificación"
-              icon="card-outline"
-              placeholder="Selecciona el tipo"
-              options={identificationTypeOptions}
-              value={identificationTypeId}
-              onSelect={(id) => {
-                setIdentificationTypeId(id);
-                clearError('identificationTypeId');
-              }}
-              error={errors.identificationTypeId}
-            />
-            <TextField
-              label="Número de identificación"
-              icon="finger-print-outline"
-              format="identification"
-              maxLength={15}
-              value={identificationNumber}
-              onChangeText={bind(
-                'identificationNumber',
-                setIdentificationNumber,
-              )}
-              error={errors.identificationNumber}
-              placeholder="1090123456"
-            />
-
-            {isClient && (
-              <Text className="mb-3 -mt-1 text-xs leading-4 text-muted">
-                Esta es la ubicación donde vives siempre (tu perfil). Para
-                mandar tus pedidos SIEMPRE se usa la dirección que elijas en
-                &quot;Mis direcciones&quot;, no esta.
-              </Text>
-            )}
-
-            <Select
-              label="Departamento"
-              icon="map-outline"
-              placeholder="Selecciona tu departamento"
-              options={departmentOptions}
-              value={muni.departmentId}
-              onSelect={(id) => {
-                clearError('departmentId');
-                muni.onSelectDepartment(id);
-              }}
-              error={errors.departmentId}
-            />
-            <Select
-              label="Municipio"
-              icon="location-outline"
-              placeholder={
-                muni.departmentId
-                  ? 'Selecciona tu municipio'
-                  : 'Elige un departamento primero'
-              }
-              options={municipalityOptions}
-              value={muni.municipalityId}
-              onSelect={(id) => {
-                muni.setMunicipalityId(id);
-                clearError('municipalityId');
-              }}
-              disabled={!muni.departmentId || muni.loadingMuns}
-              loading={muni.loadingMuns}
-              error={errors.municipalityId}
-            />
-            {/* Solo lectura: la llena "Usar mi ubicación actual" para que el
-                texto siempre corresponda a las coordenadas reales (igual que
-                en el registro). */}
-            <TextField
-              label="Dirección (se llena con tu ubicación)"
-              icon="home-outline"
-              format="text"
-              value={address}
-              error={errors.address}
-              placeholder="Toca «Usar mi ubicación actual»"
-              editable={false}
-            />
             <Pressable
-              onPress={handleUseLocation}
-              disabled={locating}
-              className="-mt-2 mb-4 flex-row items-center gap-1.5 self-start"
+              onPress={() => router.push(editProfileHref)}
+              className="mt-1 h-12 flex-row items-center justify-center gap-2 rounded-2xl border border-primary active:opacity-70"
             >
-              {locating ? (
-                <ActivityIndicator size="small" color={colors.primaryColor} />
-              ) : (
-                <Ionicons
-                  name={coords ? 'checkmark-circle' : 'locate-outline'}
-                  size={16}
-                  color={colors.primaryColor}
-                />
-              )}
-              <Text className="text-[13px] font-bold text-primary">
-                {locating
-                  ? 'Obteniendo ubicación…'
-                  : coords
-                    ? 'Ubicación actualizada — se guarda al guardar cambios'
-                    : profile?.latitude != null
-                      ? 'Actualizar con mi ubicación actual'
-                      : 'Usar mi ubicación actual'}
-              </Text>
+              <Ionicons name="create-outline" size={18} color={colors.primaryColor} />
+              <Text className="text-[15px] font-bold text-primary">Editar información</Text>
             </Pressable>
-
-            <Button
-              label="Guardar cambios"
-              onPress={handleSave}
-              loading={saving}
-              disabled={!dirty}
-            />
           </View>
 
           {/* ---- Cuenta ---- */}
           <Text className="mb-2 mt-6 text-base font-extrabold text-ink">
             Cuenta
           </Text>
-          <View className="rounded-2xl border border-border bg-card p-4">
+          <View className="gap-2 rounded-2xl border border-border bg-card p-4">
             {/* Correo (solo lectura: cambiarlo requeriría re-verificación) */}
-            <View className="mb-4 flex-row items-center gap-3">
+            <View className="flex-row items-center gap-3 px-3.5 pb-1">
               <Ionicons name="mail-outline" size={20} color={colors.mutedColor} />
               <View className="flex-1">
                 <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
@@ -561,7 +312,7 @@ export function ProfileScreen({
 
             {/* Google */}
             {profile?.googleId ? (
-              <View className="mb-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3">
+              <View className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3">
                 <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
                 <Text className="flex-1 text-[14px] font-medium text-ink">
                   Cuenta vinculada con Google
@@ -580,7 +331,7 @@ export function ProfileScreen({
               // Vincular usa el sign-in NATIVO de Google → solo en la app y
               // solo con GMS. (Desvincular sí queda en web: es una llamada
               // normal al API.)
-              <View className="mb-4">
+              <View>
                 <GoogleButton
                   label="Vincular con Google"
                   onPress={handleLinkGoogle}
@@ -596,7 +347,7 @@ export function ProfileScreen({
             {resendDocumentsHref && profile && !profile.isActive && (
               <Pressable
                 onPress={() => router.push(resendDocumentsHref)}
-                className="mb-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+                className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
               >
                 <Ionicons name="document-attach-outline" size={20} color={colors.primaryColor} />
                 <Text className="flex-1 text-[14px] font-bold text-ink">
@@ -608,7 +359,7 @@ export function ProfileScreen({
             {resendDocumentsHref && profile?.isActive && (
               <Pressable
                 onPress={() => router.push(resendDocumentsHref)}
-                className="mb-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+                className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
               >
                 <Ionicons name="shield-checkmark-outline" size={20} color="#22C55E" />
                 <Text className="flex-1 text-[14px] font-bold text-ink">
@@ -620,6 +371,40 @@ export function ProfileScreen({
 
             {/* Solo web: en nativo devuelve null (el push ya pide su permiso). */}
             <WebNotifyRow />
+
+            {/* Mis favoritos (solo cliente): negocios y productos guardados. */}
+            {isClient && (
+              <Pressable
+                onPress={() => router.push('/favorites')}
+                className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+              >
+                <Ionicons name="heart-outline" size={20} color={colors.primaryColor} />
+                <Text className="flex-1 text-[14px] font-bold text-ink">Mis favoritos</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
+              </Pressable>
+            )}
+
+            {/* Mis datos de pago (solo repartidor): su Nequi para los mandados. */}
+            {!!resendDocumentsHref && (
+              <Pressable
+                onPress={() => router.push('/delivery/payment-info')}
+                className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+              >
+                <Ionicons name="wallet-outline" size={20} color={colors.primaryColor} />
+                <Text className="flex-1 text-[14px] font-bold text-ink">Mis datos de pago</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
+              </Pressable>
+            )}
+
+            {/* Mis reseñas: lo que opinan de mí (promedio + reseñas recibidas). */}
+            <Pressable
+              onPress={() => router.push(isClient ? '/reviews' : '/delivery/reviews')}
+              className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+            >
+              <Ionicons name="star-outline" size={20} color={colors.primaryColor} />
+              <Text className="flex-1 text-[14px] font-bold text-ink">Mis reseñas</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.mutedColor} />
+            </Pressable>
 
             {/* Cambiar contraseña: pantalla propia */}
             <Pressable
@@ -638,7 +423,7 @@ export function ProfileScreen({
             <Pressable
               onPress={handleLogout}
               disabled={signingOut}
-              className="mt-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+              className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
               {signingOut ? (
                 <ActivityIndicator size="small" color={colors.primaryColor} />
@@ -653,7 +438,7 @@ export function ProfileScreen({
             {/* Eliminar cuenta: self-service exigido por Google Play. Separada
                 con más espacio (y una línea divisoria) del resto de rutas: es
                 la única acción destructiva de la lista. */}
-            <View className="mt-5 border-t border-border pt-4">
+            <View className="mt-1 border-t border-border pt-3">
               <Pressable
                 onPress={() => setConfirmDelete(true)}
                 className="flex-row items-center gap-3 rounded-xl border border-red-200 px-3.5 py-3 active:opacity-70"
@@ -671,7 +456,25 @@ export function ProfileScreen({
           <Text className="mb-2 mt-6 text-base font-extrabold text-ink">
             Ayuda y legal
           </Text>
-          <View className="rounded-2xl border border-border bg-card p-4">
+          <View className="gap-2 rounded-2xl border border-border bg-card p-4">
+            {/* Reseña de la APP en su tienda (App Store / Google Play /
+                AppGallery según el teléfono; en web, según el equipo). */}
+            <Pressable
+              onPress={() => void openStoreReview()}
+              className="flex-row items-center gap-3 rounded-xl bg-amber-50 px-3.5 py-3 active:opacity-70"
+            >
+              <Ionicons name="star" size={20} color="#F5A623" />
+              <View className="flex-1">
+                <Text className="text-[14px] font-bold text-amber-900">
+                  Califica Mandalo en {STORE_LABEL[store]}
+                </Text>
+                <Text className="text-[12px] text-amber-800">
+                  Tu opinión nos ayuda a crecer
+                </Text>
+              </View>
+              <Ionicons name="open-outline" size={16} color="#92400E" />
+            </Pressable>
+
             {/* Guía de uso: mismo contenido de la página que se comparte por
                 fuera, pero adaptada como pantalla nativa (pedido del cliente). */}
             <Pressable
@@ -688,7 +491,7 @@ export function ProfileScreen({
             {/* Términos y Condiciones de Uso (TYC-001). */}
             <Pressable
               onPress={() => router.push('/terminos-y-condiciones-de-uso')}
-              className="mt-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+              className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
               <Ionicons name="document-text-outline" size={20} color={colors.mutedColor} />
               <Text className="flex-1 text-[14px] font-bold text-ink">
@@ -703,7 +506,7 @@ export function ProfileScreen({
                 Fusionada dentro de esta misma app (NOTAS §62). */}
             <Pressable
               onPress={() => router.push('/politicas-de-privacidad')}
-              className="mt-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+              className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
             >
               <Ionicons name="shield-outline" size={20} color={colors.mutedColor} />
               <Text className="flex-1 text-[14px] font-bold text-ink">
@@ -714,13 +517,13 @@ export function ProfileScreen({
 
             {/* Redes/contacto que el admin carga en "Aplicación" — vacío si
                 todavía no cargó nada. */}
-            {socialItems.map((item) => (
+            {socialItems.map((item, i) => (
               <Pressable
                 key={item.key}
                 onPress={() => Linking.openURL(item.url)}
-                className="mt-4 flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
+                className="flex-row items-center gap-3 rounded-xl bg-surface px-3.5 py-3 active:opacity-70"
               >
-                <Ionicons name={item.icon} size={20} color={colors.mutedColor} />
+                <AnimatedSocialIcon icon={item.icon} color={item.color} size={20} index={i} />
                 <Text className="flex-1 text-[14px] font-bold text-ink">
                   {item.label}
                 </Text>
@@ -729,7 +532,7 @@ export function ProfileScreen({
             ))}
           </View>
         </View>
-      </KeyboardAwareScroll>
+      </ScrollView>
       </View>
 
       <YesNoDialog
@@ -748,13 +551,49 @@ export function ProfileScreen({
         visible={confirmDelete}
         destructive
         icon="trash-outline"
-        title="¿Eliminar tu cuenta?"
-        message="Esta acción no se puede deshacer. Se borran de inmediato tu nombre, correo, teléfono, dirección, foto y documentos. Si tienes pedidos en tu historial, la cuenta queda anónima (el registro de esos pedidos se conserva por contabilidad); si no tienes historial, se borra por completo."
-        confirmLabel="Sí, eliminar"
+        title="¿Seguro que deseas eliminar tu cuenta?"
+        message={`Te enviaremos un correo a ${profile?.email ?? 'tu correo'} con un enlace para confirmar (vence en 30 minutos). Al confirmarlo se borran tu nombre, correo, teléfono, dirección, foto y documentos, y no se puede deshacer. Si tienes pedidos, su registro se conserva de forma anónima por razones contables.`}
+        confirmLabel="Sí, enviar el correo"
         cancelLabel="No"
+        stacked
         onConfirm={handleDeleteAccount}
         onCancel={() => setConfirmDelete(false)}
       />
+
+      <YesNoDialog
+        visible={deletionEmailSent}
+        icon="mail-outline"
+        title="Revisa tu correo"
+        message={`Te enviamos un enlace a ${profile?.email ?? 'tu correo'}. Ábrelo en los próximos 30 minutos para eliminar tu cuenta. Si no lo ves, revisa la carpeta de spam. Mientras no lo abras, tu cuenta sigue igual.`}
+        confirmLabel="Entendido"
+        onConfirm={() => setDeletionEmailSent(false)}
+      />
     </PanelSafeArea>
+  );
+}
+
+/** Fila de solo lectura "ícono · etiqueta / valor" de los datos personales. */
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string | null;
+}) {
+  const colors = useResolvedAppColors();
+  return (
+    <View className="mb-3 flex-row items-start gap-3">
+      <Ionicons name={icon} size={18} color={colors.mutedColor} style={{ marginTop: 2 }} />
+      <View className="flex-1">
+        <Text className="text-[11px] font-bold uppercase tracking-wide text-muted">
+          {label}
+        </Text>
+        <Text className={`text-[14px] ${value ? 'font-medium text-ink' : 'italic text-muted'}`}>
+          {value ?? 'Sin completar'}
+        </Text>
+      </View>
+    </View>
   );
 }

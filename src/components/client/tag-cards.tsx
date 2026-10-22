@@ -3,6 +3,7 @@ import { ScrollView } from 'react-native';
 import { SquareCard } from '@/components/client/square-card';
 import { catalogIcon } from '@/lib/catalog-icon';
 import { ExploreFilterItem } from '@/services/explore';
+import { useWebHorizontalScroll } from '@/hooks/use-web-horizontal-scroll';
 
 type Props = {
   tags: ExploreFilterItem[];
@@ -25,8 +26,12 @@ export function TagCards({
   onToggle,
   onToggleAll,
 }: Props) {
+  const webScrollRef = useWebHorizontalScroll();
+
   return (
     <ScrollView
+      // Web: rueda del mouse y arrastre mueven la fila (ver el hook).
+      ref={webScrollRef}
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ gap: 10, paddingHorizontal: 20 }}

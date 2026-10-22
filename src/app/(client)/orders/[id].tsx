@@ -19,7 +19,7 @@ import { useAppTheme } from '@/context/app-theme';
 import { isAmbiguousFailure } from '@/lib/http';
 import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
 import { toast } from '@/lib/toast';
-import { Order, ordersService } from '@/services/orders';
+import { isErrand, Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
@@ -101,7 +101,12 @@ export default function ClientOrderDetailScreen() {
     }
   }
 
-  const canCancel = order?.stateType?.code === 'PEND';
+  // Pedido: mientras el negocio no lo acepte. Mandado: mientras nadie lo
+  // haya tomado (después el domiciliario ya pudo comprar/recoger).
+  const errand = isErrand(order);
+  const canCancel = errand
+    ? order?.stateType?.code === 'PREP' && !order.deliveryUserId
+    : order?.stateType?.code === 'PEND';
 
   return (
     // Solo top/left/right: esta pantalla vive dentro del menú inferior de
@@ -123,7 +128,7 @@ export default function ClientOrderDetailScreen() {
           <Ionicons name="arrow-back" size={20} color={colors.inkColor} />
         </Pressable>
         <Text className="flex-1 text-lg font-extrabold text-ink">
-          Pedido #{orderId}
+          {errand ? 'Mandado' : 'Pedido'} #{orderId}
         </Text>
         <ThemeToggle />
       </View>
@@ -170,7 +175,7 @@ export default function ClientOrderDetailScreen() {
                 className="h-[52px] items-center justify-center rounded-2xl border border-red-200 active:opacity-70"
               >
                 <Text className="text-[15px] font-bold text-red-600">
-                  Cancelar pedido
+                  {errand ? 'Cancelar mandado' : 'Cancelar pedido'}
                 </Text>
               </Pressable>
             </View>
@@ -182,8 +187,12 @@ export default function ClientOrderDetailScreen() {
         visible={confirmCancel}
         destructive
         icon="close-circle-outline"
-        title="¿Cancelar pedido?"
-        message="El negocio dejará de prepararlo. Esta acción no se puede deshacer."
+        title={errand ? '¿Cancelar mandado?' : '¿Cancelar pedido?'}
+        message={
+          errand
+            ? 'Se retira de la lista de los domiciliarios. Esta acción no se puede deshacer.'
+            : 'El negocio dejará de prepararlo. Esta acción no se puede deshacer.'
+        }
         confirmLabel="Sí, cancelar"
         cancelLabel="No"
         onConfirm={cancel}

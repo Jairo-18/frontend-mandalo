@@ -21,6 +21,9 @@ import { OrderTimeline } from '@/components/orders/order-timeline';
 import { Avatar } from '@/components/ui/avatar';
 import { PhotoActionsSheet } from '@/components/ui/photo-actions-sheet';
 import { PhotoPreviewModal } from '@/components/ui/photo-preview-modal';
+import { OrderReviewCard } from '@/components/reviews/order-review-card';
+import { ReviewsSheet } from '@/components/reviews/reviews-list';
+import { RatingBadge } from '@/components/reviews/star-rating';
 import { isAmbiguousFailure } from '@/lib/http';
 import { pickPhoto } from '@/lib/pick-photo';
 import { formatPrice } from '@/lib/price';
@@ -31,7 +34,8 @@ import {
   DEFAULT_USER_AVATAR,
 } from '@/lib/default-images';
 import { businessDisplayName } from '@/services/explore';
-import { Order, ordersService } from '@/services/orders';
+import { isErrand, Order, ordersService } from '@/services/orders';
+import { ReviewsPage, reviewsService } from '@/services/reviews';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
@@ -69,10 +73,21 @@ export function OrderDetailView({
   const [proofMenuVisible, setProofMenuVisible] = useState(false);
   const [decidingFailure, setDecidingFailure] = useState(false);
   const [retryingTimeout, setRetryingTimeout] = useState(false);
+  // Reseñas de un contacto (al tocar sus estrellas).
+  const [reviewsOf, setReviewsOf] = useState<{
+    title: string;
+    fetchPage: (page: number) => Promise<{ data: ReviewsPage }>;
+  } | null>(null);
 
   const businessName = order.organizational
     ? businessDisplayName(order.organizational)
     : 'Negocio';
+  // Mandado: sin negocio; el cliente le paga directo al domiciliario.
+  const errand = isErrand(order);
+  const kind = errand ? 'mandado' : 'pedido';
+  const errandFee = order.deliveryFee + order.deliverySurcharge;
+  const courier = order.deliveryUser;
+  const courierHasNequi = !!(courier?.nequiNumber || courier?.nequiKey || courier?.nequiQrUrl);
 
   // Soporte de pago: solo aplica a métodos distintos a efectivo. El cliente
   // dueño puede subirlo/cambiarlo mientras el pedido no esté cancelado; el
@@ -241,7 +256,7 @@ export function OrderDetailView({
           <View className="flex-row gap-2">
             <Ionicons name="alert-circle-outline" size={18} color="#B45309" />
             <Text className="flex-1 text-[13px] text-amber-700">
-              No se pudo entregar tu pedido
+              No se pudo entregar tu {kind}
               {order.deliveryFailReason ? `: ${order.deliveryFailReason}` : '.'}
             </Text>
           </View>
@@ -266,13 +281,13 @@ export function OrderDetailView({
                 className={`h-11 flex-1 items-center justify-center rounded-xl border border-red-300 active:opacity-70 ${decidingFailure ? 'opacity-60' : ''}`}
               >
                 <Text className="text-[13px] font-bold text-red-600">
-                  Cancelar pedido
+                  Cancelar {kind}
                 </Text>
               </Pressable>
             </View>
           ) : perspective === 'client' ? (
             <Text className="mt-2 text-[12px] text-amber-700">
-              Ya se usó el reintento disponible para este pedido.
+              Ya se usó el reintento disponible para este {kind}.
             </Text>
           ) : null}
         </View>
@@ -287,13 +302,25 @@ export function OrderDetailView({
         </View>
       )}
 
-      {/* Contactos */}
-      {perspective !== 'business' && (
+      {/* Calificaciones (pedido entregado): cada parte califica a las otras. */}
+      {state === 'ENTR' && <OrderReviewCard invoiceId={order.id} />}
+
+      {/* Contactos (con su calificación; tocarla abre sus reseñas) */}
+      {perspective !== 'business' && !errand && (
         <ContactRow
           icon="storefront-outline"
           avatarUri={order.organizational?.logoUrl}
           label={businessName}
           detail={order.organizational?.phone || order.organizational?.address}
+          rating={order.organizational}
+          onRatingPress={() =>
+            order.organizational &&
+            setReviewsOf({
+              title: `Reseñas de ${businessName}`,
+              fetchPage: (page) =>
+                reviewsService.forBusiness(order.organizational!.id, page),
+            })
+          }
         />
       )}
       {perspective !== 'client' && order.user && (
@@ -305,6 +332,14 @@ export function OrderDetailView({
           label={order.user.fullName}
           detail={order.user.phone}
           caption="Cliente"
+          rating={order.user}
+          onRatingPress={() =>
+            order.user &&
+            setReviewsOf({
+              title: `Reseñas de ${order.user.fullName}`,
+              fetchPage: (page) => reviewsService.forUser(order.user!.id, page),
+            })
+          }
         />
       )}
       {order.deliveryUser && perspective !== 'delivery' && (
@@ -316,6 +351,15 @@ export function OrderDetailView({
           label={order.deliveryUser.fullName}
           detail={order.deliveryUser.phone}
           caption="Domiciliario"
+          rating={order.deliveryUser}
+          onRatingPress={() =>
+            order.deliveryUser &&
+            setReviewsOf({
+              title: `Reseñas de ${order.deliveryUser.fullName}`,
+              fetchPage: (page) =>
+                reviewsService.forUser(order.deliveryUser!.id, page),
+            })
+          }
         />
       )}
 
@@ -332,6 +376,41 @@ export function OrderDetailView({
               : 'Chatear con el cliente'}
           </Text>
         </Pressable>
+      )}
+
+      {/* Mandado: qué hacer, dónde recoger y la compra a adelantar. */}
+      {errand && (
+        <>
+          <Text className="mb-2 mt-1 text-sm font-bold text-ink">El mandado</Text>
+          <View className="mb-5 gap-2.5 rounded-2xl bg-surface p-3.5">
+            <View className="flex-row gap-2.5">
+              <Ionicons name="clipboard-outline" size={18} color={colors.primaryColor} />
+              <Text className="flex-1 text-[14px] font-semibold text-ink">
+                {order.errandDescription}
+              </Text>
+            </View>
+            <View className="flex-row gap-2.5">
+              <Ionicons name="flag-outline" size={18} color={colors.mutedColor} />
+              <Text className="flex-1 text-[13px] text-ink">
+                {order.pickupAddress
+                  ? `Recoger en: ${order.pickupAddress}`
+                  : order.pickupLatitude != null
+                    ? 'Recoger en el punto marcado en el mapa'
+                    : 'Sin punto de recogida fijo'}
+              </Text>
+            </View>
+            {(order.errandPurchaseAmount ?? 0) > 0 && (
+              <View className="flex-row gap-2.5 rounded-xl bg-amber-50 p-3">
+                <Ionicons name="cart-outline" size={18} color="#B45309" />
+                <Text className="flex-1 text-[12px] leading-[17px] text-amber-800">
+                  {perspective === 'delivery'
+                    ? `Debes adelantar la compra (aprox. ${formatPrice(order.errandPurchaseAmount ?? 0)}). El cliente te la devuelve al recibir; guarda la factura.`
+                    : `El domiciliario adelanta la compra (aprox. ${formatPrice(order.errandPurchaseAmount ?? 0)}). Devuélvesela al recibir según la factura.`}
+                </Text>
+              </View>
+            )}
+          </View>
+        </>
       )}
 
       {/* Dirección de entrega */}
@@ -387,7 +466,9 @@ export function OrderDetailView({
         </View>
       )}
 
-      {/* Artículos */}
+      {/* Artículos (un mandado no tiene). */}
+      {!errand && (
+      <>
       <Text className="mb-2 text-sm font-bold text-ink">Artículos</Text>
       <View className="mb-5 rounded-2xl bg-surface p-3.5">
         {(order.details ?? []).map((detail, idx) => (
@@ -397,19 +478,25 @@ export function OrderDetailView({
           >
             {/* Foto del producto (si el negocio lo borró, queda el icono). */}
             <Avatar
-              uri={detail.product?.images?.[0]}
+              uri={detail.promotion?.imageUrl ?? detail.product?.images?.[0]}
               fallbackSource={DEFAULT_PRODUCT_IMAGE}
-              icon="cube-outline"
+              icon={detail.promotionId ? 'pricetags-outline' : 'cube-outline'}
               size={40}
               shape="rounded"
             />
             <Text className="text-[13px] font-extrabold text-primary">
               {detail.quantity}×
             </Text>
-            <Text numberOfLines={1} className="flex-1 text-[13px] text-ink">
-              {detail.productName}
-              {detail.discount > 0 ? ` (-${detail.discount}%)` : ''}
-            </Text>
+            <View className="flex-1">
+              <Text numberOfLines={1} className="text-[13px] text-ink">
+                {detail.productName}
+                {detail.discount > 0 ? ` (-${detail.discount}%)` : ''}
+              </Text>
+              {/* Promo: qué incluye, congelado al pedir (lo que hay que preparar). */}
+              {!!detail.itemsDescription && (
+                <Text className="text-[11px] text-muted">{detail.itemsDescription}</Text>
+              )}
+            </View>
             {/* Ancho mínimo: ver AmountRow (montos recortados en Android). */}
             <Text
               numberOfLines={1}
@@ -421,6 +508,8 @@ export function OrderDetailView({
           </View>
         ))}
       </View>
+      </>
+      )}
 
       {/* Pago + nota */}
       <View className="mb-5 rounded-2xl bg-surface p-3.5">
@@ -429,8 +518,40 @@ export function OrderDetailView({
           <Text className="text-[13px] text-ink">
             Pago: {order.paidType?.name ?? '—'}
             {order.paidType?.code === 'EFEC' ? ' (contra-entrega)' : ''}
+            {errand ? ' · se le paga al domiciliario' : ''}
           </Text>
         </View>
+
+        {/* Mandado por Nequi: a dónde transferirle al domiciliario (el
+            cliente lo ve en cuanto alguien toma el mandado). */}
+        {errand &&
+          perspective === 'client' &&
+          order.paidType?.code === 'NEQUI' &&
+          !['ENTR', 'CANC'].includes(state) &&
+          (courier ? (
+            courierHasNequi && (
+              <View className="mt-2.5 rounded-xl bg-primary-tint p-3">
+                <Text className="mb-1 text-[13px] font-extrabold text-ink">
+                  Al recibir, paga {formatPrice(order.total)}
+                  {courier.paymentHolderName ? ` a ${courier.paymentHolderName}` : ''}
+                </Text>
+                {!!courier.nequiNumber && (
+                  <PayRow label="Número Nequi" value={courier.nequiNumber} />
+                )}
+                {!!courier.nequiKey && <PayRow label="Llave Nequi" value={courier.nequiKey} />}
+                {!!courier.nequiQrUrl && (
+                  <PaymentQr
+                    uri={courier.nequiQrUrl}
+                    caption="Escanea el QR desde tu app Nequi (o la de tu banco)"
+                  />
+                )}
+              </View>
+            )
+          ) : (
+            <Text className="mt-2 text-[12px] text-muted">
+              Verás el Nequi del domiciliario cuando tome tu mandado.
+            </Text>
+          ))}
         {!!order.notes && (
           <View className="mt-2 flex-row items-start gap-2">
             <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.mutedColor} />
@@ -545,6 +666,18 @@ export function OrderDetailView({
               </Text>
             )}
 
+            {/* Cómo debe ser la foto: el negocio verifica el pago con el QR
+                del comprobante (Nequi / Bancolombia). */}
+            {canAttachProof && (
+              <View className="mt-2.5 flex-row gap-2 rounded-xl bg-amber-50 p-3">
+                <Ionicons name="camera-outline" size={16} color="#B45309" />
+                <Text className="flex-1 text-[12px] leading-[17px] text-amber-800">
+                  Por favor, envía una foto clara del comprobante completo, donde se vea
+                  el código QR, para que el negocio pueda verificar tu pago.
+                </Text>
+              </View>
+            )}
+
             {canAttachProof && (
               <Pressable
                 onPress={() => setProofMenuVisible(true)}
@@ -606,7 +739,35 @@ export function OrderDetailView({
         onClose={() => setProofMenuVisible(false)}
       />
 
+      <ReviewsSheet
+        visible={!!reviewsOf}
+        title={reviewsOf?.title ?? ''}
+        fetchPage={(page) =>
+          reviewsOf ? reviewsOf.fetchPage(page) : Promise.reject(new Error('sin destino'))
+        }
+        onClose={() => setReviewsOf(null)}
+      />
+
       {/* Totales */}
+      {errand ? (
+        <View className="rounded-2xl bg-card p-4">
+          <AmountRow label="Mandado" value={formatPrice(errandFee - (order.retryFeeCharged ?? 0))} />
+          {(order.retryFeeCharged ?? 0) > 0 && (
+            <AmountRow
+              label="Segundo intento (espera adicional)"
+              value={formatPrice(order.retryFeeCharged)}
+            />
+          )}
+          {(order.errandPurchaseAmount ?? 0) > 0 && (
+            <AmountRow
+              label="Compra (aprox.)"
+              value={formatPrice(order.errandPurchaseAmount ?? 0)}
+            />
+          )}
+          <View className="my-2 h-px bg-border" />
+          <AmountRow label="Total al domiciliario" value={formatPrice(order.total)} bold />
+        </View>
+      ) : (
       <View className="rounded-2xl bg-card p-4">
         <AmountRow label="Subtotal" value={formatPrice(order.subtotal)} />
         <AmountRow label="Domicilio" value={formatPrice(order.deliveryFee)} />
@@ -623,6 +784,7 @@ export function OrderDetailView({
         <View className="my-2 h-px bg-border" />
         <AmountRow label="Total" value={formatPrice(order.total)} bold />
       </View>
+      )}
     </View>
   );
 }
@@ -674,6 +836,8 @@ function ContactRow({
   label,
   detail,
   caption,
+  rating,
+  onRatingPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   /** Foto del contacto (logo del negocio, avatar de la persona) — si viene (aunque sea null), reemplaza el ícono plano. */
@@ -684,6 +848,9 @@ function ContactRow({
   label: string;
   detail?: string | null;
   caption?: string;
+  /** Calificación del contacto (reseñas); se pinta como "★ 4,5 (12)". */
+  rating?: { ratingAverage?: number | null; ratingCount?: number } | null;
+  onRatingPress?: () => void;
 }) {
   const colors = useResolvedAppColors();
   const [preview, setPreview] = useState(false);
@@ -728,6 +895,13 @@ function ContactRow({
           </Text>
         )}
       </View>
+      {rating && (
+        <RatingBadge
+          average={rating.ratingAverage}
+          count={rating.ratingCount}
+          onPress={rating.ratingCount ? onRatingPress : undefined}
+        />
+      )}
     </View>
   );
 }

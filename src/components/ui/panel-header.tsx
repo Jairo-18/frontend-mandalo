@@ -12,6 +12,8 @@ type Props = {
   subtitle?: string;
   /** Botón de la izquierda (opcional: back de un drill-down, etc). */
   menu?: ReactNode;
+  /** Acción a la derecha, antes del botón de tema (p. ej. "Pedir un mandado"). */
+  right?: ReactNode;
 };
 
 /**
@@ -23,7 +25,7 @@ type Props = {
  * (p. ej. Mis cobros). Usarla junto con `PanelSafeArea` (mismo degradado
  * detrás de la barra de estado, para que no se note la costura).
  */
-export function PanelHeader({ title, subtitle, menu }: Props) {
+export function PanelHeader({ title, subtitle, menu, right }: Props) {
   const { primaryColor, darkColor } = getAppColors();
 
   return (
@@ -43,6 +45,7 @@ export function PanelHeader({ title, subtitle, menu }: Props) {
             </Text>
           )}
         </View>
+        {right}
         <ThemeToggle
           className="h-10 w-10 items-center justify-center rounded-full bg-white/15 active:opacity-70"
           iconColor="#FFFFFF"

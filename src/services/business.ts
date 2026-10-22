@@ -19,6 +19,9 @@ export type BusinessProduct = {
   discount: number;
   /** URLs de las fotos; la primera es la principal. */
   images: string[];
+  /** Video corto del producto (4:3 horizontal, <= 10 s) y su miniatura. */
+  videoUrl?: string | null;
+  videoThumbnailUrl?: string | null;
   isActive: boolean;
   createdAt: string | null;
 };
@@ -98,6 +101,8 @@ export const businessService = {
       perPage?: number;
       search?: string;
       categoryTypeId?: number;
+      /** Solo ADMIN: productos de ese negocio (el NEGO siempre ve los suyos). */
+      organizationalId?: number;
     }) => {
       const query = new URLSearchParams({
         page: String(params.page),
@@ -107,6 +112,9 @@ export const businessService = {
       if (params.search?.trim()) query.set('search', params.search.trim());
       if (params.categoryTypeId) {
         query.set('categoryTypeId', String(params.categoryTypeId));
+      }
+      if (params.organizationalId) {
+        query.set('organizationalId', String(params.organizationalId));
       }
 
       return http<Paginated<BusinessProduct>>(
@@ -160,6 +168,35 @@ export const businessService = {
         { auth: true, onProgress },
       );
     },
+
+    /**
+     * Pone (o reemplaza) el video del producto. El servidor lo deja 4:3
+     * horizontal (960x720); puede tardar unos segundos más que una foto.
+     */
+    uploadVideo: async (
+      id: number,
+      video: { uri: string; mimeType: string },
+      onProgress?: (fraction: number) => void,
+    ) => {
+      const form = new FormData();
+      const ext = video.mimeType.includes('quicktime') ? 'mov' : 'mp4';
+      form.append(
+        'file',
+        await xhrFilePart(video.uri, `product.${ext}`, video.mimeType),
+        `product.${ext}`,
+      );
+      return httpUpload<{ data: { videoUrl: string; videoThumbnailUrl: string } }>(
+        `/product/${id}/video`,
+        form,
+        { auth: true, onProgress, timeoutMs: 180_000 },
+      );
+    },
+
+    removeVideo: (id: number) =>
+      http<{ message?: string }>(`/product/${id}/video`, {
+        method: 'DELETE',
+        auth: true,
+      }),
 
     /**
      * Quita una o varias fotos (URLs tal como están guardadas en `images`)

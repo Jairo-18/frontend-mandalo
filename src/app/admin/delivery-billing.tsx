@@ -15,8 +15,10 @@ import { settlementPeriodLabel } from '@/lib/settlement-period-label';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import {
-  adminDeliverySettlementsService,
   DeliverySettlementPeriod,
+  adminDeliverySettlementsService,
+  collectedRow,
+  riderNet,
 } from '@/services/admin-delivery-settlements';
 
 const SUBPERIOD_LABEL = { year: 'meses', month: 'quincenas' } as const;
@@ -115,8 +117,14 @@ export default function AdminDeliveryBillingScreen() {
               periodStart={item.periodStart}
               periodEnd={item.periodEnd}
               ordersCount={item.ordersCount}
-              primaryLabel="Le corresponde"
-              primaryValue={formatPrice(item.riderCut)}
+              primaryLabel={
+                  riderNet(item) < 0
+                    ? 'Debe a Mándalo'
+                    : (item.collectedTotal ?? 0) > 0
+                      ? 'Neto a pagar'
+                      : 'Le corresponde'
+                }
+              primaryValue={formatPrice(Math.abs(riderNet(item)))}
               secondaryLabel="Domicilios"
               secondaryValue={formatPrice(item.deliveryTotal)}
               breakdown={[
@@ -133,6 +141,7 @@ export default function AdminDeliveryBillingScreen() {
                 ...(item.retryTotal > 0
                   ? [{ label: 'Segundo intento', value: formatPrice(item.retryTotal) }]
                   : []),
+                ...collectedRow(item),
               ]}
               isPaid={item.settlement?.isPaid}
               paidLabel="Pagado"
@@ -161,9 +170,13 @@ export default function AdminDeliveryBillingScreen() {
           toMark
             ? toMark.settlement?.isPaid
               ? `La quincena ${settlementPeriodLabel(toMark)} volverá a "Pendiente".`
-              : `Confirmas que ya le pagaste ${formatPrice(
-                  toMark.riderCut,
-                )} al domiciliario por la quincena ${settlementPeriodLabel(toMark)}.`
+              : riderNet(toMark) < 0
+                ? `Confirmas que el domiciliario ya le pagó a Mándalo ${formatPrice(
+                    -riderNet(toMark),
+                  )} (comisión de sus mandados) por la quincena ${settlementPeriodLabel(toMark)}.`
+                : `Confirmas que ya le pagaste ${formatPrice(
+                    riderNet(toMark),
+                  )} al domiciliario por la quincena ${settlementPeriodLabel(toMark)}.`
             : ''
         }
         confirmLabel={toMark?.settlement?.isPaid ? 'Deshacer' : 'Sí, pagado'}

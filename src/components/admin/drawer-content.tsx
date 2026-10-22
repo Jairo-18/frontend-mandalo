@@ -22,7 +22,7 @@ import { AdminUser, adminUsersService } from '@/services/admin-users';
 import { DEFAULT_USER_AVATAR } from '@/lib/default-images';
 import { useUnreviewedAccidentsCount } from '@/hooks/use-unreviewed-accidents-count';
 
-type AdminRoute =
+export type AdminRoute =
   | '/admin/dashboard'
   | '/admin/orders'
   | '/admin/businesses'
@@ -32,20 +32,23 @@ type AdminRoute =
   | '/admin/pricing'
   | '/admin/tags'
   | '/admin/categories'
-  | '/admin/bulk-invite'
   | '/admin/app-settings';
 
-type Item = {
+export type AdminNavItem = {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   href: AdminRoute;
   /** Solo visible para SUPERADMIN (pedido del usuario: un admin regional no
-   * administra etiquetas/categorías/alta masiva/config. de la app). */
+   * administra etiquetas/categorías/config. de la app). */
   superadminOnly?: boolean;
 };
 
-/** Secciones del panel de administración (orden del sidebar). */
-const ITEMS: Item[] = [
+/**
+ * Secciones del panel de administración (orden del sidebar). Los accesos
+ * rápidos del Inicio salen de esta MISMA lista (`adminNavItemsFor`), así
+ * nunca muestran algo que el menú del rol no tiene.
+ */
+const ITEMS: AdminNavItem[] = [
   { label: 'Inicio', icon: 'home-outline', href: '/admin/dashboard' },
   { label: 'Pedidos', icon: 'receipt-outline', href: '/admin/orders' },
   { label: 'Negocios', icon: 'storefront-outline', href: '/admin/businesses' },
@@ -53,12 +56,16 @@ const ITEMS: Item[] = [
   { label: 'Domiciliarios', icon: 'bicycle-outline', href: '/admin/deliveries' },
   { label: 'Accidentes', icon: 'warning-outline', href: '/admin/accidents' },
   // Admin regional: solo su municipio; superadmin: general + todos.
-  { label: 'Tarifas', icon: 'pricetag-outline', href: '/admin/pricing' },
+  { label: 'Tarifas', icon: 'cash-outline', href: '/admin/pricing' },
   { label: 'Etiquetas', icon: 'pricetags-outline', href: '/admin/tags', superadminOnly: true },
   { label: 'Categorías', icon: 'grid-outline', href: '/admin/categories', superadminOnly: true },
-  { label: 'Alta masiva', icon: 'people-circle-outline', href: '/admin/bulk-invite', superadminOnly: true },
   { label: 'Aplicación', icon: 'color-palette-outline', href: '/admin/app-settings', superadminOnly: true },
 ];
+
+/** Secciones visibles para el rol (las `superadminOnly` solo para SUPERADMIN). */
+export function adminNavItemsFor(isSuperAdmin: boolean): AdminNavItem[] {
+  return ITEMS.filter((item) => !item.superadminOnly || isSuperAdmin);
+}
 
 // Lo único que se usa de las props del drawer (evita el choque de tipos entre
 // expo-router y @react-navigation/drawer).
@@ -88,7 +95,7 @@ export function AdminDrawerContent({ navigation }: Props) {
   // React Compiler (regla de NOTAS §23).
   const user = useSession()?.user;
   const isSuperAdmin = user?.role?.code === 'SUPERADMIN';
-  const items = ITEMS.filter((item) => !item.superadminOnly || isSuperAdmin);
+  const items = adminNavItemsFor(isSuperAdmin);
   const unreviewedAccidents = useUnreviewedAccidentsCount();
   const displayName = headerName ?? user?.fullName ?? 'Administrador';
   const avatarUrl =

@@ -40,8 +40,10 @@ type Props = {
   width: number;
   height: number;
   onCancel: () => void;
-  /** Devuelve la uri local de la imagen recortada (siempre cuadrada). */
+  /** Devuelve la uri local de la imagen recortada (con la proporción `aspect`). */
   onDone: (uri: string) => void;
+  /** Proporción ancho/alto del recorte (default 1 = cuadrado; 16/9 = banner). */
+  aspect?: number;
   /** Lado máximo del recorte final en px (default 1080). */
   maxOutput?: number;
   /** Calidad JPEG 0–1 (default 0.85). */
@@ -49,10 +51,11 @@ type Props = {
 };
 
 /**
- * Editor de foto reutilizable: encuadre cuadrado tipo Instagram. La imagen se
- * mueve (pan) y acerca (pinch) dentro de un marco cuadrado fijo, con botón de
- * rotar 90°; al confirmar se recorta lo visible con expo-image-manipulator y
- * se devuelve una imagen SIEMPRE cuadrada.
+ * Editor de foto reutilizable: encuadre tipo Instagram. La imagen se mueve
+ * (pan) y acerca (pinch) dentro de un marco fijo (cuadrado por defecto, o la
+ * proporción `aspect`, p. ej. 16:9 para banners), con botón de rotar 90°; al
+ * confirmar se recorta lo visible con expo-image-manipulator y se devuelve
+ * una imagen SIEMPRE con esa proporción.
  */
 export function PhotoEditor({
   visible,
@@ -63,11 +66,13 @@ export function PhotoEditor({
   onDone,
   maxOutput = DEFAULT_MAX_OUTPUT,
   quality = DEFAULT_QUALITY,
+  aspect = 1,
 }: Props) {
   const insets = useSafeAreaInsets();
 
-  // Lado del marco de recorte (cuadrado, centrado en pantalla).
-  const frame = useMemo(() => Dimensions.get('window').width - 48, []);
+  // Marco de recorte (centrado en pantalla): ancho fijo, alto según `aspect`.
+  const frameW = useMemo(() => Dimensions.get('window').width - 48, []);
+  const frameH = frameW / aspect;
 
   // Imagen vigente: cambia con cada rotación (la rotación se "hornea" de una
   // vez con el manipulador y así los gestos solo lidian con pan/zoom).
@@ -104,14 +109,19 @@ export function PhotoEditor({
 
   // Escala base "cover": la imagen (ya rotada) siempre llena el marco.
   const baseScale = current
-    ? Math.max(frame / current.w, frame / current.h)
+    ? Math.max(frameW / current.w, frameH / current.h)
     : 1;
-  const displayW = current ? current.w * baseScale : frame;
-  const displayH = current ? current.h * baseScale : frame;
+  const displayW = current ? current.w * baseScale : frameW;
+  const displayH = current ? current.h * baseScale : frameH;
 
-  const clampTranslation = (value: number, displaySide: number, k: number) => {
+  const clampTranslation = (
+    value: number,
+    displaySide: number,
+    frameSide: number,
+    k: number,
+  ) => {
     'worklet';
-    const max = Math.max(0, (displaySide * k - frame) / 2);
+    const max = Math.max(0, (displaySide * k - frameSide) / 2);
     return Math.min(max, Math.max(-max, value));
   };
 
@@ -120,11 +130,13 @@ export function PhotoEditor({
       tx.value = clampTranslation(
         savedTx.value + e.translationX,
         displayW,
+        frameW,
         scale.value,
       );
       ty.value = clampTranslation(
         savedTy.value + e.translationY,
         displayH,
+        frameH,
         scale.value,
       );
     })
@@ -138,8 +150,8 @@ export function PhotoEditor({
       const k = Math.min(MAX_ZOOM, Math.max(1, savedScale.value * e.scale));
       scale.value = k;
       // Al alejar, la imagen no puede dejar bordes vacíos en el marco.
-      tx.value = clampTranslation(tx.value, displayW, k);
-      ty.value = clampTranslation(ty.value, displayH, k);
+      tx.value = clampTranslation(tx.value, displayW, frameW, k);
+      ty.value = clampTranslation(ty.value, displayH, frameH, k);
     })
     .onEnd(() => {
       savedScale.value = scale.value;
@@ -188,24 +200,30 @@ export function PhotoEditor({
     try {
       // Mapea el marco (px de pantalla) a píxeles de la imagen original.
       const s = baseScale * scale.value;
-      const cropSize = Math.min(frame / s, current.w, current.h);
+      const cropW = Math.min(frameW / s, current.w);
+      const cropH = Math.min(frameH / s, current.h);
       const originX = Math.min(
-        Math.max(0, (current.w - cropSize) / 2 - tx.value / s),
-        current.w - cropSize,
+        Math.max(0, (current.w - cropW) / 2 - tx.value / s),
+        current.w - cropW,
       );
       const originY = Math.min(
-        Math.max(0, (current.h - cropSize) / 2 - ty.value / s),
-        current.h - cropSize,
+        Math.max(0, (current.h - cropH) / 2 - ty.value / s),
+        current.h - cropH,
       );
 
       const context = ImageManipulator.manipulate(current.uri).crop({
         originX: Math.round(originX),
         originY: Math.round(originY),
-        width: Math.floor(cropSize),
-        height: Math.floor(cropSize),
+        width: Math.floor(cropW),
+        height: Math.floor(cropH),
       });
-      if (cropSize > maxOutput) {
-        context.resize({ width: maxOutput, height: maxOutput });
+      // `maxOutput` limita el lado mayor.
+      if (Math.max(cropW, cropH) > maxOutput) {
+        context.resize(
+          cropW >= cropH
+            ? { width: maxOutput, height: Math.round(maxOutput / aspect) }
+            : { width: Math.round(maxOutput * aspect), height: maxOutput },
+        );
       }
       const rendered = await context.renderAsync();
       const saved = await rendered.saveAsync({
@@ -248,7 +266,7 @@ export function PhotoEditor({
             <GestureDetector gesture={gesture}>
               <View
                 className="items-center justify-center overflow-hidden rounded-2xl bg-black"
-                style={{ width: frame, height: frame }}
+                style={{ width: frameW, height: frameH }}
               >
                 {current && (
                   <Animated.Image
@@ -274,8 +292,8 @@ export function PhotoEditor({
               </View>
             </GestureDetector>
             <Text className="mt-4 text-xs text-white/60">
-              Arrastra y pellizca para encuadrar · el recorte siempre es
-              cuadrado
+              Arrastra y pellizca para encuadrar
+              {aspect === 1 ? ' · el recorte siempre es cuadrado' : ''}
             </Text>
           </View>
 

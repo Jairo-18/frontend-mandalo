@@ -283,6 +283,8 @@ type UploadOptions = {
    * en vez de un spinner ciego (registros/subidas con varias fotos tardan
    * bastante en conexión rural y sin esto se sienten "colgados"). */
   onProgress?: (fraction: number) => void;
+  /** Tope de la subida (default `UPLOAD_TIMEOUT_MS`): un video tarda más. */
+  timeoutMs?: number;
 };
 
 /**
@@ -303,6 +305,7 @@ export function httpUpload<T = unknown>(
     toastSuccess = false,
     onProgress,
     retried = false,
+    timeoutMs = UPLOAD_TIMEOUT_MS,
   } = options;
 
   const bearer = auth ? getSession()?.accessToken : undefined;
@@ -324,7 +327,7 @@ export function httpUpload<T = unknown>(
     xhr.open(method, apiUrl(path));
     if (CLIENT_API_KEY) xhr.setRequestHeader('X-Client-Key', CLIENT_API_KEY);
     if (bearer) xhr.setRequestHeader('Authorization', `Bearer ${bearer}`);
-    xhr.timeout = UPLOAD_TIMEOUT_MS;
+    xhr.timeout = timeoutMs;
 
     xhr.upload.onprogress = (e) => {
       if (onProgress && e.lengthComputable) onProgress(e.loaded / e.total);
@@ -384,7 +387,7 @@ export function httpUpload<T = unknown>(
       if (toastError) toast.error(message);
       reject(
         new HttpError(message, 0, {
-          cause: `timeout ${UPLOAD_TIMEOUT_MS / 1000}s`,
+          cause: `timeout ${timeoutMs / 1000}s`,
         }),
       );
     };

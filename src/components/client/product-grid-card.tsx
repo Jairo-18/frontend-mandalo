@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Pressable, Text, View } from 'react-native';
 
+import { StarRating } from '@/components/reviews/star-rating';
+import { FavoriteButton } from '@/components/ui/favorite-button';
 import { formatDistance } from '@/lib/distance';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { businessDisplayName, DeliveryEstimate, ExploreProduct } from '@/services/explore';
@@ -23,6 +25,12 @@ type Props = {
    * propio negocio.
    */
   estimate?: DeliveryEstimate | null;
+  /**
+   * Sin las filas del negocio (nombre + estrellas): dentro de la tienda todos
+   * los productos son del mismo negocio y esas filas solo dejaban espacio en
+   * blanco. La tarjeta queda más baja (alto fijo propio, igual en todo el grid).
+   */
+  compact?: boolean;
 };
 
 /**
@@ -38,6 +46,7 @@ export function ProductGridCard({
   onAdd,
   onDecrement,
   estimate,
+  compact = false,
 }: Props) {
   const colors = useResolvedAppColors();
   const hasDiscount = product.discount > 0;
@@ -69,16 +78,32 @@ export function ProductGridCard({
           transition={150}
         />
 
-        {hasDiscount && (
-          <View className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5">
-            <Text className="text-[11px] font-extrabold text-white">
-              -{product.discount}%
-            </Text>
+        {/* Insignias a la izquierda (descuento, cerrado); el corazón a la derecha. */}
+        <View className="absolute left-2 top-2 items-start gap-1">
+          {hasDiscount && (
+            <View className="rounded-full bg-primary px-2 py-0.5">
+              <Text className="text-[11px] font-extrabold text-white">
+                -{product.discount}%
+              </Text>
+            </View>
+          )}
+          {product.organizational?.isOpen === false && (
+            <View className="rounded-full bg-dark px-2 py-0.5">
+              <Text className="text-[10px] font-bold text-white">Cerrado</Text>
+            </View>
+          )}
+        </View>
+        {/* Las promos del carrito (id negativo) no son favoritos. */}
+        {product.id > 0 && (
+          <View className="absolute right-2 top-2">
+            <FavoriteButton kind="product" id={product.id} size={30} />
           </View>
         )}
-        {product.organizational?.isOpen === false && (
-          <View className="absolute right-2 top-2 rounded-full bg-dark px-2 py-0.5">
-            <Text className="text-[10px] font-bold text-white">Cerrado</Text>
+
+        {/* Tiene video (se ve en el detalle). */}
+        {!!product.videoUrl && (
+          <View className="absolute bottom-2 left-2 h-7 w-7 items-center justify-center rounded-full bg-black/55">
+            <Ionicons name="videocam" size={14} color="#FFFFFF" />
           </View>
         )}
 
@@ -127,8 +152,11 @@ export function ProductGridCard({
           se pasaba por poco crecía y dejaba a las vecinas "chicas" dentro de su
           celda ya estirada. Con alto fijo + `numberOfLines` topados nada puede
           empujar. Suma de las partes: 10 padding + 26 nombre + 32 precio +
-          18 negocio + 17 entrega + 10 padding = 113, con 3px de holgura. */}
-      <View className="h-[116px] p-2.5">
+          18 negocio + 14 estrellas + 17 entrega + 10 padding = 127, con 3px
+          de holgura. */}
+      {/* Compacta: 10 padding + 26 nombre + 32 precio + 17 entrega + 10
+          padding = 95 (+3 de holgura). */}
+      <View className={`${compact ? 'h-[98px]' : 'h-[130px]'} p-2.5`}>
         <Text
           numberOfLines={2}
           className="h-[26px] text-[11px] font-bold leading-[13px] text-ink"
@@ -145,7 +173,7 @@ export function ProductGridCard({
             {formatPrice(price)}
           </Text>
         </View>
-        {!!product.organizational && (
+        {!compact && !!product.organizational && (
           <View className="mt-1 flex-row items-center gap-1">
             <Ionicons name="storefront-outline" size={11} color={colors.mutedColor} />
             <Text
@@ -153,6 +181,19 @@ export function ProductGridCard({
               className="shrink text-[11px] font-semibold text-muted"
             >
               {businessDisplayName(product.organizational)}
+            </Text>
+          </View>
+        )}
+        {/* Calificación del negocio debajo de su nombre: 5 estrellas que se
+            rellenan según el promedio (con medias). Siempre presente para que
+            todas las tarjetas midan igual: sin reseñas, vacías + "Nuevo". */}
+        {!compact && !!product.organizational && (
+          <View className="mt-0.5 h-[12px] flex-row items-center gap-1">
+            <StarRating value={product.organizational.ratingAverage ?? 0} size={10} />
+            <Text className="text-[9px] font-semibold text-muted">
+              {product.organizational.ratingCount
+                ? `(${product.organizational.ratingCount})`
+                : 'Nuevo'}
             </Text>
           </View>
         )}

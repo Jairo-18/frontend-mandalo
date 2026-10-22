@@ -23,7 +23,7 @@ import { getAppColors } from '@/lib/app-colors';
  */
 export default function QuickRegisterScreen() {
   const router = useRouter();
-  const { errors, clearError, bind, validate } = useFormErrors();
+  const { errors, clearError, bind, validate, applyServerErrors } = useFormErrors();
 
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -48,7 +48,9 @@ export default function QuickRegisterScreen() {
 
   function validateForm() {
     return validate({
-      fullName: fullName.trim() ? undefined : 'Ingresa tu nombre completo.',
+      fullName: fullName.trim()
+        ? undefined
+        : 'Ingresa tus nombres y apellidos completos.',
       username: username.trim() ? undefined : 'Ingresa un nombre de usuario.',
       email: !email.trim()
         ? 'Ingresa tu correo.'
@@ -99,7 +101,8 @@ export default function QuickRegisterScreen() {
       });
       // De vuelta al checkout con sesión + dirección; el carrito sigue vivo.
       router.replace('/checkout');
-    } catch {
+    } catch (e) {
+      applyServerErrors(e, { latitude: 'location', longitude: 'location' });
       // El interceptor HTTP ya mostró el error (correo/usuario en uso, etc.).
     } finally {
       setSaving(false);
@@ -120,7 +123,7 @@ export default function QuickRegisterScreen() {
       </Text>
 
       <TextField
-        label="Nombre completo"
+        label="Nombres y apellidos completos"
         icon="person-outline"
         format="name"
         value={fullName}

@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { BUSINESS_NAV_ITEMS } from '@/components/business/drawer-content';
 import { QuickAction } from '@/components/ui/quick-action';
 import { SectionTitle } from '@/components/ui/section-title';
 import { StatCard } from '@/components/ui/stat-card';
@@ -167,21 +168,17 @@ export default function BusinessDashboardScreen() {
         <SectionTitle label="Accesos rápidos" />
       </View>
       <View className="flex-row flex-wrap gap-3 px-4">
-        <QuickAction
-          icon="cash-outline"
-          label="Mis pagos"
-          onPress={() => router.navigate('/business/earnings')}
-        />
-        <QuickAction
-          icon="cube-outline"
-          label="Mis productos"
-          onPress={() => router.navigate('/business/products')}
-        />
-        <QuickAction
-          icon="storefront-outline"
-          label="Mi negocio"
-          onPress={() => router.navigate('/business/profile')}
-        />
+        {/* Mismas secciones que el menú lateral del negocio. */}
+        {BUSINESS_NAV_ITEMS.filter((item) => item.href !== '/business/dashboard').map(
+          (item) => (
+            <QuickAction
+              key={item.href}
+              icon={item.icon}
+              label={item.label}
+              onPress={() => router.navigate(item.href)}
+            />
+          ),
+        )}
       </View>
       </>
       )}

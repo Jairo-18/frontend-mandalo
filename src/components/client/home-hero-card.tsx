@@ -6,6 +6,11 @@ import { getAppColors } from '@/lib/app-colors';
 type Props = {
   /** Primer nombre del usuario para el saludo; vacío/omitido en modo invitado. */
   name?: string;
+  /**
+   * Dentro del carrusel de promociones (`HomePromoCarousel`): sin el margen
+   * propio ni esquinas (las pone el carrusel) y con el alto de la diapositiva.
+   */
+  embedded?: { width: number; height: number };
 };
 
 /**
@@ -16,16 +21,20 @@ type Props = {
  * ("¡Hola!") vivía antes en la cabecera oscura del home — se movió acá para
  * dejar la cabecera solo con el buscador.
  */
-export function HomeHeroCard({ name }: Props) {
+export function HomeHeroCard({ name, embedded }: Props) {
   const { primaryColor, darkColor } = getAppColors();
 
   return (
-    <View className="px-5 pt-4">
+    <View className={embedded ? '' : 'px-5 pt-4'}>
       <LinearGradient
         colors={[primaryColor, darkColor]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ borderRadius: 20, overflow: 'hidden' }}
+        style={
+          embedded
+            ? { width: embedded.width, height: embedded.height, justifyContent: 'center' }
+            : { borderRadius: 20, overflow: 'hidden' }
+        }
       >
         <View className="flex-row items-center justify-between px-5 py-5">
           <View className="flex-1 pr-3">

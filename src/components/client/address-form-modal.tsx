@@ -40,7 +40,7 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
   const [mapVisible, setMapVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
-  const { errors, setErrors, clearError, bind, validate } = useFormErrors();
+  const { errors, setErrors, clearError, bind, validate, applyServerErrors } = useFormErrors();
 
   const isEdit = !!editing;
 
@@ -156,7 +156,8 @@ export function AddressFormModal({ visible, editing, onClose, onSaved }: Props) 
         // Ya mostró el error.
       }
       onSaved();
-    } catch {
+    } catch (e) {
+      applyServerErrors(e, { latitude: 'location', longitude: 'location' });
       // El interceptor HTTP ya mostró el mensaje del backend.
     } finally {
       setSaving(false);

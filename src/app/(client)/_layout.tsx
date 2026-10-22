@@ -1,6 +1,6 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs, useRouter } from 'expo-router';
-import { PlatformPressable } from 'expo-router/react-navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -13,6 +13,7 @@ import {
   PaymentRequestedEvent,
   usePaymentRequested,
 } from '@/lib/orders-socket';
+import { TAB_BAR_HEIGHT, TabBarButton } from '@/components/ui/tab-bar-button';
 
 /**
  * Escucha el aviso "el negocio necesita tu comprobante de pago" mientras el
@@ -40,6 +41,7 @@ export default function ClientLayout() {
   // Reactivo de verdad (no el singleton `getAppColors()`), ver
   // hooks/use-resolved-app-colors.ts.
   const colors = useResolvedAppColors();
+  const insets = useSafeAreaInsets();
   // undefined = cargando de SecureStore; null = sin sesión.
   const [session, setSession] = useState<Session | null | undefined>(
     () => getSession() ?? undefined,
@@ -81,7 +83,7 @@ export default function ClientLayout() {
    */
   function guardedTabBarButton({ onPress, ...rest }: any) {
     return (
-      <PlatformPressable
+      <TabBarButton
         {...rest}
         onPress={isGuest ? () => router.push('/auth/login') : onPress}
       />
@@ -98,7 +100,11 @@ export default function ClientLayout() {
           sceneStyle: { backgroundColor: colors.surfaceColor },
           tabBarActiveTintColor: colors.primaryColor,
           tabBarInactiveTintColor: colors.mutedColor,
+          tabBarButton: TabBarButton,
           tabBarStyle: {
+            // Más alto que el default para que el ripple de la pestaña no choque.
+            height: TAB_BAR_HEIGHT + insets.bottom,
+            paddingTop: 2,
             backgroundColor: colors.cardColor,
             borderTopColor: colors.borderColor,
           },
@@ -174,7 +180,19 @@ export default function ClientLayout() {
             tabBarButton: guardedTabBarButton,
           }}
         />
-        {/* Ruta propia, sin item en la barra: se llega desde Mi perfil. */}
+        {/* Rutas propias, sin item en la barra: se llega desde Mi perfil. */}
+        <Tabs.Screen
+          name="edit-profile"
+          options={{ href: null, title: 'Editar información' }}
+        />
+        <Tabs.Screen
+          name="reviews"
+          options={{ href: null, title: 'Mis reseñas' }}
+        />
+        <Tabs.Screen
+          name="favorites"
+          options={{ href: null, title: 'Mis favoritos' }}
+        />
         <Tabs.Screen
           name="change-password"
           options={{ href: null, title: 'Cambiar contraseña' }}

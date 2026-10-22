@@ -1,3 +1,4 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -6,6 +7,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { useUnreadChats } from '@/hooks/use-unread-chats';
 import { getSession, homePathFor, loadSession, Session } from '@/lib/session';
+import { TAB_BAR_HEIGHT, TabBarButton } from '@/components/ui/tab-bar-button';
 
 /**
  * Panel del repartidor (rol DELI): menú inferior (Pedidos, Cobros, Chats,
@@ -17,6 +19,7 @@ export default function DeliveryLayout() {
   // Reactivo de verdad (no el singleton `getAppColors()`), ver
   // hooks/use-resolved-app-colors.ts.
   const colors = useResolvedAppColors();
+  const insets = useSafeAreaInsets();
   // undefined = cargando de SecureStore; null = sin sesión.
   const [session, setSession] = useState<Session | null | undefined>(
     () => getSession() ?? undefined,
@@ -50,7 +53,11 @@ export default function DeliveryLayout() {
         sceneStyle: { backgroundColor: colors.surfaceColor },
         tabBarActiveTintColor: colors.primaryColor,
         tabBarInactiveTintColor: colors.mutedColor,
+        tabBarButton: TabBarButton,
         tabBarStyle: {
+          // Más alto que el default para que el ripple de la pestaña no choque.
+          height: TAB_BAR_HEIGHT + insets.bottom,
+          paddingTop: 2,
           backgroundColor: colors.cardColor,
           borderTopColor: colors.borderColor,
         },
@@ -112,8 +119,20 @@ export default function DeliveryLayout() {
       {/* Rutas propias, sin item en la barra: se llega desde Mi perfil o
           desde la pantalla de "Cuenta en proceso de habilitación". */}
       <Tabs.Screen
+        name="edit-profile"
+        options={{ href: null, title: 'Editar información' }}
+      />
+      <Tabs.Screen
+        name="reviews"
+        options={{ href: null, title: 'Mis reseñas' }}
+      />
+      <Tabs.Screen
         name="change-password"
         options={{ href: null, title: 'Cambiar contraseña' }}
+      />
+      <Tabs.Screen
+        name="payment-info"
+        options={{ href: null, title: 'Mis datos de pago' }}
       />
       <Tabs.Screen
         name="resend-documents"

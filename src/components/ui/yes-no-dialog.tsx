@@ -37,6 +37,11 @@ type Props = {
    * no puede haber una salida que evite llegar al diálogo nativo del SO.
    */
   onCancel?: () => void;
+  /**
+   * Botones uno debajo del otro (confirmar arriba) en vez de lado a lado:
+   * para textos largos en los botones (p. ej. "Sí, enviar el correo").
+   */
+  stacked?: boolean;
 };
 
 /**
@@ -53,6 +58,7 @@ export function YesNoDialog({
   icon,
   onConfirm,
   onCancel,
+  stacked = false,
 }: Props) {
   const [working, setWorking] = useState(false);
 
@@ -76,6 +82,8 @@ export function YesNoDialog({
       animationType="fade"
       onRequestClose={working || !onCancel ? undefined : onCancel}
       statusBarTranslucent
+      // El fondo oscuro cubre también la barra de navegación de Android.
+      navigationBarTranslucent
     >
       <Pressable
         className="flex-1 items-center justify-center bg-black/50 px-8"
@@ -113,12 +121,12 @@ export function YesNoDialog({
               </Text>
             ) : null}
 
-            <View className="mt-6 flex-row gap-3">
+            <View className={`mt-6 gap-3 ${stacked ? 'flex-col-reverse' : 'flex-row'}`}>
               {onCancel && (
                 <Pressable
                   onPress={onCancel}
                   disabled={working}
-                  className={`min-h-[48px] flex-1 items-center justify-center rounded-2xl border border-border px-2 py-3 active:opacity-70 ${
+                  className={`min-h-[48px] ${stacked ? 'w-full' : 'flex-1'} items-center justify-center rounded-2xl border border-border px-2 py-3 active:opacity-70 ${
                     working ? 'opacity-50' : ''
                   }`}
                 >
@@ -131,7 +139,7 @@ export function YesNoDialog({
               <Pressable
                 onPress={handleConfirm}
                 disabled={working}
-                className={`min-h-[48px] flex-1 items-center justify-center rounded-2xl px-2 py-3 active:opacity-80 ${
+                className={`min-h-[48px] ${stacked ? 'w-full' : 'flex-1'} items-center justify-center rounded-2xl px-2 py-3 active:opacity-80 ${
                   destructive ? 'bg-red-600' : 'bg-primary'
                 }`}
               >

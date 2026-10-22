@@ -348,6 +348,13 @@ function navigateFromNotification(
       router.push(`/chat/${data.invoiceId}`);
       return;
     }
+    if (data.type === 'review') {
+      // Me calificaron: a "Mis reseñas" del rol.
+      if (role === 'NEGO') router.push('/business/reviews');
+      else if (role === 'DELI') router.push('/delivery/reviews');
+      else router.push('/reviews');
+      return;
+    }
     if (data.type !== 'order') return;
     if (role === 'NEGO') router.push('/business/orders');
     else if (role === 'DELI') router.push('/delivery');

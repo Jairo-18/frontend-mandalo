@@ -12,7 +12,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { OrderStateCode } from '@/lib/order-status';
 import { businessDisplayName } from '@/services/explore';
-import { Order, ordersService } from '@/services/orders';
+import { isErrand, Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 
 type StateFilter = 'all' | OrderStateCode;
@@ -52,9 +52,11 @@ export default function AdminOrdersScreen() {
   );
 
   const title = (order: Order) =>
-    order.organizational
-      ? `${businessDisplayName(order.organizational)} → ${order.user?.fullName ?? 'Cliente'}`
-      : (order.user?.fullName ?? 'Cliente');
+    isErrand(order)
+      ? `Mandado → ${order.user?.fullName ?? 'Cliente'}`
+      : order.organizational
+        ? `${businessDisplayName(order.organizational)} → ${order.user?.fullName ?? 'Cliente'}`
+        : (order.user?.fullName ?? 'Cliente');
 
   return (
     <View className="flex-1 bg-surface">
@@ -74,7 +76,7 @@ export default function AdminOrdersScreen() {
           <OrderCard
             order={item}
             title={title(item)}
-            titleIcon="storefront-outline"
+            titleIcon={isErrand(item) ? 'walk-outline' : 'storefront-outline'}
             perspective="business"
             showAddress
             onPress={() => setSelectedId(item.id)}

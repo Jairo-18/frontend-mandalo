@@ -30,7 +30,8 @@ import {
 import { isAmbiguousFailure } from '@/lib/http';
 import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
 import { useSession } from '@/hooks/use-session';
-import { Order, ordersService } from '@/services/orders';
+import { isErrand, Order, ordersService } from '@/services/orders';
+import { formatPrice } from '@/lib/price';
 import { getAppColors } from '@/lib/app-colors';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
@@ -146,9 +147,9 @@ export function DeliveryOrders() {
     useCallback(
       (_payload, event) => {
         if (event === 'invoice:available' || event === 'invoice:taken') {
-          available.fetchPage(1, 'refresh');
+          available.fetchPage(1, 'silent');
         } else {
-          mine.fetchPage(1, 'refresh');
+          mine.fetchPage(1, 'silent');
         }
       },
       [available.fetchPage, mine.fetchPage],
@@ -158,8 +159,8 @@ export function DeliveryOrders() {
   // de cualquiera de las dos listas mientras estuvo desconectado.
   useSocketReconnected(
     useCallback(() => {
-      available.fetchPage(1, 'refresh');
-      mine.fetchPage(1, 'refresh');
+      available.fetchPage(1, 'silent');
+      mine.fetchPage(1, 'silent');
     }, [available.fetchPage, mine.fetchPage]),
   );
 
@@ -204,10 +205,37 @@ export function DeliveryOrders() {
     }
   }
 
+  /**
+   * Mandado (sin negocio que despache): el propio repartidor marca que ya lo
+   * hizo y sale hacia el cliente (PREP → RUTA).
+   */
+  async function startErrandRoute(id: number): Promise<Order | undefined> {
+    try {
+      const res = await ordersService.changeState(id, 'RUTA');
+      mine.replaceItem(res.data.id, res.data);
+      return res.data;
+    } catch (e) {
+      if (isAmbiguousFailure(e)) mine.fetchPage(1, 'refresh');
+      return undefined;
+    }
+  }
+
+  /** No puede hacer el mandado: vuelve a "Disponibles" para otro repartidor. */
+  async function releaseErrand(id: number) {
+    try {
+      await ordersService.releaseErrand(id);
+    } catch {
+      // El interceptor ya mostró el error.
+    } finally {
+      mine.fetchPage(1, 'refresh');
+      available.fetchPage(1, 'refresh');
+    }
+  }
+
   // Confirmación previa a comprometerse con un pedido disponible: el
   // repartidor debe confirmar antes de que quede asignado (antes se tomaba
   // con un solo tap, sin poder dar un paso atrás).
-  const [takeTarget, setTakeTarget] = useState<{ id: number } | null>(null);
+  const [takeTarget, setTakeTarget] = useState<{ id: number; errand: boolean } | null>(null);
   // Entrega verificada: pide el código que el CLIENTE ve en su app.
   const [deliverTarget, setDeliverTarget] = useState<{ id: number } | null>(
     null,
@@ -230,9 +258,18 @@ export function DeliveryOrders() {
   function cardAction(order: Order) {
     if (tab === 'available') {
       return {
-        label: 'Tomar pedido',
-        icon: 'bicycle' as const,
-        onPress: () => setTakeTarget({ id: order.id }),
+        label: isErrand(order) ? 'Tomar mandado' : 'Tomar pedido',
+        icon: isErrand(order) ? ('walk' as const) : ('bicycle' as const),
+        onPress: () => setTakeTarget({ id: order.id, errand: isErrand(order) }),
+      };
+    }
+    if (isErrand(order) && order.stateType?.code === 'PREP') {
+      return {
+        label: 'Ya lo hice · voy en camino',
+        icon: 'bicycle-outline' as const,
+        onPress: async () => {
+          await startErrandRoute(order.id);
+        },
       };
     }
     if (order.stateType?.code === 'RUTA') {
@@ -264,6 +301,11 @@ export function DeliveryOrders() {
 
   /** Nota de estado para mis entregas aún no despachadas por el negocio. */
   function cardHint(order: Order): string | undefined {
+    if (tab === 'mine' && order.stateType?.code === 'PREP' && isErrand(order)) {
+      return (order.errandPurchaseAmount ?? 0) > 0
+        ? `Haz el mandado (adelantas la compra, aprox. ${formatPrice(order.errandPurchaseAmount ?? 0)}; guarda la factura) y marca "Voy en camino".`
+        : 'Haz el mandado y, cuando lo tengas, marca "Voy en camino".';
+    }
     if (tab === 'mine' && order.stateType?.code === 'PREP') {
       // El código de recogida es SU llave: se lo dicta al negocio al recoger.
       return order.pickupCode
@@ -278,7 +320,11 @@ export function DeliveryOrders() {
 
   const list = tab === 'available' ? available : mine;
   const bizName = (order: Order) =>
-    order.organizational ? businessDisplayName(order.organizational) : 'Negocio';
+    isErrand(order)
+      ? `Mandado · ${formatPrice(order.deliveryFee + order.deliverySurcharge)}`
+      : order.organizational
+        ? businessDisplayName(order.organizational)
+        : 'Negocio';
 
   return (
     <View className="flex-1 bg-surface">
@@ -355,8 +401,8 @@ export function DeliveryOrders() {
           <OrderCard
             order={item}
             title={bizName(item)}
-            titleIcon="storefront-outline"
-            logoUri={item.organizational?.logoUrl ?? null}
+            titleIcon={isErrand(item) ? 'walk-outline' : 'storefront-outline'}
+            logoUri={isErrand(item) ? undefined : (item.organizational?.logoUrl ?? null)}
             perspective="delivery"
             onPress={() => setSelectedId(item.id)}
             showAddress
@@ -435,12 +481,38 @@ export function DeliveryOrders() {
           if (!order.deliveryUserId && code === 'PREP') {
             return (
               <ActionButton
-                label="Tomar pedido"
+                label={isErrand(order) ? 'Tomar mandado' : 'Tomar pedido'}
                 onPress={() => {
-                  setTakeTarget({ id: order.id });
+                  setTakeTarget({ id: order.id, errand: isErrand(order) });
                   close();
                 }}
               />
+            );
+          }
+          // Mandado mío, aún sin salir: marcar que va en camino o liberarlo
+          // (no puede hacerlo → vuelve a "Disponibles").
+          if (isMine && code === 'PREP' && isErrand(order)) {
+            return (
+              <View>
+                <View className="gap-2.5">
+                  <ActionButton
+                    label="Ya lo hice · voy en camino"
+                    onPress={async () => {
+                      const fresh = await startErrandRoute(order.id);
+                      reload(fresh);
+                    }}
+                  />
+                  <ActionButton
+                    label="No puedo hacerlo · liberar"
+                    variant="danger-outline"
+                    onPress={async () => {
+                      await releaseErrand(order.id);
+                      close();
+                    }}
+                  />
+                </View>
+                {accidentLink}
+              </View>
             );
           }
           // Pedido mío, aún no despachado: solo el link de accidente.
@@ -467,16 +539,18 @@ export function DeliveryOrders() {
             }
             return (
               <View>
-                <View className="flex-row gap-3">
-                  <FailureButton
-                    arrivedAt={order.arrivedAt}
-                    waitMinutes={order.deliveryWaitMinutes}
-                    onPress={() => setFailureTarget({ id: order.id })}
-                  />
+                {/* Apilados (entregar arriba): en fila "No se pudo entregar
+                    (4:55)" no cabía y se partía en dos líneas. */}
+                <View className="gap-2.5">
                   <ActionButton
                     label="Marcar entregado"
                     variant="success"
                     onPress={() => setDeliverTarget({ id: order.id })}
+                  />
+                  <FailureButton
+                    arrivedAt={order.arrivedAt}
+                    waitMinutes={order.deliveryWaitMinutes}
+                    onPress={() => setFailureTarget({ id: order.id })}
                   />
                 </View>
                 {accidentLink}
@@ -549,10 +623,15 @@ export function DeliveryOrders() {
       <YesNoDialog
         visible={takeTarget != null}
         icon="bicycle-outline"
-        title="¿Tomar este pedido?"
-        message="Al confirmar quedarás asignado: deberás recogerlo en el negocio y entregarlo al cliente."
-        confirmLabel="Sí, tomar pedido"
+        title={takeTarget?.errand ? '¿Tomar este mandado?' : '¿Tomar este pedido?'}
+        message={
+          takeTarget?.errand
+            ? 'Al confirmar quedarás asignado: deberás hacer el mandado y llevárselo al cliente. Él te paga directo al recibir.'
+            : 'Al confirmar quedarás asignado: deberás recogerlo en el negocio y entregarlo al cliente.'
+        }
+        confirmLabel={takeTarget?.errand ? 'Sí, tomar mandado' : 'Sí, tomar pedido'}
         cancelLabel="Ahora no"
+        stacked
         onConfirm={async () => {
           if (!takeTarget) return;
           await take(takeTarget.id);

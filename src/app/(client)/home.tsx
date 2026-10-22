@@ -17,7 +17,8 @@ import { AddressSheet } from '@/components/client/address-sheet';
 import { BusinessGridCard } from '@/components/client/business-grid-card';
 import { CategoryCards } from '@/components/client/category-cards';
 import { FilterSheet } from '@/components/client/filter-sheet';
-import { HomeHeroCard } from '@/components/client/home-hero-card';
+import { ErrandBanner } from '@/components/client/errand-banner';
+import { HomePromoCarousel } from '@/components/client/home-promo-carousel';
 import { ProductGridCard } from '@/components/client/product-grid-card';
 import { TagCards } from '@/components/client/tag-cards';
 import { GridSkeleton } from '@/components/ui/grid-skeleton';
@@ -219,42 +220,55 @@ export default function HomeScreen() {
   const hasActiveFilters =
     allBusinesses || selectedTagIds.length > 0 || selectedCategoryId != null;
 
-  /** Cabecera scrolleable del feed (búsqueda, card de marca y las 2 secciones). */
+  /**
+   * Buscador + filtros FIJOS bajo la navbar: antes iban en la cabecera del
+   * feed y se perdían al hacer scroll (pedido del cliente 2026-10-21).
+   */
+  const searchHeader = (
+    <LinearGradient
+      colors={[colors.primaryColor, colors.darkColor]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
+    >
+      <View className="flex-row items-center gap-2 px-5 pb-6 pt-1">
+        <View className="flex-1 rounded-2xl bg-card">
+          <SearchBar
+            value={productList.search}
+            onChangeText={handleSearchChange}
+            placeholder="Busca productos, ej: hamburguesa…"
+          />
+        </View>
+        {hasFilters && (
+          <Pressable
+            onPress={() => setFilterSheetVisible(true)}
+            className={`h-[46px] w-[46px] items-center justify-center rounded-2xl active:opacity-80 ${
+              hasActiveFilters ? 'bg-white' : 'bg-primary'
+            }`}
+          >
+            <Ionicons
+              name="options-outline"
+              size={20}
+              color={hasActiveFilters ? colors.primaryColor : '#FFFFFF'}
+            />
+          </Pressable>
+        )}
+      </View>
+    </LinearGradient>
+  );
+
+  /** Cabecera scrolleable del feed (card de marca y las 2 secciones). */
   const listHeader = (
     <View>
-      {/* Cierre del bloque de marca: buscador + botón de filtros */}
-      <LinearGradient
-        colors={[colors.primaryColor, colors.darkColor]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ borderBottomLeftRadius: 28, borderBottomRightRadius: 28 }}
-      >
-        <View className="flex-row items-center gap-2 px-5 pb-6 pt-1">
-          <View className="flex-1 rounded-2xl bg-card">
-            <SearchBar
-              value={productList.search}
-              onChangeText={handleSearchChange}
-              placeholder="Busca productos, ej: hamburguesa…"
-            />
-          </View>
-          {hasFilters && (
-            <Pressable
-              onPress={() => setFilterSheetVisible(true)}
-              className={`h-[46px] w-[46px] items-center justify-center rounded-2xl active:opacity-80 ${
-                hasActiveFilters ? 'bg-white' : 'bg-primary'
-              }`}
-            >
-              <Ionicons
-                name="options-outline"
-                size={20}
-                color={hasActiveFilters ? colors.primaryColor : '#FFFFFF'}
-              />
-            </Pressable>
-          )}
-        </View>
-      </LinearGradient>
+      {/* Saludo + publicidades de negocios cercanos (rota cada 5 s). */}
+      <HomePromoCarousel
+        name={user?.fullName?.split(' ')[0]}
+        nearLat={nearLat}
+        nearLng={nearLng}
+        onOpenStore={openStore}
+      />
 
-      <HomeHeroCard name={user?.fullName?.split(' ')[0]} />
+      <ErrandBanner onPress={() => router.push('/errand')} />
 
       {tags.length > 0 && (
         <View className="pb-3 pt-4">
@@ -356,6 +370,8 @@ export default function HomeScreen() {
       </LinearGradient>
 
       <View className="flex-1 bg-surface">
+      {searchHeader}
+
       {needsLocation ? (
         <ScrollView
           style={{ flex: 1 }}

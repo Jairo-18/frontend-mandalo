@@ -1,7 +1,8 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 
 import { OrderCard } from '@/components/orders/order-card';
 import { PanelHeader, PanelSafeArea } from '@/components/ui/panel-header';
@@ -13,8 +14,9 @@ import {
 import { ListEmpty } from '@/components/ui/list-empty';
 import { usePaginatedList } from '@/hooks/use-paginated-list';
 import { useOrderEvents, useSocketReconnected } from '@/lib/orders-socket';
+import { consumeClientOrdersStale } from '@/lib/orders-stale';
 import { businessDisplayName } from '@/services/explore';
-import { Order, ordersService } from '@/services/orders';
+import { isErrand, Order, ordersService } from '@/services/orders';
 import { getAppColors } from '@/lib/app-colors';
 
 /**
@@ -38,34 +40,29 @@ export default function ClientOrdersScreen() {
     ),
   );
 
-  // Al VOLVER a la pantalla (p. ej. tras crear/cancelar) recarga la 1ª página.
-  // El primer focus se salta: usePaginatedList ya hizo la carga inicial al
-  // montar (sin esto salían 2 peticiones idénticas al abrir). El ref evita el
-  // closure viejo: sin él, el refresh usaría el fetcher del primer render
-  // (filtro "Todos") aunque el usuario tenga otro filtro activo.
-  const firstFocusRef = useRef(true);
-  const refreshRef = useRef(() => {});
+  // NO recarga en cada visita: se actualiza en vivo por socket (en silencio,
+  // sin spinner) y con deslizar hacia abajo. Solo al volver tras crear un
+  // pedido (el socket no le avisa al cliente de su propio pedido nuevo) se
+  // recarga, también en silencio. El ref evita el closure viejo: sin él
+  // usaría el fetcher del primer render aunque haya otro filtro activo.
+  const silentRefreshRef = useRef(() => {});
   useEffect(() => {
-    refreshRef.current = () => list.fetchPage(1, 'refresh');
+    silentRefreshRef.current = () => list.fetchPage(1, 'silent');
   });
   useFocusEffect(
     useCallback(() => {
-      if (firstFocusRef.current) {
-        firstFocusRef.current = false;
-        return;
-      }
-      refreshRef.current();
+      if (consumeClientOrdersStale()) silentRefreshRef.current();
     }, []),
   );
 
   // En vivo: cambios de estado de mis pedidos refrescan la lista.
   useOrderEvents(
-    useCallback(() => list.fetchPage(1, 'refresh'), [list.fetchPage]),
+    useCallback(() => list.fetchPage(1, 'silent'), [list.fetchPage]),
   );
   // Si el socket se cayó (wifi/datos) y volvió, pudo perderse algún evento
   // mientras estuvo desconectado.
   useSocketReconnected(
-    useCallback(() => list.fetchPage(1, 'refresh'), [list.fetchPage]),
+    useCallback(() => list.fetchPage(1, 'silent'), [list.fetchPage]),
   );
 
   return (
@@ -73,7 +70,21 @@ export default function ClientOrdersScreen() {
       <StatusBar style="light" />
 
       <View className="flex-1 bg-surface">
-      <PanelHeader title="Mis pedidos" />
+      <PanelHeader
+        title="Mis pedidos"
+        right={
+          // "Pedir un mandado": para quien ya conoce el servicio (también
+          // está la tarjeta del home).
+          <Pressable
+            onPress={() => router.push('/errand')}
+            hitSlop={6}
+            className="h-9 flex-row items-center gap-1.5 rounded-full bg-white/15 px-3 active:opacity-70"
+          >
+            <Ionicons name="walk-outline" size={16} color="#FFFFFF" />
+            <Text className="text-[13px] font-bold text-white">Mandado</Text>
+          </Pressable>
+        }
+      />
 
       <View className="px-5 pb-2 pt-3">
         <OrderFilters
@@ -92,11 +103,15 @@ export default function ClientOrdersScreen() {
             order={item}
             perspective="client"
             title={
-              item.organizational
-                ? businessDisplayName(item.organizational)
-                : `Pedido #${item.id}`
+              isErrand(item)
+                ? item.errandDescription || 'Mandado'
+                : item.organizational
+                  ? businessDisplayName(item.organizational)
+                  : `Pedido #${item.id}`
             }
-            logoUri={item.organizational?.logoUrl}
+            titleIcon={isErrand(item) ? 'walk-outline' : undefined}
+            // Mandado: sin logo (no hay negocio) → el icono.
+            logoUri={isErrand(item) ? undefined : item.organizational?.logoUrl}
             onPress={() =>
               router.push({ pathname: '/orders/[id]', params: { id: String(item.id) } })
             }

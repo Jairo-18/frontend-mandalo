@@ -37,6 +37,25 @@ export const ORDER_FLOW: OrderStateCode[] = [
   'ENTR',
 ];
 
+/**
+ * Estado del PEDIDO (no solo del código): en un mandado no hay negocio que
+ * prepare — PREP significa "buscando domiciliario" o, ya tomado, "haciendo
+ * el mandado".
+ */
+export function orderStateMeta(order: {
+  type?: string;
+  deliveryUserId?: string | null;
+  stateType?: { code: string } | null;
+}): StateMeta {
+  const code = order.stateType?.code ?? '';
+  if (order.type === 'ERRAND' && code === 'PREP') {
+    return order.deliveryUserId
+      ? { label: 'Haciendo el mandado', tone: 'primary', icon: 'walk-outline' }
+      : { label: 'Buscando domiciliario', tone: 'amber', icon: 'search-outline' };
+  }
+  return stateMeta(code);
+}
+
 export function stateMeta(code: string): StateMeta {
   return (
     ORDER_STATE[code as OrderStateCode] ?? {

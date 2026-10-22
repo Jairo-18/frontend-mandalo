@@ -8,18 +8,18 @@
        esto es solo el fallback antes de que cargue el fetch de
        /app-settings — una vez carga, `context/app-data.tsx` la pisa en
        runtime con vars(), eligiendo claro/oscuro según el tema activo. */
-    --color-primary: 255 90 60; /* #FF5A3C naranja principal */
-    --color-primary-soft: 255 140 110; /* #FF8C6E tinte medio (degradados) — derivado de primary */
-    --color-primary-tint: 255 231 225; /* #FFE7E1 tinte claro (fondos de iconos) — derivado de primary */
-    --color-dark: 30 30 45; /* #1E1E2D azul-negro de marca (franjas/cabeceras) — fijo entre temas */
+    --color-primary: 198 40 40; /* #C62828 rojo principal (paleta de prod) */
+    --color-primary-soft: 228 119 119; /* #E47777 tinte medio (degradados) — derivado de primary */
+    --color-primary-tint: 249 225 225; /* #F9E1E1 tinte claro (fondos de iconos) — derivado de primary */
+    --color-dark: 142 27 27; /* #8E1B1B rojo oscuro de marca (franjas/cabeceras) — fijo entre temas */
 
     /* Tokens de tema (modo claro por defecto) — cada uno tiene su par oscuro
        explícito abajo, elegido por el admin, no derivado. */
-    --color-surface: 242 242 242; /* #F2F2F2 fondo de pantalla */
+    --color-surface: 255 255 255; /* #FFFFFF fondo de pantalla */
     --color-card: 255 255 255; /* #FFFFFF tarjetas/inputs/superficies elevadas */
-    --color-ink: 30 30 45; /* #1E1E2D texto principal (títulos/cuerpo) */
+    --color-ink: 34 34 34; /* #222222 texto principal (títulos/cuerpo) */
     --color-muted: 122 122 138; /* #7A7A8A texto secundario */
-    --color-border: 229 231 235; /* gray-200 líneas/divisores/fondos sutiles */
+    --color-border: 198 40 40; /* #C62828 líneas/divisores/fondos sutiles */
   }
 
   /* El modo oscuro se activa manualmente con colorScheme.set('dark')
@@ -27,11 +27,11 @@
      igual en nativo y web una vez forzado el color scheme. */
   @media (prefers-color-scheme: dark) {
     :root {
-      --color-surface: 18 18 27; /* fondo de pantalla oscuro */
-      --color-card: 38 38 54; /* tarjetas/inputs oscuros */
+      --color-surface: 30 30 36; /* fondo de pantalla oscuro */
+      --color-card: 30 30 36; /* tarjetas/inputs oscuros */
       --color-ink: 237 237 242; /* texto principal claro */
       --color-muted: 160 160 178; /* texto secundario claro */
-      --color-border: 51 51 74; /* #33334A líneas/divisores/fondos sutiles oscuros */
+      --color-border: 198 40 40; /* #C62828 líneas/divisores/fondos sutiles oscuros */
     }
   }
 }

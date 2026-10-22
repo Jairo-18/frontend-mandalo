@@ -126,8 +126,13 @@ export default function DeliveryScreen() {
               onPress={() => router.navigate('/delivery/chats')}
             />
             <QuickAction
+              icon="star-outline"
+              label="Mis reseñas"
+              onPress={() => router.navigate('/delivery/reviews')}
+            />
+            <QuickAction
               icon="person-outline"
-              label="Mi perfil"
+              label="Mi cuenta"
               onPress={() => router.navigate('/delivery/profile')}
             />
           </View>

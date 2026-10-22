@@ -7,8 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAppData } from '@/context/app-data';
 import { useAppTheme } from '@/context/app-theme';
+import { useGoogleServices } from '@/hooks/use-google-services';
 import { useSession } from '@/hooks/use-session';
+import { openStoreReview, STORE_LABEL, storeFor } from '@/lib/rate-app';
 import { buildSocialLinkItems } from '@/lib/social-links';
+import { AnimatedSocialIcon } from '@/components/ui/animated-social-icon';
 import { homePathFor } from '@/lib/session';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
@@ -47,6 +50,8 @@ export function HelpScreen() {
   const colors = useResolvedAppColors();
   const { platformSocial } = useAppData();
   const socialItems = buildSocialLinkItems(platformSocial);
+  // Tienda donde se califica la app (App Store / Google Play / AppGallery).
+  const store = storeFor(useGoogleServices());
 
   return (
     <SafeAreaView className="flex-1 bg-card">
@@ -75,6 +80,21 @@ export function HelpScreen() {
           <Text className="mb-5 mt-2 text-[13px] leading-5 text-muted">
             Guía de uso y documentos legales de Mandalo.
           </Text>
+
+          {/* Reseña de la APP en su tienda (en web, según el equipo). */}
+          <Pressable
+            onPress={() => void openStoreReview()}
+            className="mb-4 flex-row items-center gap-3 rounded-2xl bg-amber-50 px-3.5 py-3.5 active:opacity-70"
+          >
+            <Ionicons name="star" size={20} color="#F5A623" />
+            <View className="flex-1">
+              <Text className="text-[14px] font-bold text-amber-900">
+                Califica Mandalo en {STORE_LABEL[store]}
+              </Text>
+              <Text className="text-[12px] text-amber-800">Tu opinión nos ayuda a crecer</Text>
+            </View>
+            <Ionicons name="open-outline" size={16} color="#92400E" />
+          </Pressable>
 
           <View className="rounded-2xl border border-border bg-surface p-2">
             {LINKS.map((link, i) => (
@@ -108,7 +128,7 @@ export function HelpScreen() {
                       i > 0 ? 'mt-1' : ''
                     }`}
                   >
-                    <Ionicons name={item.icon} size={20} color={colors.mutedColor} />
+                    <AnimatedSocialIcon icon={item.icon} color={item.color} size={20} index={i} />
                     <Text className="flex-1 text-[14px] font-bold text-ink">
                       {item.label}
                     </Text>

@@ -63,13 +63,13 @@ export default function BusinessOrdersScreen() {
 
   // En vivo: cualquier evento de pedido refresca el listado.
   useOrderEvents(
-    useCallback(() => list.fetchPage(1, 'refresh'), [list.fetchPage]),
+    useCallback(() => list.fetchPage(1, 'silent'), [list.fetchPage]),
   );
   // Si el socket se cayó (wifi/datos) y volvió, pudo perderse algún evento
   // mientras estuvo desconectado — se refresca la lista para no quedar
   // desactualizado en silencio hasta el próximo evento nuevo.
   useSocketReconnected(
-    useCallback(() => list.fetchPage(1, 'refresh'), [list.fetchPage]),
+    useCallback(() => list.fetchPage(1, 'silent'), [list.fetchPage]),
   );
 
   // Actualización optimista: las mutaciones (`changeState`, `rejectPayment`…)
@@ -251,25 +251,25 @@ export default function BusinessOrdersScreen() {
             // Con repartidor asignado, el negocio confirma la salida (despacha).
             if (order.deliveryUserId) {
               return (
-                <View className="gap-2">
-                  <View className="flex-row gap-3">
-                    <ActionButton
-                      label="Cancelar"
-                      variant="danger-outline"
-                      onPress={() => {
-                    detailReload.current = reload;
-                    setCancelId(order.id);
-                  }}
-                    />
-                    <ActionButton
-                      label="Entregar al domiciliario"
-                      variant="success"
-                      onPress={() => {
-                        detailReload.current = reload;
-                        setDispatchId(order.id);
-                      }}
-                    />
-                  </View>
+                // Apilados (acción principal arriba): en fila "Entregar al
+                // domiciliario" no cabía y se partía en dos líneas.
+                <View className="gap-2.5">
+                  <ActionButton
+                    label="Entregar al domiciliario"
+                    variant="success"
+                    onPress={() => {
+                      detailReload.current = reload;
+                      setDispatchId(order.id);
+                    }}
+                  />
+                  <ActionButton
+                    label="Cancelar pedido"
+                    variant="danger-outline"
+                    onPress={() => {
+                      detailReload.current = reload;
+                      setCancelId(order.id);
+                    }}
+                  />
                 </View>
               );
             }

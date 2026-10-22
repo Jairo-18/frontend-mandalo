@@ -29,6 +29,7 @@ import { authService } from '@/services/auth';
 import { profileService } from '@/services/profile';
 import { userAddressesService } from '@/services/user-addresses';
 import { getAppColors } from '@/lib/app-colors';
+import { identificationErrorFor } from '@/lib/identification';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 type Role = 'client' | 'delivery';
@@ -48,7 +49,7 @@ export default function CompleteRegistrationScreen() {
 
   const { departments, identificationTypes } = useAppData();
   const muni = useMunicipalities();
-  const { errors, clearError, bind, validate } = useFormErrors();
+  const { errors, clearError, bind, validate, applyServerErrors } = useFormErrors();
 
   // Rol: viene fijo desde la pantalla de registro; desde el login se elige acá.
   const [role, setRole] = useState<Role | null>(params.role ?? null);
@@ -156,7 +157,11 @@ export default function CompleteRegistrationScreen() {
               ? undefined
               : 'Selecciona el tipo.',
             identificationNumber: identificationNumber.trim()
-              ? undefined
+              ? identificationErrorFor(
+                  identificationTypes,
+                  identificationTypeId,
+                  identificationNumber,
+                )
               : 'Ingresa tu número de identificación.',
             avatar: avatarUri ? undefined : 'Sube una foto de tu rostro.',
             idFront: idFrontUri
@@ -248,7 +253,8 @@ export default function CompleteRegistrationScreen() {
       const current = getSession()!;
       await setSession({ ...current, needsOnboarding: undefined });
       router.replace(homePathFor(current.user));
-    } catch {
+    } catch (e) {
+      applyServerErrors(e, { latitude: 'location', longitude: 'location' });
       // El interceptor HTTP ya mostró el mensaje del backend.
     } finally {
       setSaving(false);

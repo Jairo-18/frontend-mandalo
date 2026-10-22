@@ -6,6 +6,7 @@ import { disconnectOrdersSocket } from '@/lib/orders-socket';
 import { unregisterPushToken } from '@/lib/push';
 import { clearSession, loadSession } from '@/lib/session';
 import { clearUserData } from '@/lib/user-data';
+import { clearFavorites } from '@/lib/favorites';
 import { authService } from '@/services/auth';
 
 // ---- Estado global "cerrando sesión" (para el overlay del layout raíz) ----
@@ -60,6 +61,7 @@ export async function signOutEverywhere(): Promise<void> {
     disconnectOrdersSocket();
     resetUnreadChats();
     clearUserData();
+    clearFavorites();
     await clearSession();
     try {
       router.replace('/auth/login');

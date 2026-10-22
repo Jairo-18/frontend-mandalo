@@ -14,6 +14,7 @@ import { useColorScheme } from 'nativewind';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
@@ -34,6 +35,15 @@ import { signOutEverywhere } from '@/lib/sign-out';
 // Define la tarea de tracking en background del repartidor (import con efecto:
 // TaskManager exige que la tarea exista ANTES de que el SO la dispare).
 import '@/lib/delivery-tracker';
+
+// Web: sin el contorno negro que el navegador le pone a un campo enfocado —
+// `TextField` marca su propio borde con el color de marca. (Va acá y no en
+// `+html.tsx`: con `web.output: "single"` ese archivo no llega a la página.)
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = 'input:focus,textarea:focus,select:focus{outline:none;}';
+  document.head.appendChild(style);
+}
 
 SplashScreen.preventAutoHideAsync();
 

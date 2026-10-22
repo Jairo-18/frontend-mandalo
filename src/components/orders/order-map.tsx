@@ -73,6 +73,7 @@ function OrderMapView({ order, perspective }: Props) {
   const mapRef = useRef<MapView>(null);
   const isOnRoute = order.stateType?.code === 'RUTA';
 
+  // Punto de recogida: el negocio o, en un mandado, su recogida (opcional).
   const business: LatLng | null =
     order.organizational?.latitude != null &&
     order.organizational?.longitude != null
@@ -80,7 +81,9 @@ function OrderMapView({ order, perspective }: Props) {
           latitude: order.organizational.latitude,
           longitude: order.organizational.longitude,
         }
-      : null;
+      : order.pickupLatitude != null && order.pickupLongitude != null
+        ? { latitude: order.pickupLatitude, longitude: order.pickupLongitude }
+        : null;
   const destination: LatLng | null =
     order.deliveryLatitude != null && order.deliveryLongitude != null
       ? {
@@ -172,7 +175,7 @@ function OrderMapView({ order, perspective }: Props) {
         {business && (
           <Marker
             coordinate={business}
-            title="Negocio"
+            title={order.type === 'ERRAND' ? 'Recogida' : 'Negocio'}
             description="Punto de recogida"
           >
             <PinBubble icon="storefront" color={getAppColors().darkColor} />

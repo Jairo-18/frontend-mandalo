@@ -33,6 +33,7 @@ import {
 import { adminTagsService, CatalogItem } from '@/services/admin-catalogs';
 import { businessService } from '@/services/business';
 import { getAppColors } from '@/lib/app-colors';
+import { identificationErrorFor } from '@/lib/identification';
 import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 
 /** Días de la semana para el horario (números JS: 0 = domingo). */
@@ -154,7 +155,7 @@ export function BusinessFormModal({
   const [allTags, setAllTags] = useState<CatalogItem[]>([]);
 
   const [saving, setSaving] = useState(false);
-  const { errors, setErrors, clearError, bind, validate } = useFormErrors();
+  const { errors, setErrors, clearError, bind, validate, applyServerErrors } = useFormErrors();
 
   const isEdit = !!editing;
 
@@ -298,6 +299,13 @@ export function BusinessFormModal({
         !selfBusiness && identificationNumber.trim() && !identificationTypeId
           ? 'Selecciona el tipo.'
           : undefined,
+      identificationNumber: selfBusiness
+        ? undefined
+        : identificationErrorFor(
+            identificationTypes,
+            identificationTypeId,
+            identificationNumber,
+          ),
       commissionOrderRate:
         !selfBusiness &&
         (!commissionOrderRate.trim() ||
@@ -464,7 +472,16 @@ export function BusinessFormModal({
         await adminBusinessesService.removePaymentQr(businessId, 'nequi');
       }
       onSaved();
-    } catch {
+    } catch (e) {
+      applyServerErrors(e, {
+        latitude: 'location',
+        longitude: 'location',
+        openTime: 'schedule',
+        closeTime: 'schedule',
+        openDays: 'schedule',
+        email: 'accountEmail',
+        password: 'accountPassword',
+      });
       // El interceptor HTTP ya mostró el mensaje del backend.
     } finally {
       setSaving(false);

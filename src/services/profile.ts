@@ -37,6 +37,11 @@ export type MyProfile = {
   technicalInspectionUrl: string | null;
   /** Cuándo/qué versión aceptó Términos y Tratamiento de Datos (null = nunca). */
   termsAcceptedAt: string | null;
+  /** Repartidor: su Nequi para los mandados ("Mis datos de pago"). */
+  paymentHolderName?: string | null;
+  nequiNumber?: string | null;
+  nequiKey?: string | null;
+  nequiQrUrl?: string | null;
 };
 
 export type MyProfilePayload = {
@@ -79,6 +84,31 @@ export const profileService = {
     });
   },
 
+  /** Repartidor: titular, número y llave de Nequi (mandados pagados por Nequi). */
+  updatePaymentInfo: (payload: {
+    paymentHolderName: string;
+    nequiNumber: string;
+    nequiKey: string;
+  }) =>
+    http<{ message?: string }>('/user/me/payment-info', {
+      method: 'PATCH',
+      body: payload,
+      auth: true,
+    }),
+
+  uploadNequiQr: async (uri: string) => {
+    const form = new FormData();
+    form.append('file', await filePart(uri));
+    return http<{ data: { nequiQrUrl: string } }>('/user/me/nequi-qr', {
+      method: 'POST',
+      body: form,
+      auth: true,
+    });
+  },
+
+  removeNequiQr: () =>
+    http<{ message?: string }>('/user/me/nequi-qr', { method: 'DELETE', auth: true }),
+
   removeAvatar: () =>
     http<{ message?: string }>('/user/me/avatar', {
       method: 'DELETE',
@@ -98,6 +128,16 @@ export const profileService = {
    * historial se borra al instante; con historial el backend la desactiva
    * y la marca para limpieza manual. El mensaje de éxito lo pone el backend.
    */
+  /**
+   * "Eliminar mi cuenta": manda al correo de la cuenta el enlace que la
+   * elimina (30 min). `deleteAccount` (inmediato) queda para builds viejos.
+   */
+  requestAccountDeletion: () =>
+    http<{ message?: string }>('/user/me/request-deletion', {
+      method: 'POST',
+      auth: true,
+    }),
+
   deleteAccount: () =>
     http<{ message?: string }>('/user/me', {
       method: 'DELETE',

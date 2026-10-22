@@ -54,7 +54,8 @@ export function CancelOrderDialog({ visible, onConfirm, onCancel }: Props) {
 
             <View className="mt-4 rounded-xl border border-border px-3.5 py-2.5">
               <TextInput
-                className="min-h-[44px] text-[15px] text-ink"
+                className="min-h-[96px] text-[15px] text-ink"
+            textAlignVertical="top"
                 placeholder="Ej: sin stock del producto."
                 placeholderTextColor={colors.mutedColor}
                 value={reason}
