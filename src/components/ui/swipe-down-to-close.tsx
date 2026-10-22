@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from 'react';
-import { StyleProp, ViewStyle } from 'react-native';
+import { StyleProp, View, ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -78,8 +78,13 @@ export function SwipeDownToClose({ children, onClose, visible, className, style 
   const { gesture, animatedStyle } = useSwipeDownToClose({ visible, onClose });
   return (
     <GestureDetector gesture={gesture}>
-      <Animated.View className={className} style={[style, animatedStyle]}>
-        {children}
+      {/* `className` va en un View normal ADENTRO: en web, NativeWind no
+          aplica clases a la vista animada de Reanimated (la hoja salía sin
+          fondo, transparente). La animada solo lleva el transform. */}
+      <Animated.View style={animatedStyle}>
+        <View className={className} style={style}>
+          {children}
+        </View>
       </Animated.View>
     </GestureDetector>
   );

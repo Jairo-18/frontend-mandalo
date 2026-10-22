@@ -21,12 +21,14 @@ import { formatDistance } from '@/lib/distance';
 import { finalPrice, formatPrice } from '@/lib/price';
 import { DeliveryEstimate, ExploreProduct } from '@/services/explore';
 import { getAppColors } from '@/lib/app-colors';
+import { useResolvedAppColors } from '@/hooks/use-resolved-app-colors';
 import { ProductVideo } from '@/components/ui/product-video';
 import { useSwipeDownToClose } from '@/components/ui/swipe-down-to-close';
 import { DEFAULT_PRODUCT_IMAGE } from '@/lib/default-images';
 import { Promotion } from '@/services/promotions';
 
 const CAROUSEL_HEIGHT = 280;
+const SHEET_MAX_WIDTH = 720;
 
 type Props = {
   /** Producto a mostrar; null = hoja cerrada. */
@@ -61,7 +63,10 @@ export function ProductDetailSheet({
   promotion,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const colors = useResolvedAppColors();
+  // Ancho de la hoja (y de cada foto del carrusel): en web/tablet se limita
+  // a SHEET_MAX_WIDTH y se centra; en celular es la pantalla completa.
+  const width = Math.min(useWindowDimensions().width, SHEET_MAX_WIDTH);
 
   // Foto del carrusel visible (contador) y zoom a pantalla completa.
   const [index, setIndex] = useState(0);
@@ -111,9 +116,22 @@ export function ProductDetailSheet({
 
       {/* Sin esquinas redondeadas: la foto/video de arriba va a ras, sin
           recortes (pedido del cliente 2026-10-21). */}
+      {/* Estilos EXPLÍCITOS (no `className`): en web NativeWind no aplica
+          clases a la vista animada de Reanimated y la hoja salía sin fondo.
+          En pantallas anchas (web/tablet) se limita el ancho y se centra. */}
       <Animated.View
-        className="max-h-[85%] overflow-hidden bg-card"
-        style={[{ paddingBottom: insets.bottom + 16 }, swipe.animatedStyle]}
+        style={[
+          {
+            maxHeight: '85%',
+            overflow: 'hidden',
+            backgroundColor: colors.cardColor,
+            width: '100%',
+            maxWidth: SHEET_MAX_WIDTH,
+            alignSelf: 'center',
+            paddingBottom: insets.bottom + 16,
+          },
+          swipe.animatedStyle,
+        ]}
       >
         {/* Carrusel de fotos (remonta por producto para arrancar en la 1ª).
             Es la zona que se agarra para cerrar arrastrando hacia abajo. */}
